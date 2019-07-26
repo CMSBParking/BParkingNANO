@@ -42,6 +42,10 @@ process.maxEvents = cms.untracked.PSet(
    input = cms.untracked.int32(options.maxEvents) 
 )
 
+process.options = cms.untracked.PSet(
+    wantSummary = cms.untracked.bool(options.wantSummary),
+)
+
 process.source = cms.Source(
    "PoolSource",
    # replace 'myfile.root' with the source file you want to use
