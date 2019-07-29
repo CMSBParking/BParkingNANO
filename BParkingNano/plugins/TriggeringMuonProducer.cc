@@ -12,6 +12,7 @@
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
+#include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
@@ -25,7 +26,8 @@
 using namespace std;
 
 
-float MuonMass_ = 0.10565837;
+constexpr float MuonMass_ = 0.10565837;
+constexpr bool debug = false;
 
 class TriggeringMuonProducer : public edm::EDProducer {
     
@@ -40,14 +42,13 @@ private:
 
     virtual void produce(edm::Event&, const edm::EventSetup&);
 
-
     edm::EDGetTokenT<std::vector<pat::Muon>> muonSrc_;
     edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
     edm::EDGetTokenT<std::vector<pat::TriggerObjectStandAlone>> triggerObjects_;
     edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
     edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
 
-    bool debug;
+    float maxdR_;
 };
 
 
@@ -56,10 +57,10 @@ TriggeringMuonProducer::TriggeringMuonProducer(const edm::ParameterSet &iConfig)
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"))),
   triggerObjects_(consumes<std::vector<pat::TriggerObjectStandAlone>>(iConfig.getParameter<edm::InputTag>("objects"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
-  vertexSrc_( consumes<reco::VertexCollection> ( iConfig.getParameter<edm::InputTag>( "vertexCollection" ) ) )
+  vertexSrc_( consumes<reco::VertexCollection> ( iConfig.getParameter<edm::InputTag>( "vertexCollection" ) ) ), 
+  maxdR_((float)iConfig.getParameter<double>("maxdR_matching"))
 {
-    produces<pat::CompositeCandidateCollection>();
-    debug = false;
+    produces<pat::MuonCollection>();
 }
 
 
@@ -77,7 +78,8 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
     iEvent.getByToken(triggerBits_, triggerBits);
     const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
 
-    std::vector<std::vector<float>> triggeringMuons;
+    std::vector<pat::TriggerObjectStandAlone> triggeringMuons;
+
     //taken from https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2016#Trigger
     edm::Handle<std::vector<pat::TriggerObjectStandAlone>> triggerObjects;
     iEvent.getByToken(triggerObjects_, triggerObjects);
@@ -107,11 +109,7 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
       }
 
       if(!isTriggerMuon) continue;
-      std::vector<float> localMuon;
-      localMuon.push_back(obj.pt());
-      localMuon.push_back(obj.eta());
-      localMuon.push_back(obj.phi());
-      triggeringMuons.push_back(localMuon);
+      triggeringMuons.push_back(obj);
       if(debug){ std::cout << "\tTrigger object:  pt " << obj.pt() << ", eta " << obj.eta() << ", phi " << obj.phi() << std::endl;
 	// Print trigger object collection and type
 	std::cout << "\t   Collection: " << obj.collection() << std::endl;
@@ -121,12 +119,12 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
     if(debug){
       std::cout << "\n total n of triggering muons = " << triggeringMuons.size() << std::endl;
       for(auto ij : triggeringMuons){
-	for(auto il : ij) std::cout << " >>> components (pt, eta, phi) = " << il << std::endl;
+	std::cout << " >>> components (pt, eta, phi) = " << ij.pt() << " " << ij.eta() << " " << ij.phi() << std::endl;
       }
     }
 
 
-    std::unique_ptr<pat::CompositeCandidateCollection> result( new pat::CompositeCandidateCollection );
+    std::unique_ptr<pat::MuonCollection> result( new pat::MuonCollection );
 
 
     //now check for reco muons matched to triggering muons
@@ -137,20 +135,18 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
       const pat::Muon & muon1 = (*muonForTrgHandle)[iTrg];
 
       if(!(muon1.isLooseMuon() && muon1.isSoftMuon(PV))) continue;
-      TLorentzVector recoMuon(muon1.pt(), muon1.eta(), muon1.phi(), MuonMass_);
 
       float dRMuonMatching = -1.;
       int muonMatching_index = -1;
       for(unsigned int ij=0; ij<triggeringMuons.size(); ++ij){
 
-	TLorentzVector trgMuon((triggeringMuons.at(ij))[0], (triggeringMuons.at(ij))[1], (triggeringMuons.at(ij))[2], MuonMass_);
-	float dR = recoMuon.DeltaR(trgMuon);
-	if((dR < dRMuonMatching || dRMuonMatching == -1) && dR < 0.01){
+	float dR = reco::deltaR(triggeringMuons[ij], muon1);
+	if((dR < dRMuonMatching || dRMuonMatching == -1) && dR < maxdR_){
 	  dRMuonMatching = dR;
 	  muonMatching_index = iTrg;
 	  if(debug) std::cout << " dR = " << dR 
-			      << " reco = " << recoMuon.Pt() << " " << recoMuon.Eta() << " " << recoMuon.Phi() << " " 
-			      << " HLT = " << trgMuon.Pt() << " " << trgMuon.Eta() << " " << trgMuon.Phi()
+			      << " reco = " << muon1.pt() << " " << muon1.eta() << " " << muon1.phi() << " " 
+			      << " HLT = " << triggeringMuons[ij].pt() << " " << triggeringMuons[ij].eta() << " " << triggeringMuons[ij].phi()
 			      << std::endl;
 	}
       }
@@ -158,8 +154,7 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
       //save reco muon 
       // can add p4 of triggering muon in case
       if(muonMatching_index != -1){
-	pat::CompositeCandidate recoTriggerMuonCand;
-	recoTriggerMuonCand.addDaughter( (*muonForTrgHandle)[muonMatching_index] );
+	pat::Muon recoTriggerMuonCand (muon1);
 	recoTriggerMuonCand.addUserInt("recoMuonIndex", muonMatching_index);
 	result->push_back(recoTriggerMuonCand);
       }

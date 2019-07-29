@@ -6,11 +6,13 @@ RecoTrgMuonCand=cms.EDProducer("TriggeringMuonProducer",
                                bits = cms.InputTag("TriggerResults","","HLT"),
                                prescales = cms.InputTag("patTrigger"),
                                objects = cms.InputTag("slimmedPatTrigger"),
-                               vertexCollection=cms.InputTag("offlineSlimmedPrimaryVertices")
+                               vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
+                               maxdR_matching = cms.double(0.01)
                                )
 
 
-RecoTrgMuonCandTable=cms.EDProducer("SimpleCompositeCandidateFlatTableProducer",
+#RecoTrgMuonCandTable=cms.EDProducer("SimpleMuonFlatTableProducer",
+RecoTrgMuonCandTable=cms.EDProducer("SimpleCandidateFlatTableProducer",
                                     src=cms.InputTag("RecoTrgMuonCand"),
                                     cut=cms.string(""),
                                     name=cms.string("RecoTrgMuonCand"),
