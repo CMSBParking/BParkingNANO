@@ -137,13 +137,15 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
       if(!(muon1.isLooseMuon() && muon1.isSoftMuon(PV))) continue;
 
       float dRMuonMatching = -1.;
-      int muonMatching_index = -1;
+      int recoMuonMatching_index = -1;
+      int trgMuonMatching_index = -1;
       for(unsigned int ij=0; ij<triggeringMuons.size(); ++ij){
 
 	float dR = reco::deltaR(triggeringMuons[ij], muon1);
 	if((dR < dRMuonMatching || dRMuonMatching == -1) && dR < maxdR_){
 	  dRMuonMatching = dR;
-	  muonMatching_index = iTrg;
+	  recoMuonMatching_index = iTrg;
+	  trgMuonMatching_index = ij;
 	  if(debug) std::cout << " dR = " << dR 
 			      << " reco = " << muon1.pt() << " " << muon1.eta() << " " << muon1.phi() << " " 
 			      << " HLT = " << triggeringMuons[ij].pt() << " " << triggeringMuons[ij].eta() << " " << triggeringMuons[ij].phi()
@@ -153,9 +155,10 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
 
       //save reco muon 
       // can add p4 of triggering muon in case
-      if(muonMatching_index != -1){
+      if(recoMuonMatching_index != -1){
 	pat::Muon recoTriggerMuonCand (muon1);
-	recoTriggerMuonCand.addUserInt("recoMuonIndex", muonMatching_index);
+	recoTriggerMuonCand.addUserInt("recoMuonIndex", recoMuonMatching_index);
+	recoTriggerMuonCand.addUserInt("trgMuonIndex", trgMuonMatching_index);
 	result->push_back(recoTriggerMuonCand);
       }
     }

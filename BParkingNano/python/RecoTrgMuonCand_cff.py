@@ -2,7 +2,7 @@ from PhysicsTools.NanoAOD.common_cff import *
 import FWCore.ParameterSet.Config as cms
 
 RecoTrgMuonCand=cms.EDProducer("TriggeringMuonProducer",
-                               muonCollection = cms.InputTag("linkedObjects","muons"), #same collection as in NanoAOD
+                               muonCollection = cms.InputTag("slimmedMuons"), #same collection as in NanoAOD
                                bits = cms.InputTag("TriggerResults","","HLT"),
                                prescales = cms.InputTag("patTrigger"),
                                objects = cms.InputTag("slimmedPatTrigger"),
@@ -19,7 +19,8 @@ RecoTrgMuonCandTable=cms.EDProducer("SimpleCandidateFlatTableProducer",
                                     doc=cms.string("reco muon matched to triggering muon"),
                                     singleton=cms.bool(False),
                                     extension=cms.bool(False),
-                                    variables=cms.PSet(recoMuonIndex = Var("userInt('recoMuonIndex')", int,doc="index in original muon collection")
+                                    variables=cms.PSet(recoMuonIndex = Var("userInt('recoMuonIndex')", int,doc="index in original reco muon collection"),
+                                                       trgMuonIndex = Var("userInt('trgMuonIndex')", int,doc="index in trigger muon collection")
                                                        #these following are already in the full muon collection
                                                        #pt = Var("daughter(0).pt()",float,doc="pt"),
                                                        #eta = Var("daughter(0).eta()",float,doc="eta"),
