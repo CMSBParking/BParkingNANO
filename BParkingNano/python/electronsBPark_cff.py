@@ -7,6 +7,7 @@ lowptElectronsWithSeed = cms.EDProducer(
   src = cms.InputTag('slimmedLowPtElectrons'),
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
+  minBdtUnbiased = cms.double(0.)
 )
 
 lowptElectronsForAnalysis = cms.EDFilter(
@@ -67,8 +68,8 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         lostHits = Var("gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS')","uint8",doc="number of missing inner hits"),
         isPF = Var("userInt('isPF')",bool,doc="electron is PF candidate"),
         isLowPt = Var("userInt('isLowPt')",bool,doc="electron is LowPt candidate"),
-        ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT -99 for pfEle"), 
-        unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT -99 for pfEle"), 
+        ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT 20 for pfEle"), 
+        unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
         fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8)
         )
 )
