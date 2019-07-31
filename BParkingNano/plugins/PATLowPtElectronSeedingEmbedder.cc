@@ -19,7 +19,8 @@ public:
   explicit PATLowPtElectronSeedingEmbedder(const edm::ParameterSet &cfg):
     lowpt_src_{ consumes<pat::ElectronCollection>( cfg.getParameter<edm::InputTag>("src") )},
     ptBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("ptbiasedSeeding") )},
-    unBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("unbiasedSeeding") )} {
+    unBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("unbiasedSeeding") )},
+    minBdtUnbiased_{cfg.getParameter<double>("minBdtUnbiased")} {
       produces<pat::ElectronCollection>();
     }
 
@@ -33,6 +34,7 @@ private:
   const edm::EDGetTokenT<pat::ElectronCollection> lowpt_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> ptBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> unBiased_src_;
+  const double minBdtUnbiased_;
 };
 
 void PATLowPtElectronSeedingEmbedder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
@@ -52,6 +54,8 @@ void PATLowPtElectronSeedingEmbedder::produce(edm::StreamID, edm::Event &evt, ed
     const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
     float unbiased_seedBDT = float((*unBiased)[gsfTrk]);
     float ptbiased_seedBDT = float((*ptBiased)[gsfTrk]);
+
+    if(unbiased_seedBDT < minBdtUnbiased_) continue;
 
     ele.addUserFloat("ptBiased", ptbiased_seedBDT);
     ele.addUserFloat("unBiased", unbiased_seedBDT);
