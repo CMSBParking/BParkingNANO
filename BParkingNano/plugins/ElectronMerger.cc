@@ -65,25 +65,25 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 	 (std::fabs(ele.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
       ele.addUserInt("isPF", 1);
       ele.addUserInt("isLowPt", 0);
-      ele.addUserFloat("ptBiased", -99);
-      ele.addUserFloat("unBiased", -99);
+      ele.addUserFloat("ptBiased", 20.);
+      ele.addUserFloat("unBiased", 20.);
       ele.addUserFloat("chargeMode", ele.charge());
       out->push_back(ele);
     }
 
     for(auto ele : *lowpt) {
+      if((reco::deltaR(ele, muonTrg) > drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
+	 (std::fabs(ele.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
+      
       bool clean_out = false;
       for(const auto& pfele : *pf) {
+
 	clean_out |= (
 		      fabs(pfele.vz() - ele.vz()) < dz_cleaning_ &&
 		      reco::deltaR(ele, pfele) < dr_cleaning_
 		      );
       }
       if(clean_out) continue;
-
-      if((reco::deltaR(ele, muonTrg) > drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
-	 (std::fabs(ele.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
-
       ele.addUserInt("isPF", 0);
       ele.addUserInt("isLowPt", 1);
       ele.addUserFloat("chargeMode", ele.gsfTrack()->chargeMode());
