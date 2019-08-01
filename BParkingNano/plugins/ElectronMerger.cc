@@ -58,23 +58,41 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   
   std::unique_ptr<pat::ElectronCollection> out(new pat::ElectronCollection);
 
+  //just to avoid electrons double storing
+  //in case of ntrgMuon > 1 and same electron compatible with all 
+  std::vector<int> alreadySavedPF;
+  alreadySavedPF.resize(pf->size(), 0);
+
+  std::vector<int> alreadySavedLPT;
+  alreadySavedLPT.resize(lowpt->size(), 0);
+
   for(auto muonTrg : *trgMuon) {
 
+    int icount = -1;
     for(auto ele : *pf) {
-      if((reco::deltaR(ele, muonTrg) > drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
+      ++icount;
+      if(alreadySavedPF[icount]) { std::cout << " already saved " << std::endl; continue;}
+
+      if((reco::deltaR(ele, muonTrg) < drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
 	 (std::fabs(ele.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
+
       ele.addUserInt("isPF", 1);
       ele.addUserInt("isLowPt", 0);
       ele.addUserFloat("ptBiased", 20.);
       ele.addUserFloat("unBiased", 20.);
       ele.addUserFloat("chargeMode", ele.charge());
+      alreadySavedPF[icount] = 1;
       out->push_back(ele);
     }
 
+    icount = -1;
     for(auto ele : *lowpt) {
-      if((reco::deltaR(ele, muonTrg) > drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
+      ++icount;
+      if(alreadySavedLPT[icount]) continue;
+
+      if((reco::deltaR(ele, muonTrg) < drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
 	 (std::fabs(ele.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
-      
+
       bool clean_out = false;
       for(const auto& pfele : *pf) {
 
@@ -96,6 +114,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 					     );
 	ele.setP4(p4);
       }
+      alreadySavedLPT[icount] = 1;
       out->push_back(ele);
     }
 

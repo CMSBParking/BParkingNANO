@@ -1,11 +1,28 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
+muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
+                                 muonCollection = cms.InputTag("slimmedMuons"), #same collection as in NanoAOD                                                           
+                                 bits = cms.InputTag("TriggerResults","","HLT"),
+                                 prescales = cms.InputTag("patTrigger"),
+                                 objects = cms.InputTag("slimmedPatTrigger"),
+                                 vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
+                                 
+                                 ##for the output matched collection                                                                                                     
+                                 maxdR_matching = cms.double(0.01),
+                                 
+                                 ## for the output filtered collection                                                                                                   
+                                 # do not cut on dR to keep Kmumu on trg side                                                                                            
+                                 dzForCleaning_wrtTrgMuon = cms.double(1.),
+                                 ptMin = cms.double(1.),
+                                 absEtaMax = cms.double(2.4)
+                             )
+
 
 muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
-    src = cms.InputTag("slimmedMuons"),
+    src = cms.InputTag("muonTrgSelector:trgFiltered"),
     cut = cms.string(""), #we should not filter on cross linked collections
-    name = cms.string("Muon"),
+    name = cms.string("MuonBPark"),
     doc  = cms.string("slimmedMuons for BPark after basic selection"),
     singleton = cms.bool(False), # the number of entries is variable
     extension = cms.bool(False), # this is the main table for the muons
@@ -15,6 +32,8 @@ muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         dzErr = Var("abs(edB('PVDZ'))",float,doc="dz uncertainty, in cm",precision=6),
         dxy = Var("dB('PV2D')",float,doc="dxy (with sign) wrt first PV, in cm",precision=10),
         dxyErr = Var("edB('PV2D')",float,doc="dxy uncertainty, in cm",precision=6),
+        vx = Var("vx()",float,doc="x coordinate of vertex position, in cm",precision=6),
+        vy = Var("vy()",float,doc="y coordinate of vertex position, in cm",precision=6),
         vz = Var("vz()",float,doc="z coordinate of vertex position, in cm",precision=6),
         ip3d = Var("abs(dB('PV3D'))",float,doc="3D impact parameter wrt first PV, in cm",precision=10),
         sip3d = Var("abs(dB('PV3D')/edB('PV3D'))",float,doc="3D impact parameter significance wrt first PV",precision=10),
@@ -67,6 +86,22 @@ muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
 )
 
 
+
+muonTriggerMatchedTable = muonBParkTable.clone(
+    src = cms.InputTag("muonTrgSelector:trgMatched"),
+    name = cms.string("TriggerMuon"),
+    doc  = cms.string("reco muon matched to triggering muon"),
+    variables = cms.PSet(CandVars,
+        vx = Var("vx()",float,doc="x coordinate of vertex position, in cm",precision=6),
+        vy = Var("vy()",float,doc="y coordinate of vertex position, in cm",precision=6),
+        vz = Var("vz()",float,doc="z coordinate of vertex position, in cm",precision=6),
+        trgMuonIndex = Var("userInt('trgMuonIndex')", int,doc="index in trigger muon collection")
+   )
+)
+
+
+muonBParkSequence = cms.Sequence(muonTrgSelector)
 muonBParkMC = cms.Sequence(muonsBParkMCMatchForTable + muonBParkMCTable)
 muonBParkTables = cms.Sequence(muonBParkTable)
+muonTriggerMatchedTables = cms.Sequence(muonTriggerMatchedTable)
 

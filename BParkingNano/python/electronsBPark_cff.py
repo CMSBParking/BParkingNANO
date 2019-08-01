@@ -7,7 +7,7 @@ lowptElectronsWithSeed = cms.EDProducer(
   src = cms.InputTag('slimmedLowPtElectrons'),
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
-  minBdtUnbiased = cms.double(0.)
+    minBdtUnbiased = cms.double(0.5)
 )
 
 lowptElectronsForAnalysis = cms.EDFilter(
@@ -28,12 +28,12 @@ pfElectronsForAnalysis = cms.EDFilter(
 
 electronsForAnalysis = cms.EDProducer(
   'ElectronMerger',
-  trgMuon = cms.InputTag('RecoTrgMuonCand'),
+  trgMuon = cms.InputTag('muonTrgSelector:trgMatched'),
   lowptSrc = cms.InputTag('lowptElectronsForAnalysis'),
   pfSrc    = cms.InputTag('pfElectronsForAnalysis'),
   ## cleaning wrt trigger muon [-1 == no cut]
   drForCleaning_wrtTrgMuon = cms.double(0.4),
-  dzForCleaning_wrtTrgMuon = cms.double(0.5),
+  dzForCleaning_wrtTrgMuon = cms.double(1.),
   ## cleaning between pfEle and lowPtGsf
   drForCleaning = cms.double(0.01),
   dzForCleaning = cms.double(0.01),
@@ -55,6 +55,8 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         dzErr = Var("abs(edB('PVDZ'))",float,doc="dz uncertainty, in cm",precision=6),
         dxy = Var("dB('PV2D')",float,doc="dxy (with sign) wrt first PV, in cm",precision=10),
         dxyErr = Var("edB('PV2D')",float,doc="dxy uncertainty, in cm",precision=6),
+        vx = Var("vx()",float,doc="x coordinate of vertex position, in cm",precision=6),
+        vy = Var("vy()",float,doc="y coordinate of vertex position, in cm",precision=6),
         vz = Var("vz()",float,doc="z coordinate of vertex position, in cm",precision=6),
         ip3d = Var("abs(dB('PV3D'))",float,doc="3D impact parameter wrt first PV, in cm",precision=10),
         sip3d = Var("abs(dB('PV3D')/edB('PV3D'))",float,doc="3D impact parameter significance wrt first PV, in cm",precision=10),
