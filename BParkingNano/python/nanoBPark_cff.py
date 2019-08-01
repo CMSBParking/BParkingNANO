@@ -10,11 +10,11 @@ from PhysicsTools.NanoAOD.NanoAODEDMEventContent_cff import *
 from PhysicsTools.BParkingNano.genparticlesBPark_cff import *
 from PhysicsTools.BParkingNano.particlelevelBPark_cff import *
 from PhysicsTools.BParkingNano.triggerObjectsBPark_cff import *
-from PhysicsTools.BParkingNano.RecoTrgMuonCand_cff import *
+from PhysicsTools.BParkingNano.muonsBPark_cff import * 
 
 ## filtered input collections
 from PhysicsTools.BParkingNano.electronsBPark_cff import * 
-from PhysicsTools.BParkingNano.muonsBPark_cff import * ##to be replaced with slimmed muons filtered wrt trigger muon
+
 
 
 
@@ -22,7 +22,8 @@ from PhysicsTools.BParkingNano.muonsBPark_cff import * ##to be replaced with sli
 nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
 
 nanoSequence = cms.Sequence(nanoMetadata + 
-                            vertexSequence +                             
+                            vertexSequence +           
+                            muonBParkSequence +
                             globalTables + vertexTables + 
                             triggerObjectBParkTables + l1bits)
 
@@ -37,7 +38,7 @@ def nanoAOD_customizeMC(process):
     return process
 
 def nanoAOD_customizeMuonTriggerBPark(process):
-    process.nanoSequence = cms.Sequence( process.nanoSequence + RecoTrgMuonCandSequence + RecoTrgMuonCandTables)
+    process.nanoSequence = cms.Sequence( process.nanoSequence + muonBParkSequence + muonTriggerMatchedTables + muonBParkTables)
     return process
 
 def nanoAOD_customizeElectronFilteredBPark(process):
