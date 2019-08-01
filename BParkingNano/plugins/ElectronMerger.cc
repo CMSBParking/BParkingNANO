@@ -71,7 +71,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
     int icount = -1;
     for(auto ele : *pf) {
       ++icount;
-      if(alreadySavedPF[icount]) { std::cout << " already saved " << std::endl; continue;}
+      if(alreadySavedPF[icount]) continue;
 
       if((reco::deltaR(ele, muonTrg) < drTrg_cleaning_ && drTrg_cleaning_ != -1) ||
 	 (std::fabs(ele.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
