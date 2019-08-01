@@ -1,0 +1,49 @@
+## nanoAOD producer customized for BParking analysis (focus on RK/K*/phi)
+
+
+## Getting started
+
+```shell
+cmsrel CMSSW_10_2_15
+cd CMSSW_10_2_15/src
+cmsenv
+git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
+scram b
+```
+
+
+## To run on a test file
+
+```shell
+cd PhysicsTools/BParkingNANO/test/
+cmsenv 
+cmsRun test_BParkSequence_10215.py
+
+```
+
+## Contributing
+
+We use the _fork and pull_ model:
+
+fork this repository https://github.com/CMSBParking/BParkingNANO (top right _Fork button)
+
+If you haven't done so yet, clone this repository:
+
+```shell
+git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
+```
+
+Add your fork of the repository as remote:
+
+```shell
+git remote add mine git@github.com:`git config user.github`/BParkingNANO.git
+git checkout -b ${USER}_feature_branch origin/master
+```
+
+Work on your feature, `add`, `commit`, etc. and push to your own fork
+
+```shell
+git push mine feature_branch
+```
+
+Make a pull request on github
