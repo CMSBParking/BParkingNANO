@@ -18,7 +18,6 @@ scram b
 cd PhysicsTools/BParkingNANO/test/
 cmsenv 
 cmsRun test_BParkSequence_10215.py
-
 ```
 
 ## Contributing
@@ -41,6 +40,9 @@ git checkout -b ${USER}_feature_branch origin/master
 ```
 
 Work on your feature, `add`, `commit`, etc. and push to your own fork
+
+when adding a sequence or table producer, please include it in the _python/nanoBPark_cff.py_
+and make sure it runs properly checking the output result (_test_BParkSequence_10215.py_ to give it a try)
 
 ```shell
 git push mine feature_branch
