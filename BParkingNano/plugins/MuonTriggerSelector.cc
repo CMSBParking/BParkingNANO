@@ -1,3 +1,7 @@
+// class to produce 2 pat::MuonCollections
+// one matched to the Park triggers
+// another fitered wrt the Park triggers
+
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -29,13 +33,13 @@ using namespace std;
 constexpr float MuonMass_ = 0.10565837;
 constexpr bool debug = false;
 
-class TriggeringMuonProducer : public edm::EDProducer {
+class MuonTriggerSelector : public edm::EDProducer {
     
 public:
     
-    explicit TriggeringMuonProducer(const edm::ParameterSet &iConfig);
+    explicit MuonTriggerSelector(const edm::ParameterSet &iConfig);
     
-    ~TriggeringMuonProducer() override {};
+    ~MuonTriggerSelector() override {};
     
     
 private:
@@ -48,31 +52,41 @@ private:
     edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescales_;
     edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
 
-    float maxdR_;
+    //for trigger match
+    const double maxdR_;
+
+    //for filter wrt trigger
+    const double dzTrg_cleaning_;
+    const double ptMin_;
+    const double absEtaMax_;
 };
 
 
-TriggeringMuonProducer::TriggeringMuonProducer(const edm::ParameterSet &iConfig):
+MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   muonSrc_( consumes<std::vector<pat::Muon>> ( iConfig.getParameter<edm::InputTag>( "muonCollection" ) ) ),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"))),
   triggerObjects_(consumes<std::vector<pat::TriggerObjectStandAlone>>(iConfig.getParameter<edm::InputTag>("objects"))),
   triggerPrescales_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("prescales"))),
   vertexSrc_( consumes<reco::VertexCollection> ( iConfig.getParameter<edm::InputTag>( "vertexCollection" ) ) ), 
-  maxdR_((float)iConfig.getParameter<double>("maxdR_matching"))
+  maxdR_(iConfig.getParameter<double>("maxdR_matching")),
+  dzTrg_cleaning_(iConfig.getParameter<double>("dzForCleaning_wrtTrgMuon")),
+  ptMin_(iConfig.getParameter<double>("ptMin")),
+  absEtaMax_(iConfig.getParameter<double>("absEtaMax"))
 {
-    produces<pat::MuonCollection>();
+    produces<pat::MuonCollection>("trgMatched");
+    produces<pat::MuonCollection>("trgFiltered");
 }
 
 
 
-void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     
 
     edm::Handle<reco::VertexCollection> vertexHandle;
     iEvent.getByToken(vertexSrc_, vertexHandle);
     const reco::Vertex & PV = vertexHandle->front();
 
-    if(debug) std::cout << " BToKstllProducer::identifyTriggeringMuons " << std::endl;
+    if(debug) std::cout << " MuonTriggerSelector::produce " << std::endl;
 
     edm::Handle<edm::TriggerResults> triggerBits;
     iEvent.getByToken(triggerBits_, triggerBits);
@@ -124,48 +138,74 @@ void TriggeringMuonProducer::produce(edm::Event& iEvent, const edm::EventSetup& 
     }
 
 
-    std::unique_ptr<pat::MuonCollection> result( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection> resultMatch( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection> resultFilter( new pat::MuonCollection );
 
 
     //now check for reco muons matched to triggering muons
-    edm::Handle<std::vector<pat::Muon>> muonForTrgHandle;
-    iEvent.getByToken(muonSrc_, muonForTrgHandle);
+    edm::Handle<std::vector<pat::Muon>> muons;
+    iEvent.getByToken(muonSrc_, muons);
 
-    for(unsigned int iTrg=0; iTrg<muonForTrgHandle->size(); ++iTrg){
-      const pat::Muon & muon1 = (*muonForTrgHandle)[iTrg];
+    for(unsigned int iMuo=0; iMuo<muons->size(); ++iMuo){
+      const pat::Muon & muon = (*muons)[iMuo];
 
-      if(!(muon1.isLooseMuon() && muon1.isSoftMuon(PV))) continue;
+      //this is for triggering muon not really need to be configurable
+      if(!(muon.isLooseMuon() && muon.isSoftMuon(PV))) continue;
 
       float dRMuonMatching = -1.;
       int recoMuonMatching_index = -1;
       int trgMuonMatching_index = -1;
-      for(unsigned int ij=0; ij<triggeringMuons.size(); ++ij){
+      for(unsigned int iTrg=0; iTrg<triggeringMuons.size(); ++iTrg){
 
-	float dR = reco::deltaR(triggeringMuons[ij], muon1);
+	float dR = reco::deltaR(triggeringMuons[iTrg], muon);
 	if((dR < dRMuonMatching || dRMuonMatching == -1) && dR < maxdR_){
 	  dRMuonMatching = dR;
-	  recoMuonMatching_index = iTrg;
-	  trgMuonMatching_index = ij;
+	  recoMuonMatching_index = iMuo;
+	  trgMuonMatching_index = iTrg;
 	  if(debug) std::cout << " dR = " << dR 
-			      << " reco = " << muon1.pt() << " " << muon1.eta() << " " << muon1.phi() << " " 
-			      << " HLT = " << triggeringMuons[ij].pt() << " " << triggeringMuons[ij].eta() << " " << triggeringMuons[ij].phi()
+			      << " reco = " << muon.pt() << " " << muon.eta() << " " << muon.phi() << " " 
+			      << " HLT = " << triggeringMuons[iTrg].pt() << " " << triggeringMuons[iTrg].eta() << " " << triggeringMuons[iTrg].phi()
 			      << std::endl;
 	}
       }
 
       //save reco muon 
-      // can add p4 of triggering muon in case
+      //since we do not store full muon collection => useless to save original muon index
       if(recoMuonMatching_index != -1){
-	pat::Muon recoTriggerMuonCand (muon1);
-	recoTriggerMuonCand.addUserInt("recoMuonIndex", recoMuonMatching_index);
+	pat::Muon recoTriggerMuonCand (muon);
 	recoTriggerMuonCand.addUserInt("trgMuonIndex", trgMuonMatching_index);
-	result->push_back(recoTriggerMuonCand);
+	resultMatch->push_back(recoTriggerMuonCand);
       }
     }
     
-    iEvent.put(std::move(result));
+
+    //muons filtered wrt trigger
+    // not enough to save allMuons - triggerMuons
+    // need to check dZwrtTrg and pt, eta...
+    std::vector<int> alreadySavedM;
+    alreadySavedM.resize(muons->size(), 0);
+
+    for(auto muonTrg : *resultMatch) {
+      
+      int icount = -1;
+      for(auto muon : *muons) {
+	++icount;
+	if(alreadySavedM[icount]) continue;
+
+	if((std::fabs(muon.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1) ||
+	   muon.pt() < ptMin_ || 
+	   std::fabs(muon.eta() > absEtaMax_) ) continue;
+
+	alreadySavedM[icount] = 1;
+	resultFilter->emplace_back(muon);
+      }
+    }
+
+
+    iEvent.put(std::move(resultMatch), "trgMatched");
+    iEvent.put(std::move(resultFilter), "trgFiltered");
 }
 
 
 
-DEFINE_FWK_MODULE(TriggeringMuonProducer);
+DEFINE_FWK_MODULE(MuonTriggerSelector);

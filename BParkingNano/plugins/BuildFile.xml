@@ -22,6 +22,6 @@
 <use   name="MagneticField/Records"/>
 <use   name="TrackingTools/Records"/>
 <use   name="TrackingTools/GsfTracking"/>
-<library   file="*.cc" name="PhysicsToolsNanoAODPlugins">
+<library   file="*.cc" name="PhysicsToolsBParkingNanoPlugins">
   <flags   EDM_PLUGIN="1"/>
 </library>
