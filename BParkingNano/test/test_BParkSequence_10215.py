@@ -95,14 +95,14 @@ if wantFullRECO:
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
-from PhysicsTools.BParkingNano.nanoBPark_cff import *
-process = nanoAOD_customizeMuonTriggerBPark(process)
-process = nanoAOD_customizeElectronFilteredBPark(process)
-
 # customisation of the process.
 if isMC:
     from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMC
     process = nanoAOD_customizeMC(process)
+
+
+from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMuonTriggerBPark
+process = nanoAOD_customizeMuonTriggerBPark(process)
 
 
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
