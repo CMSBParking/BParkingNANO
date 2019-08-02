@@ -88,153 +88,93 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   
   edm::Handle<pat::MuonCollection> trgMuon;
   evt.getByToken(trgMuonToken_, trgMuon);
-      
+
+  int nTracks = tracks->size();
+  int nLostTracks = lostTracks->size();      
+  int totalTracks = nTracks + nLostTracks;
  
   std::unique_ptr<pat::CompositeCandidateCollection> outTag(new pat::CompositeCandidateCollection());
   std::unique_ptr<pat::CompositeCandidateCollection> outProbe(new pat::CompositeCandidateCollection());
 
 
-  std::vector<int> alreadySavedP;
-  alreadySavedP.resize(tracks->size(), 0);
-
-  std::vector<int> alreadySavedLT;
-  alreadySavedLT.resize(lostTracks->size(), 0);
+  std::vector<int> alreadySaved;
+  alreadySaved.resize(totalTracks, 0);
 
   for(auto muonTrg : *trgMuon) {
 
-    int icount = -1;
-    for(auto trk : *tracks) {
-      ++icount;
-      if(alreadySavedP[icount]) continue;
+    for(int iTrk=0; iTrk<totalTracks; ++iTrk){
 
-      if(!trk.hasTrackDetails() || !trk.trackHighPurity()) continue;
-      //exclude neutral should be safe do not ask too much ID 
-      //cannot force 211 in case we want to use for muon2
-      if(abs(trk.pdgId()) != 211 && abs(trk.pdgId()) != 13) continue;
-      if(trk.pt() < trkPtCut_ || std::fabs(trk.eta()) > trkEtaCut_) continue;
-      if(trk.pseudoTrack().normalizedChi2() < trkNormChiMin_ ||
-	 trk.pseudoTrack().normalizedChi2() > trkNormChiMax_ ) continue;
+      const pat::PackedCandidate* trk;
 
-      if((std::fabs(trk.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
+      if(iTrk < nTracks){
+	if(alreadySaved[iTrk]) continue;
+	trk = &((*tracks)[iTrk]);
+	if(!trk->trackHighPurity()) continue;
+	if(abs(trk->pdgId()) != 211 && abs(trk->pdgId()) != 13) continue;
+      }
+      else{
+	if(alreadySaved[iTrk-nTracks]) continue;
+	trk = &((*lostTracks)[iTrk-nTracks]);
+	if(abs(trk->pdgId()) != 211) continue;
+      }
+      if(!trk->hasTrackDetails()) continue;
+      if(trk->pt() < trkPtCut_ || std::fabs(trk->eta()) > trkEtaCut_) continue;
+      if(trk->pseudoTrack().normalizedChi2() < trkNormChiMin_ ||
+	 trk->pseudoTrack().normalizedChi2() > trkNormChiMax_ ) continue;
+      
+      if((std::fabs(trk->vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
 
       bool saved = false;
 
-      //probe side
-      if(reco::deltaR(trk, muonTrg) > drTrg_cleaning_ || drTrg_cleaning_ == -1){
+      double DCABS = -1.;
+      double DCABSErr = -1.;
 
-	double DCABS = -1.;
-	double DCABSErr = -1.;
-	std::pair<double,double> DCA = computeDCA(trk,
+      //probe side DCASig wrt beamspot
+      if(reco::deltaR(*trk, muonTrg) > drTrg_cleaning_ || drTrg_cleaning_ == -1){
+
+	std::pair<double,double> DCA = computeDCA(*trk,
 						  bFieldHandle,
 						  GlobalPoint(beamSpot.position().x(),beamSpot.position().y(),beamSpot.position().z()));
-
         DCABS = DCA.first;
         DCABSErr = DCA.second;
-	float DCASig = DCABS/DCABSErr;
-	if(DCASig > dcaSig_probe_ || dcaSig_probe_ == -1){
-	  pat::CompositeCandidate pcand;
-	  pcand.addDaughter(trk);
-	  pcand.addUserInt("isPacked", 1);
-	  pcand.addUserInt("isLostTrk", 0);
-	  pcand.addUserFloat("dxy", trk.dxy());
-	  pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
-	  pcand.addUserFloat("dz", trk.dz());
-	  pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
-	  pcand.addUserFloat("DCASig", DCASig);
-	  outProbe->push_back(pcand);
-	  saved = true;
-	}
       }
-      else{ //tag side
-	double DCABS = -1.;
-        double DCABSErr = -1.;
-	std::pair<double,double> DCA = computeDCA(trk,
+      else{ //tag side DCASig wrt trigger muon                                                                      
+	std::pair<double,double> DCA = computeDCA(*trk,
 						  bFieldHandle,
 						  GlobalPoint(muonTrg.vx(), muonTrg.vy(), muonTrg.vz()));
-
-        DCABS = DCA.first;
-        DCABSErr = DCA.second;
-        float DCASig = DCABS/DCABSErr;
-        if(DCASig < dcaSig_tag_ || dcaSig_tag_ == -1){
-	  pat::CompositeCandidate pcand;
-          pcand.addDaughter(trk);
-          pcand.addUserInt("isPacked", 1);
-          pcand.addUserInt("isLostTrk", 0);
-          pcand.addUserFloat("dxy", trk.dxy());
-          pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
-          pcand.addUserFloat("dz", trk.dz());
-          pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
-          pcand.addUserFloat("DCASig", DCASig);
-          outTag->push_back(pcand);
-	  saved = true;
-	}
+	DCABS = DCA.first;
+	DCABSErr = DCA.second;
       }
-      if(saved) alreadySavedP[icount] = 1;
-    }
 
+      float DCASig = DCABS/DCABSErr;
+      if(DCASig > dcaSig_probe_ || dcaSig_probe_ == -1){
+	pat::CompositeCandidate pcand;
+	pcand.addDaughter(*trk);
+	pcand.addUserInt("isPacked", (iTrk < nTracks) ? 1 : 0);
+	pcand.addUserInt("isLostTrk", (iTrk < nTracks) ? 0 : 1);
+	pcand.addUserFloat("dxy", trk->dxy());
+	pcand.addUserFloat("dxyS", trk->dxy()/trk->dxyError());
+	pcand.addUserFloat("dz", trk->dz());
+	pcand.addUserFloat("dzS", trk->dz()/trk->dzError());
+	pcand.addUserFloat("DCASig", DCASig);
+	outProbe->push_back(pcand);
+	saved = true;
+      }    
+      if(DCASig < dcaSig_tag_ || dcaSig_tag_ == -1){
+	pat::CompositeCandidate pcand;
+	pcand.addDaughter(*trk);
+	pcand.addUserInt("isPacked", (iTrk < nTracks) ? 1 : 0);
+	pcand.addUserInt("isLostTrk", (iTrk < nTracks) ? 0 : 1);
+	pcand.addUserFloat("dxy", trk->dxy());
+	pcand.addUserFloat("dxyS", trk->dxy()/trk->dxyError());
+	pcand.addUserFloat("dz", trk->dz());
+	pcand.addUserFloat("dzS", trk->dz()/trk->dzError());
+	pcand.addUserFloat("DCASig", DCASig);
+	outTag->push_back(pcand);
+	saved = true;
+      }
     
-    for ( auto trk : *lostTracks) {
-      ++icount;
-      if(alreadySavedLT[icount]) continue;
-
-      if(!trk.hasTrackDetails()) continue;
-      if(fabs(trk.pdgId()) != 211) continue; // lost tracks are less clean do not want muon2 from these
-      if(trk.pt() < trkPtCut_ || std::fabs(trk.eta()) > trkEtaCut_) continue;
-      if(trk.pseudoTrack().normalizedChi2() < trkNormChiMin_ ||
-         trk.pseudoTrack().normalizedChi2() > trkNormChiMax_ ) continue;
-
-      if((std::fabs(trk.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1)) continue;
-
-      bool saved = false;
-
-      //probe side
-      if(reco::deltaR(trk, muonTrg) > drTrg_cleaning_ || drTrg_cleaning_ == -1){
-	double DCABS = -1.;
-	double DCABSErr = -1.;
-	std::pair<double,double> DCA = computeDCA(trk,
-						  bFieldHandle,
-						  GlobalPoint(beamSpot.position().x(),beamSpot.position().y(),beamSpot.position().z()));
-	DCABS = DCA.first;
-	DCABSErr = DCA.second;
-	float DCASig = DCABS/DCABSErr;
-	if(DCASig > dcaSig_probe_ || dcaSig_probe_ == -1){
-	  pat::CompositeCandidate pcand;
-	  pcand.addDaughter(trk);
-	  pcand.addUserInt("isPacked", 0);
-	  pcand.addUserInt("isLostTrk", 1);
-	  pcand.addUserFloat("dxy", trk.dxy());
-	  pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
-	  pcand.addUserFloat("dz", trk.dz());
-	  pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
-	  pcand.addUserFloat("DCASig", DCASig);
-	  outProbe->push_back(pcand);
-	  saved = true;
-	}
-      }
-      else{ //tag side                                                                               
-	double DCABS = -1.;
-	double DCABSErr = -1.;
-	std::pair<double,double> DCA = computeDCA(trk,
-						  bFieldHandle,
-						  GlobalPoint(muonTrg.vx(), muonTrg.vy(), muonTrg.vz()));
-	DCABS = DCA.first;
-	DCABSErr = DCA.second;
-	float DCASig = DCABS/DCABSErr;
-	if(DCASig < dcaSig_tag_ || dcaSig_tag_ == -1){
-	  pat::CompositeCandidate lostT;
-	  lostT.addDaughter(trk);
-	  lostT.addUserInt("isPacked", 0);
-	  lostT.addUserInt("isLostTrk", 1);
-	  lostT.addUserFloat("dxy", trk.dxy());
-	  lostT.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
-	  lostT.addUserFloat("dz", trk.dz());
-	  lostT.addUserFloat("dzS", trk.dz()/trk.dzError());
-	  lostT.addUserFloat("DCASig", DCASig);
-	  outTag->push_back(lostT);
-	  saved = true;
-	}
-      }
-      if(saved) alreadySavedLT[icount] = 1;
+      if(saved) alreadySaved[((iTrk < nTracks) ? iTrk : (iTrk - nTracks))] = 1;
     }
   }
 
