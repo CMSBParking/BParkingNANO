@@ -36,7 +36,7 @@ trackBParkTable = cms.EDProducer(
         vy = Var("daughter(0).vy()", float, doc="y coordinate of vertex position, in cm", precision=10),
         vz = Var("daughter(0).vz()", float, doc="z coordinate of vertex position, in cm", precision=10),
         isPacked = Var("userInt('isPacked')",int,doc="track from packedCandidate collection", precision=10),
-        isLost = Var("userInt('isLost')",int,doc="track from lostTrack collection", precision=10),
+        isLostTrk = Var("userInt('isLostTrk')",int,doc="track from lostTrack collection", precision=10),
         dz = Var("userFloat('dz')",float,doc="dz (with sign) wrt first PV, in cm", precision=10),
         dxy = Var("userFloat('dxy')",float,doc="dxy (with sign) wrt first PV, in cm", precision=10),
         dzS = Var("userFloat('dzS')", float, doc="dz/err (with sign) wrt first PV, in cm", precision=10),
