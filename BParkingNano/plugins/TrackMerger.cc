@@ -1,5 +1,6 @@
 // Merges the PFPackedCandidates and Lost tracks
-
+// beam spot readout in case dcasig to be calculated wrt beam spot
+// currently computed wrt triggeringMuon vertex
 #include "FWCore/Framework/interface/global/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -25,14 +26,15 @@
 class TrackMerger : public edm::global::EDProducer<> {
 public:
   explicit TrackMerger(const edm::ParameterSet &cfg):
-    beamSpotSrc_( consumes<reco::BeamSpot> (cfg.getParameter<edm::InputTag>("beamSpot"))),
+    //beamSpotSrc_( consumes<reco::BeamSpot> (cfg.getParameter<edm::InputTag>("beamSpot"))),
     tracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     lostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     trgMuonToken_(consumes<pat::MuonCollection>(cfg.getParameter<edm::InputTag>("trgMuon"))),
     trkPtCut_(cfg.getParameter<double>("trkPtCut")),
     trkEtaCut_(cfg.getParameter<double>("trkEtaCut")),
     dzTrg_cleaning_(cfg.getParameter<double>("dzTrg_cleaning")),
-    drTrg_cleaning_(cfg.getParameter<double>("drTrg_cleaning")),
+    drTrg_ProbeCleaning_(cfg.getParameter<double>("drTrg_ProbeCleaning")),
+    drTrg_TagCleaning_(cfg.getParameter<double>("drTrg_TagCleaning")),
     dcaSig_probe_(cfg.getParameter<double>("dcaSig_probe")),
     dcaSig_tag_(cfg.getParameter<double>("dcaSig_tag")),
     trkNormChiMin_(cfg.getParameter<int>("trkNormChiMin")),
@@ -53,7 +55,7 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
 
 private:
-  const edm::EDGetTokenT<reco::BeamSpot> beamSpotSrc_;
+  //  const edm::EDGetTokenT<reco::BeamSpot> beamSpotSrc_;
   const edm::EDGetTokenT<pat::PackedCandidateCollection> tracksToken_;
   const edm::EDGetTokenT<pat::PackedCandidateCollection> lostTracksToken_;
   const edm::EDGetTokenT<pat::MuonCollection> trgMuonToken_;
@@ -62,7 +64,8 @@ private:
   const double trkPtCut_;
   const double trkEtaCut_;
   const double dzTrg_cleaning_;
-  const double drTrg_cleaning_;
+  const double drTrg_ProbeCleaning_;
+  const double drTrg_TagCleaning_;
   const double dcaSig_probe_;
   const double dcaSig_tag_;
   const int trkNormChiMin_;
@@ -72,13 +75,13 @@ private:
 void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &stp) const {
   //get data  
   edm::ESHandle<MagneticField> bFieldHandle;
-  edm::Handle<reco::BeamSpot> beamSpotHandle;
   stp.get<IdealMagneticFieldRecord>().get(bFieldHandle);
-  evt.getByToken(beamSpotSrc_, beamSpotHandle);
-  if ( ! beamSpotHandle.isValid() ) {
-    edm::LogError("PFCandProducer") << "No beam spot available from EventSetup" ;
-  }
-  reco::BeamSpot beamSpot = *beamSpotHandle;
+  // edm::Handle<reco::BeamSpot> beamSpotHandle;  
+  // evt.getByToken(beamSpotSrc_, beamSpotHandle);
+  // if ( ! beamSpotHandle.isValid() ) {
+  //   edm::LogError("PFCandProducer") << "No beam spot available from EventSetup" ;
+  // }
+  // reco::BeamSpot beamSpot = *beamSpotHandle;
 
   edm::Handle<pat::PackedCandidateCollection> tracks;
   evt.getByToken(tracksToken_, tracks);
@@ -126,28 +129,18 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
       bool saved = false;
 
-      double DCABS = -1.;
-      double DCABSErr = -1.;
-
-      //probe side DCASig wrt beamspot
-      if(reco::deltaR(*trk, muonTrg) > drTrg_cleaning_ || drTrg_cleaning_ == -1){
-
-	std::pair<double,double> DCA = computeDCA(*trk,
-						  bFieldHandle,
-						  GlobalPoint(beamSpot.position().x(),beamSpot.position().y(),beamSpot.position().z()));
-        DCABS = DCA.first;
-        DCABSErr = DCA.second;
-      }
-      else{ //tag side DCASig wrt trigger muon                                                                      
-	std::pair<double,double> DCA = computeDCA(*trk,
-						  bFieldHandle,
-						  GlobalPoint(muonTrg.vx(), muonTrg.vy(), muonTrg.vz()));
-	DCABS = DCA.first;
-	DCABSErr = DCA.second;
-      }
-
+      //distance closest approach in x,y wrt triggeringMuon
+      std::pair<double,double> DCA = computeDCA(*trk,
+						bFieldHandle,
+						GlobalPoint(muonTrg.vx(), muonTrg.vy(), muonTrg.vz()));
+      float DCABS = DCA.first;
+      float DCABSErr = DCA.second;
       float DCASig = DCABS/DCABSErr;
-      if(DCASig > dcaSig_probe_ || dcaSig_probe_ == -1){
+      
+      //probe side
+      if((drTrg_ProbeCleaning_ == -1 && drTrg_TagCleaning_ == -1) ||
+	 (DCASig > dcaSig_probe_  && (reco::deltaR(*trk, muonTrg) > drTrg_ProbeCleaning_)) ){
+
 	pat::CompositeCandidate pcand;
 	pcand.addDaughter(*trk);
 	pcand.addUserInt("isPacked", (iTrk < nTracks) ? 1 : 0);
@@ -159,8 +152,10 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 	pcand.addUserFloat("DCASig", DCASig);
 	outProbe->push_back(pcand);
 	saved = true;
-      }    
-      if(DCASig < dcaSig_tag_ || dcaSig_tag_ == -1){
+      }
+      if((drTrg_ProbeCleaning_ != -1 || drTrg_TagCleaning_ != -1) &&
+	 DCASig < dcaSig_tag_ && (reco::deltaR(*trk, muonTrg) < drTrg_TagCleaning_)){
+
 	pat::CompositeCandidate pcand;
 	pcand.addDaughter(*trk);
 	pcand.addUserInt("isPacked", (iTrk < nTracks) ? 1 : 0);
@@ -172,8 +167,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 	pcand.addUserFloat("DCASig", DCASig);
 	outTag->push_back(pcand);
 	saved = true;
-      }
-    
+      }    
       if(saved) alreadySaved[((iTrk < nTracks) ? iTrk : (iTrk - nTracks))] = 1;
     }
   }

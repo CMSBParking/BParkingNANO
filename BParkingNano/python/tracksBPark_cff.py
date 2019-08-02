@@ -9,7 +9,11 @@ tracksBPark = cms.EDProducer('TrackMerger',
                              trkPtCut = cms.double(0.5),    
                              trkEtaCut = cms.double(2.4),
                              dzTrg_cleaning = cms.double(1.),
-                             drTrg_cleaning = cms.double(0.4),
+                             ## the following 2 to -1 switch off the 
+                             ## difference between Probe and Tag side
+                             ## only Probe side if filled wo selection on dR nor dca
+                             drTrg_ProbeCleaning = cms.double(0.4),
+                             drTrg_TagCleaning = cms.double(0.8),
                              dcaSig_probe = cms.double(1.5),
                              dcaSig_tag = cms.double(0.5),
                              trkNormChiMin = cms.int32(-1),
