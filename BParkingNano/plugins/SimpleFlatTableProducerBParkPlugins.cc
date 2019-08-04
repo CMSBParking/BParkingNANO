@@ -1,7 +1,7 @@
 #include "PhysicsTools/NanoAOD/interface/SimpleFlatTableProducer.h"
 
-#include "DataFormats/Candidate/interface/CompositeCandidate.h"
-typedef SimpleFlatTableProducer<reco::CompositeCandidate> SimpleCompositeCandidateFlatTableProducer;
+#include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
+typedef SimpleFlatTableProducer<pat::CompositeCandidate> SimpleCompositeCandidateFlatTableProducer;
 
 //not really useful in the end because lowptgsf tracks come with BDT taht is not part of GsfTracks
 #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
