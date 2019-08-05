@@ -20,8 +20,10 @@ mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/
 
 ## Add the BParkingNano package and build everything
 
+```
 git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
 scram b
+```
 
 ## To run on a test file
 
