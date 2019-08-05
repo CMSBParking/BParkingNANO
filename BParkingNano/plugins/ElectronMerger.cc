@@ -80,6 +80,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       ele.addUserInt("isLowPt", 0);
       ele.addUserFloat("ptBiased", 20.);
       ele.addUserFloat("unBiased", 20.);
+      ele.addUserFloat("mvaId", 20.);
       ele.addUserFloat("chargeMode", ele.charge());
       alreadySavedPF[icount] = 1;
       out->push_back(ele);
