@@ -62,7 +62,7 @@ void PATLowPtElectronSeedingEmbedder::produce(edm::StreamID, edm::Event &evt, ed
     const reco::GsfTrackRef gsfTrk = ref->gsfTrack();
     float unbiased_seedBDT = float((*unBiased)[gsfTrk]);
     float ptbiased_seedBDT = float((*ptBiased)[gsfTrk]);
-    float mva_id = float(mvaId->get(ref.key()));
+    float mva_id = float((*mvaId)[ref]);
 
     if(unbiased_seedBDT < minBdtUnbiased_) continue;
 
