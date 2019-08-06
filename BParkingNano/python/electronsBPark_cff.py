@@ -1,15 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
-
-lowptElectronsWithSeed = cms.EDProducer(
+##essentially the commented out can be inside the same loop... no need to have a more loops in an "expensive" object
+'''lowptElectronsWithSeed = cms.EDProducer(
   'PATLowPtElectronSeedingEmbedder',
   src = cms.InputTag('slimmedLowPtElectrons'),
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
     minBdtUnbiased = cms.double(0.5)
 )
-
 lowptElectronsForAnalysis = cms.EDFilter(
   'PATElectronSelector',
   src = cms.InputTag("lowptElectronsWithSeed"),
@@ -25,29 +24,38 @@ pfElectronsForAnalysis = cms.EDFilter(
   ## pT > 2 since almost nothing below anyway
   cut = cms.string("pt > 2 && eta > -2.4 && eta < 2.4"),
   )
+'''
 
+
+
+
+#Everything can be done here, in one loop and save time :)
 electronsForAnalysis = cms.EDProducer(
   'ElectronMerger',
-  trgMuon = cms.InputTag('muonTrgSelector:trgMatched'),
-  lowptSrc = cms.InputTag('lowptElectronsForAnalysis'),
-  pfSrc    = cms.InputTag('pfElectronsForAnalysis'),
+  trgMuon = cms.InputTag('muonTrgSelector:trgMuons'),
+  lowptSrc = cms.InputTag('slimmedLowPtElectrons'),
+  pfSrc    = cms.InputTag('slimmedElectrons'),
+  ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
+  unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
   ## cleaning wrt trigger muon [-1 == no cut]
-  drForCleaning_wrtTrgMuon = cms.double(0.4),
-  dzForCleaning_wrtTrgMuon = cms.double(1.),
+  drForCleaning_wrtTrgMuon = cms.double(-1.),
+  dzForCleaning_wrtTrgMuon = cms.double(-1.),
   ## cleaning between pfEle and lowPtGsf
   drForCleaning = cms.double(0.01),
   dzForCleaning = cms.double(0.01),
+  ptMin = cms.double(1.),
+  etaMax = cms.double(2.5),
+  bdtMin = cms.double(15), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
 )
 
-
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
- src = cms.InputTag("electronsForAnalysis"),
- cut = cms.string(""), #we should not filter on cross linked collections
+ src = cms.InputTag("electronsForAnalysis:SelectedElectrons"),
+ cut = cms.string(""),
     name= cms.string("Electron"),
     doc = cms.string("slimmedElectrons for BPark after basic selection"),
-    singleton = cms.bool(False), # the number of entries is variable
-    extension = cms.bool(False), # this is the main table for the electrons                                                     
+    singleton = cms.bool(False), 
+    extension = cms.bool(False),                                                
     variables = cms.PSet(P4Vars,
         pdgId  = Var("pdgId", int, doc="PDG code assigned by the event reconstruction (not by MC truth)"),
         charge = Var("userFloat('chargeMode')", int, doc="electric charge from pfEle or chargeMode for lowPtGsf"),
@@ -101,11 +109,6 @@ electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
 
 
 electronsBParkSequence = cms.Sequence(
-  (
-    lowptElectronsWithSeed *
-    lowptElectronsForAnalysis +
-    pfElectronsForAnalysis 
-  ) *
   electronsForAnalysis
 )
 

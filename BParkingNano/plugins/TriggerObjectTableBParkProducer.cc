@@ -25,8 +25,13 @@
 #include "DataFormats/NanoAOD/interface/FlatTable.h"
 
 class TriggerObjectTableBParkProducer : public edm::stream::EDProducer<> {
+  //do we need better structure ?
+
     public:
-        explicit TriggerObjectTableBParkProducer(const edm::ParameterSet &iConfig) :
+
+        explicit TriggerObjectTableBParkProducer(
+                                             const edm::ParameterSet &iConfig) :
+
             name_(iConfig.getParameter<std::string>("name")),
             src_(consumes<std::vector<pat::TriggerObjectStandAlone>>(iConfig.getParameter<edm::InputTag>("src"))),
             l1Muon_(consumes<l1t::MuonBxCollection>(iConfig.getParameter<edm::InputTag>("l1Muon")))
@@ -52,6 +57,7 @@ class TriggerObjectTableBParkProducer : public edm::stream::EDProducer<> {
         ~TriggerObjectTableBParkProducer() override {}
 
     private:
+
         void produce(edm::Event&, edm::EventSetup const&) override ;
 
         std::string name_;
@@ -100,11 +106,18 @@ class TriggerObjectTableBParkProducer : public edm::stream::EDProducer<> {
         std::vector<SelectedObject> sels_;
 };
 
+
+
+
+
+
+
+
+
 // ------------ method called to produce the data  ------------
 void
 TriggerObjectTableBParkProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 {
-
     edm::Handle<std::vector<pat::TriggerObjectStandAlone>> src;
     iEvent.getByToken(src_, src);
 

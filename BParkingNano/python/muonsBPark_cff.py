@@ -1,6 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
+
+
 muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  muonCollection = cms.InputTag("slimmedMuons"), #same collection as in NanoAOD                                                           
                                  bits = cms.InputTag("TriggerResults","","HLT"),
@@ -11,16 +13,20 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  ##for the output matched collection                                                                                                     
                                  maxdR_matching = cms.double(0.01),
                                  
-                                 ## for the output filtered collection                                                                                                   
-                                 # do not cut on dR to keep Kmumu on trg side                                                                                            
+                                 ## for the output filtered collection                                                                                         
                                  dzForCleaning_wrtTrgMuon = cms.double(1.),
+                                 # gives the possibility to run only on probe side - used in other objects
+                                 #deactivated now
+                                 drForCleaning_wrtTrgMuon = cms.double (-1.),
                                  ptMin = cms.double(1.),
-                                 absEtaMax = cms.double(2.4)
+                                 absEtaMax = cms.double(2.4),
+                                 # keeps only muons with at soft Quality flag
+                                 softMuonsOnly = cms.bool(False)
                              )
 
 
 muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
-    src = cms.InputTag("muonTrgSelector:trgFiltered"),
+    src = cms.InputTag("muonTrgSelector:SelectedMuons"),
     cut = cms.string(""), #we should not filter on cross linked collections
     name = cms.string("Muon"),
     doc  = cms.string("slimmedMuons for BPark after basic selection"),
@@ -88,7 +94,7 @@ muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
 
 
 muonTriggerMatchedTable = muonBParkTable.clone(
-    src = cms.InputTag("muonTrgSelector:trgMatched"),
+    src = cms.InputTag("muonTrgSelector:trgMuons"),
     name = cms.string("TriggerMuon"),
     doc  = cms.string("reco muon matched to triggering muon"),
     variables = cms.PSet(CandVars,
