@@ -8,7 +8,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/Common/interface/View.h"
-#include "DataFormats/Common/interface/Ptr.h"
+#include "DataFormats/Common/interface/Ref.h"
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
@@ -58,15 +58,15 @@ void PATLowPtElectronSeedingEmbedder::produce(edm::StreamID, edm::Event &evt, ed
   std::unique_ptr<pat::ElectronCollection> out(new pat::ElectronCollection);
 
   for ( size_t iele = 0; iele < lowpt->size(); ++iele ) {
-    edm::Ptr<pat::Electron> ptr(lowpt,iele);
-    pat::Electron ele = *ptr;
-    const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
+    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
+    const reco::GsfTrackRef gsfTrk = ref->gsfTrack();
     float unbiased_seedBDT = float((*unBiased)[gsfTrk]);
     float ptbiased_seedBDT = float((*ptBiased)[gsfTrk]);
-    float mva_id = float(mvaId->get(ptr.key()));
+    float mva_id = float(mvaId->get(ref.key()));
 
     if(unbiased_seedBDT < minBdtUnbiased_) continue;
 
+    pat::Electron ele = *ref;
     ele.addUserFloat("ptBiased", ptbiased_seedBDT);
     ele.addUserFloat("unBiased", unbiased_seedBDT);
     ele.addUserFloat("mvaId", mva_id);
