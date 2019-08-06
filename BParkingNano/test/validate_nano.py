@@ -14,13 +14,30 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
+from pdb import set_trace
+eps = 10**-7
 
 if not os.path.isdir('validation'):
   os.makedirs('validation')
 
 legacy_mapping = { #mapping between George's Ntuples and Nano
   'nmuon' : 'nMuon',
+  'muon_pt' : 'Muon_pt',
   'muon_eta' : 'Muon_eta',
+  'muon_phi' : 'Muon_phi',
+  'muon_charge' : 'Muon_charge',
+  'muon_dxy' : 'Muon_dxy',
+  'muon_edxy' : 'Muon_dxyErr',
+  'muon_soft' : 'Muon_softId',
+  #'muon_trgIndex' : '',
+  
+  'nelectron' : 'nElectron',
+  'el_pt' : 'Electron_pt',
+  'el_eta' : 'Electron_eta',
+  'el_phi' : 'Electron_phi',
+  'el_charge' : 'Electron_charge',
+  'el_mva_unbiased' : 'Electron_unBiased',
+  'el_islowpt' : 'Electron_isLowPt',
   # TODO: Add variables as they are validated and produced
 }
 
@@ -34,7 +51,10 @@ def load_nano(infile, legacy = False):
 
 def byval_validation(v1, v2):
   try:
-    return ((np.abs(v1 - v2) / abs(v1)) < 0.001).all()
+    if v1.dtype == 'bool':
+      return v1 ^ v2
+    else:
+      return ((np.abs(v1 - v2) / (abs(v1) + eps)) < 0.001).all()
   except ValueError:
     return False
 
@@ -43,9 +63,16 @@ def stat_validation(v1, v2, name = '', nbins = 20):
     return True
   elif v1.shape[0] == 0 or v2.shape[0] == 0:
     return False
-  M = max(v1.max(), v2.max())*1.2
-  m = min(v1.min(), v2.min())*0.9
+  M = max(v1.max(), v2.max())
+  m = min(v1.min(), v2.min())
+  m = m * 0.9 if m > 0 else m * 1.2
+  M = M * 1.2 if M > 0 else M * 0.9
+  if 'int' in str(v1.dtype):
+    m = int(m) - 1
+    M = int(M) + 1
+    nbins = M - m #min(M - m, nbins)
   plt.clf()
+  #set_trace()
   h1, _, _ = plt.hist(v1, range = (m,M), bins = nbins, label = 'old', histtype = 'step')
   h2, _, _ = plt.hist(v2, range = (m,M), bins = nbins, label = 'new', histtype = 'step')
   plt.legend(loc='best')
@@ -83,7 +110,7 @@ tt = uf['Events']
 branches_and_size = {i.name : i.compressedbytes() for i in tt.allvalues()}
 tot_branches = sum(branches_and_size.values())
 n_entries = len(tt)
-n_processed = int(tf['tag'].split('nevts:')[1])
+n_processed = int(uf['tag'].split('nevts:')[1])
 
 from collections import defaultdict
 groups = defaultdict(long)
