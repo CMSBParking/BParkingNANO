@@ -105,6 +105,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserInt("isLowPt", 0);
    ele.addUserFloat("ptBiased", 20.);
    ele.addUserFloat("unBiased", 20.);
+   ele.addUserFloat("mvaId", 20.);
    ele.addUserFloat("chargeMode", ele.charge());
    ele_out->emplace_back(ele);
  }
@@ -159,10 +160,9 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele_out->emplace_back(ele);
  }
-
-//is this nescaisery ? because it is additional loop
-   /* std::sort( out->begin(), out->end(), [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();}
-	      );
+/*
+    std::sort( out->begin(), out->end(), 
+	      [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();} );
   }*/
 
   //adding label to be consistent with the muon and track naming

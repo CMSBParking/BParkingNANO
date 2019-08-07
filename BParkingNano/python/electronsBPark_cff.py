@@ -3,15 +3,24 @@ from PhysicsTools.NanoAOD.common_cff import *
 
 ##essentially the commented out can be inside the same loop... no need to have a more loops in an "expensive" object
 '''lowptElectronsWithSeed = cms.EDProducer(
+=======
+from RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cff import lowPtGsfElectronID
+lowPtGsfElectronLatestID = lowPtGsfElectronID.clone()
+lowPtGsfElectronLatestID.electrons = 'slimmedLowPtElectrons'
+lowPtGsfElectronLatestID.rho = 'fixedGridRhoFastjetAll'
+
+lowptElectronsWithSeedAndId = cms.EDProducer(
+>>>>>>> origin/master
   'PATLowPtElectronSeedingEmbedder',
   src = cms.InputTag('slimmedLowPtElectrons'),
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
+  mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
     minBdtUnbiased = cms.double(0.5)
 )
 lowptElectronsForAnalysis = cms.EDFilter(
   'PATElectronSelector',
-  src = cms.InputTag("lowptElectronsWithSeed"),
+  src = cms.InputTag("lowptElectronsWithSeedAndId"),
   ## need to add cut on BDT and ID when available 
   ## pT > 0.5 to accomodate l1 and l2
   cut = cms.string('pt > 0.5 && eta > -2.4 && eta < 2.4'),
@@ -80,6 +89,7 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         isLowPt = Var("userInt('isLowPt')",bool,doc="electron is LowPt candidate"),
         ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT 20 for pfEle"), 
         unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
+        mvaId = Var("userFloat('mvaId')",float,doc="MVA ID for low pT, 20 for pfEle"), 
         fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8)
         )
 )
@@ -109,6 +119,7 @@ electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
 
 
 electronsBParkSequence = cms.Sequence(
+  lowPtGsfElectronLatestID *
   electronsForAnalysis
 )
 
