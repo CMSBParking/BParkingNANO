@@ -29,8 +29,12 @@ from collections import defaultdict
 groups = defaultdict(float)
 
 for name, time in module_times:
-  if 'Table' in name:
-    groups['Tables'] += time
+  if 'gen' in name.lower():
+    groups['GEN'] += time
+  elif 'lhe' in name.lower():
+    groups['GEN'] += time
+  elif 'Table' in name:
+    groups['Tables (not GEN)'] += time
   elif 'electron' in name.lower():
     groups['Electrons'] += time
   elif 'track' in name.lower():
