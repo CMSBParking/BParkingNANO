@@ -161,11 +161,14 @@ intersection = old_k.intersection(new_k)
 for branch in intersection:
   v_old = old[branch]
   v_new = new[branch]
-  if hasattr(v_old, 'flatten'):
-    v_old = v_old.flatten()
-    v_new = v_new.flatten()
+
+  if hasattr(v_old, 'content'):
+    v_old = v_old.content
+    v_new = v_new.content
+
   stat_valid = stat_validation(v_old, v_new, branch)
   val_valid  = byval_validation(v_old, v_new)
+
   if val_valid and stat_valid:
     print '\033[1;32m', branch, '--> OK!\033[0m'
   elif stat_valid:
