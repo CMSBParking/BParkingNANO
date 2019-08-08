@@ -1,13 +1,18 @@
 #! /bin/env bash
 
+PRID=$1
+if [ $# -eq 2 ]; then
+    remote=$2
+else
+    remote=origin
+fi
+
 set -o errexit
 set -o nounset
 
 : ${CMSSW_BASE:?"CMSSW_BASE is not set!  Run cmsenv!"}
 
-PRID=$1
-
-git pull origin master
+git pull $remote master
 git checkout origin/master
 cd $CMSSW_BASE/src
 scram b -j 4
