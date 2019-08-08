@@ -19,7 +19,7 @@ cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
 git fetch origin pull/$PRID/head:TEST_PR$PRID
 git checkout TEST_PR$PRID
 cd $CMSSW_BASE/src
-scram b -j 4
+scram b -j 4 > PhysicsTools/BParkingNano/test/compilation_PR$PRID.log
 cd $CMSSW_BASE/src/PhysicsTools/BParkingNano/test
 TAG=PR$PRID
 cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG &> nano_$TAG'_data.log'
@@ -27,6 +27,7 @@ cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
 
 rm -rf validation
 mkdir $TAG
+mv compilation_PR$PRID.log $TAG/.
 
 python validate_nano.py testBParkNANO_data_HEAD.root testBParkNANO_data_$TAG.root
 python time_analysis.py nano_HEAD_data.log --tag=HEAD
