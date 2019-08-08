@@ -13,7 +13,7 @@ set -o nounset
 : ${CMSSW_BASE:?"CMSSW_BASE is not set!  Run cmsenv!"}
 
 git pull $remote master
-git checkout origin/master
+git checkout $remote/master -b official_current_master
 cd $CMSSW_BASE/src
 scram b -j 4
 cd $CMSSW_BASE/src/PhysicsTools/BParkingNano/test
@@ -46,3 +46,4 @@ mv validation $TAG/validation_mc
 
 git checkout master
 git branch -D TEST_PR$PRID
+git branch -D official_current_master
