@@ -20,6 +20,23 @@ eps = 10**-7
 if not os.path.isdir('validation'):
   os.makedirs('validation')
 
+# probably logging would be better
+logfile = open('validation/validation_log.raw_txt', 'w')
+
+def to_html(txt):
+  return txt.replace('<', '&lt;').replace('>', '&gt;')
+
+color_code = {
+  'green' : '\033[1;32m %s \033[0m',
+  'red' : '\033[1;31m %s \033[0m',
+  'orange' : '\033[1;35m %s \033[0m', # Could not find it, use purple
+  'black' : '%s',
+}
+def log(txt, color = 'black'):
+  print color_code[color] % txt
+  logfile.write('<code style="color: %s">%s</code>\n' % (color, to_html(txt)))
+
+
 legacy_mapping = { #mapping between George's Ntuples and Nano
   'nmuon' : 'nMuon',
   'muon_pt' : 'Muon_pt',
@@ -70,7 +87,7 @@ def byval_validation(v1, v2):
 
 def stat_validation(v1, v2, name = '', nbins = 20):
   if np.isinf(v2).any() or np.isnan(v2).any():
-    print '\033[1;35m', name, '--> CONTAINS INFs/NANs!\033[0m'
+    log(name + '--> CONTAINS INFs/NANs!', 'orange')
     v1 = v1[np.invert(np.isinf(v1) | np.isnan(v1).any())]
     v2 = v2[np.invert(np.isinf(v2) | np.isnan(v2).any())]
 
@@ -105,7 +122,7 @@ def writer(pct):
   if pct < 5: return ''
   else: return '%.1f%%' % pct
 
-def size_plot(frame, name):
+def size_plot(frame, nametag):
   uf = frame.uf
   tt = frame.tt
 
@@ -143,7 +160,7 @@ def size_plot(frame, name):
     mode="expand", borderaxespad=0., frameon=False
   )
   title = 'Total size: %.3f kB / evt (%d events / %d processed)' % (tot_branches/(10.**3 * n_entries), n_entries, n_processed)
-  print title
+  log(' '.join([nametag, title]), 'black')
   plt.title(title)
   fig.savefig('validation/%s_size.png' % name)
 
@@ -157,6 +174,15 @@ old_k = set(old.keys())
 new_k = set(new.keys())
 intersection = old_k.intersection(new_k)
 
+log('Branch diff:')
+for branch in (new_k - old_k):
+  log(' '.join(['+', branch]), 'green')
+
+for branch in (old_k - new_k):
+  log(' '.join(['-', branch]), 'red')
+
+log('\n\n')
+
 for branch in intersection:
   v_old = old[branch]
   v_new = new[branch]
@@ -169,8 +195,8 @@ for branch in intersection:
   val_valid  = byval_validation(v_old, v_new)
 
   if val_valid and stat_valid:
-    print '\033[1;32m', branch, '--> OK!\033[0m'
+    log(' '.join([branch, '--> OK!']), 'green')
   elif stat_valid:
-    print '\033[1;35m', branch, '--> FAILS BY VALUE CHECK ONLY!\033[0m'
+    log(' '.join([branch, '--> FAILS BY VALUE CHECK ONLY!']), 'orange')
   else:
-    print '\033[1;31m', branch, '--> FAILS ALL CHECKS!\033[0m'
+    log(' '.join([branch, '--> FAILS ALL CHECKS!']), 'red')
