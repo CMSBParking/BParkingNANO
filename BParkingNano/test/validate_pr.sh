@@ -7,6 +7,7 @@ set -o nounset
 
 PRID=$1
 
+git pull origin master
 git checkout origin/master
 cd $CMSSW_BASE/src
 scram b -j 4
@@ -36,3 +37,6 @@ python validate_nano.py testBParkNANO_mc_HEAD.root testBParkNANO_mc_$TAG.root
 python time_analysis.py nano_HEAD_mc.log --tag=HEAD
 python time_analysis.py nano_$TAG'_mc.log' --tag=$TAG
 mv validation $TAG/validation_mc
+
+git checkout master
+git branch -D TEST_PR$PRID
