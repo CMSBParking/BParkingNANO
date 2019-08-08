@@ -8,8 +8,10 @@ parser = ArgumentParser()
 parser.add_argument('f_old', help='file path')
 parser.add_argument('f_new', help='file path')
 parser.add_argument('--legacy', action='store_true', help='compare against legacy version')
+parser.add_argument('--noplot', default='HLT_*,L1_*', help='coma-separated list of names not to plot, default HLT_*,L1_*')
 args = parser.parse_args()
 
+import fnmatch
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -73,23 +75,24 @@ class NanoFrame(object):
     return legacy_mapping.keys() if self.legacy else self.tt.keys()
 
 def byval_validation(v1, v2):
-  if np.isinf(v2).any() or np.isnan(v2).any():
-    v1 = v1[np.invert(np.isinf(v1) | np.isnan(v1).any())]
-    v2 = v2[np.invert(np.isinf(v2) | np.isnan(v2).any())]
+  if np.isfinite(v1).any() or np.isfinite(v2).any():
+    v1 = v1[np.invert(np.isfinite(v1))]
+    v2 = v2[np.invert(np.isfinite(v2))]
 
   try:
     if v1.dtype == 'bool' or np.issubdtype(v1.dtype, np.integer):
-      return (v1 == v2).all()
+      return np.array_equal(v1, v2)
     else:
       return ((np.abs(v1 - v2) / (abs(v1) + eps)) < 0.001).all()
   except ValueError:
     return False
 
+noplot = args.noplot.split(',')
 def stat_validation(v1, v2, name = '', nbins = 20):
-  if np.isinf(v2).any() or np.isnan(v2).any():
+  if not np.isfinite(v1).all() or not np.isfinite(v2).all():
     log(name + '--> CONTAINS INFs/NANs!', 'orange')
-    v1 = v1[np.invert(np.isinf(v1) | np.isnan(v1).any())]
-    v2 = v2[np.invert(np.isinf(v2) | np.isnan(v2).any())]
+    v1 = v1[np.isfinite(v1)]
+    v2 = v2[np.isfinite(v2)]
 
   if v1.shape[0] == 0 and v2.shape[0] == 0:
     return True
@@ -108,7 +111,9 @@ def stat_validation(v1, v2, name = '', nbins = 20):
   h1, _, _ = plt.hist(v1, range = (m,M), bins = nbins, label = 'old', histtype = 'step')
   h2, _, _ = plt.hist(v2, range = (m,M), bins = nbins, label = 'new', histtype = 'step')
   plt.legend(loc='best')
-  plt.savefig('validation/%s.png' % name)
+  skip = any(fnmatch.fnmatch(name, i) for i in noplot)
+  if not skip:
+    plt.savefig('validation/%s.png' % name)
   plt.clf()
   return (h1 == h2).all()
 
@@ -162,7 +167,7 @@ def size_plot(frame, nametag):
   title = 'Total size: %.3f kB / evt (%d events / %d processed)' % (tot_branches/(10.**3 * n_entries), n_entries, n_processed)
   log(' '.join([nametag, title]), 'black')
   plt.title(title)
-  fig.savefig('validation/%s_size.png' % name)
+  fig.savefig('validation/%s_size.png' % nametag)
 
 size_plot(new, 'new')
 size_plot(old, 'old')
