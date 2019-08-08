@@ -101,55 +101,54 @@ new = NanoFrame(args.f_new)
 #
 # Size Checks
 #
-uf = new.uf
-tt = new.tt
-
-branches_and_size = {i.name : i.compressedbytes() for i in tt.allvalues()}
-tot_branches = sum(branches_and_size.values())
-n_entries = len(tt)
-try:
-  n_processed = int(uf['tag'].split('nevts:')[1])
-except:
-  n_processed = -1
-
-from collections import defaultdict
-groups = defaultdict(long)
-for name, size in branches_and_size.iteritems():
-    group = name.split('_')[0] if '_' in name else 'other'
-    groups[group] += size
-
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from cycler import cycler
-
-import matplotlib.colors as colors
-import matplotlib.cm as cmx
-cm = plt.get_cmap('rainbow')
-cNorm  = colors.Normalize(vmin=0, vmax=len(groups)-1)
-scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-cols = [scalarMap.to_rgba(i) for i in range(len(groups))]
-
 def writer(pct):
   if pct < 5: return ''
   else: return '%.1f%%' % pct
 
-plt.clf()
-fig = plt.figure(
+def size_plot(frame, name):
+  uf = frame.uf
+  tt = frame.tt
+
+  branches_and_size = {i.name : i.compressedbytes() for i in tt.allvalues()}
+  tot_branches = sum(branches_and_size.values())
+  n_entries = len(tt)
+  try:
+    n_processed = int(uf['tag'].split('nevts:')[1])
+  except:
+    n_processed = -1
+
+  from collections import defaultdict
+  groups = defaultdict(long)
+  for name, size in branches_and_size.iteritems():
+    group = name.split('_')[0] if '_' in name else 'other'
+    groups[group] += size
+
+  import matplotlib.colors as colors
+  import matplotlib.cm as cmx
+  cm = plt.get_cmap('rainbow')
+  cNorm  = colors.Normalize(vmin=0, vmax=len(groups)-1)
+  scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+  cols = [scalarMap.to_rgba(i) for i in range(len(groups))]
+
+  plt.clf()
+  fig = plt.figure(
     figsize=(12, 6), 
-)
-plt.subplot(1, 2, 1)
-wedges = plt.pie(groups.values(), autopct = writer, colors = cols)
-names = ['%s (%.1f%%)' % (n, float(p)*100/tot_branches) for n, p in groups.iteritems()]
-leg = plt.legend(
+  )
+  plt.subplot(1, 2, 1)
+  wedges = plt.pie(groups.values(), autopct = writer, colors = cols)
+  names = ['%s (%.1f%%)' % (n, float(p)*100/tot_branches) for n, p in groups.iteritems()]
+  leg = plt.legend(
     wedges[0], names, loc = 5,
     bbox_to_anchor = (0.95, 0.5),
     mode="expand", borderaxespad=0., frameon=False
-)
-title = 'Total size: %.3f kB / evt (%d events / %d processed)' % (tot_branches/(10.**3 * n_entries), n_entries, n_processed)
-print title
-plt.title(title)
-fig.savefig('validation/size.png')
+  )
+  title = 'Total size: %.3f kB / evt (%d events / %d processed)' % (tot_branches/(10.**3 * n_entries), n_entries, n_processed)
+  print title
+  plt.title(title)
+  fig.savefig('validation/%s_size.png' % name)
+
+size_plot(new, 'new')
+size_plot(old, 'old')
 
 #
 # Branch checks

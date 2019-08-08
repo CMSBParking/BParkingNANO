@@ -9,6 +9,7 @@ import numpy as np
 
 parser = ArgumentParser()
 parser.add_argument('inval', help='file path')
+parser.add_argument('--tag', help='name to use')
 args = parser.parse_args()
 
 #Module Summary
@@ -75,4 +76,4 @@ wall = float(time_rep[2].split(' = ')[1])
 
 title = 'Execution time: %.3f [s] (CPU / evt), %.3f [s] (Wall / evt)' % (cpu, wall)
 plt.title(title)
-fig.savefig('validation/timing.png')
+fig.savefig('validation/timing_%s.png' % args.tag)
