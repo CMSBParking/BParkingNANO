@@ -2,6 +2,7 @@
 // one matched to the Park triggers
 // another fitered wrt the Park triggers
 
+
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -24,6 +25,8 @@
 #include "DataFormats/PatCandidates/interface/TriggerPath.h"
 #include "DataFormats/PatCandidates/interface/TriggerEvent.h"
 #include "DataFormats/PatCandidates/interface/TriggerAlgorithm.h"
+
+
 
 #include <TLorentzVector.h>
 
@@ -56,9 +59,11 @@ private:
     const double maxdR_;
 
     //for filter wrt trigger
-    const double dzTrg_cleaning_;
-    const double ptMin_;
-    const double absEtaMax_;
+    const double dzTrg_cleaning_; // selects primary vertex
+    const double drTrg_cleaning_; //to be used only when we want to remove tag
+    const double ptMin_;          // min pT in all muons for B candidates
+    const double absEtaMax_;      //max eta ""
+    const bool softMuonsOnly_;    //cuts muons without soft ID
 };
 
 
@@ -70,11 +75,14 @@ MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   vertexSrc_( consumes<reco::VertexCollection> ( iConfig.getParameter<edm::InputTag>( "vertexCollection" ) ) ), 
   maxdR_(iConfig.getParameter<double>("maxdR_matching")),
   dzTrg_cleaning_(iConfig.getParameter<double>("dzForCleaning_wrtTrgMuon")),
+  drTrg_cleaning_(iConfig.getParameter<double>("drForCleaning_wrtTrgMuon")),
   ptMin_(iConfig.getParameter<double>("ptMin")),
-  absEtaMax_(iConfig.getParameter<double>("absEtaMax"))
+  absEtaMax_(iConfig.getParameter<double>("absEtaMax")),
+  softMuonsOnly_(iConfig.getParameter<bool>("softMuonsOnly"))
 {
-    produces<pat::MuonCollection>("trgMatched");
-    produces<pat::MuonCollection>("trgFiltered");
+  // produce 2 collections: trgMuons (tags) and SelectedMuons (probes & tags)
+    produces<pat::MuonCollection>("trgMuons"); 
+    produces<pat::MuonCollection>("SelectedMuons");
 }
 
 
@@ -138,18 +146,17 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     }
 
 
-    std::unique_ptr<pat::MuonCollection> resultMatch( new pat::MuonCollection );
-    std::unique_ptr<pat::MuonCollection> resultFilter( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection> trgmuons_out( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection> muons_out( new pat::MuonCollection );
 
 
     //now check for reco muons matched to triggering muons
     edm::Handle<std::vector<pat::Muon>> muons;
     iEvent.getByToken(muonSrc_, muons);
 
-    for(unsigned int iMuo=0; iMuo<muons->size(); ++iMuo){
-      const pat::Muon & muon = (*muons)[iMuo];
-
+    for(const pat::Muon & muon : *muons){
       //this is for triggering muon not really need to be configurable
+      unsigned int iMuo(&muon - &(muons->at(0)) );
       if(!(muon.isLooseMuon() && muon.isSoftMuon(PV))) continue;
 
       float dRMuonMatching = -1.;
@@ -174,36 +181,36 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       if(recoMuonMatching_index != -1){
 	pat::Muon recoTriggerMuonCand (muon);
 	recoTriggerMuonCand.addUserInt("trgMuonIndex", trgMuonMatching_index);
-	resultMatch->push_back(recoTriggerMuonCand);
+	trgmuons_out->emplace_back(recoTriggerMuonCand);
       }
     }
     
 
-    //muons filtered wrt trigger
-    // not enough to save allMuons - triggerMuons
-    // need to check dZwrtTrg and pt, eta...
-    std::vector<int> alreadySavedM;
-    alreadySavedM.resize(muons->size(), 0);
+    
+    // code simplified loop of trg inside
+      for(const pat::Muon &mu : *muons) {
+	//election cuts
+       if (mu.pt() < ptMin_) continue;
+       if (fabs(mu.eta()) > absEtaMax_) continue;
+       if (softMuonsOnly_ && !mu.isSoftMuon(PV)) continue;
 
-    for(auto muonTrg : *resultMatch) {
-      
-      int icount = -1;
-      for(auto muon : *muons) {
-	++icount;
-	if(alreadySavedM[icount]) continue;
-
-	if((std::fabs(muon.vz() - muonTrg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ != -1) ||
-	   muon.pt() < ptMin_ || 
-	   std::fabs(muon.eta() > absEtaMax_) ) continue;
-
-	alreadySavedM[icount] = 1;
-	resultFilter->emplace_back(muon);
-      }
+       // same PV as the tag muon
+       bool SkipMuon=true;
+       for (const pat::Muon & trgmu : *trgmuons_out) {
+         if( reco::deltaR(mu,trgmu) < drTrg_cleaning_ && drTrg_cleaning_ >0 )
+             continue;
+       	 if( fabs(mu.vz()-trgmu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ >0 )
+             continue;
+         SkipMuon=false;
+       } 
+       // needs decission: what about events without trg muon? now we SKIP them
+       if (SkipMuon)  continue;
+       muons_out->emplace_back(mu);
     }
 
 
-    iEvent.put(std::move(resultMatch), "trgMatched");
-    iEvent.put(std::move(resultFilter), "trgFiltered");
+    iEvent.put(std::move(trgmuons_out), "trgMuons");
+    iEvent.put(std::move(muons_out), "SelectedMuons");
 }
 
 
