@@ -1,6 +1,11 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
+from RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cff import lowPtGsfElectronID
+lowPtGsfElectronLatestID = lowPtGsfElectronID.clone()
+lowPtGsfElectronLatestID.electrons = 'slimmedLowPtElectrons'
+lowPtGsfElectronLatestID.rho = 'fixedGridRhoFastjetAll'
+
 ##essentially the commented out can be inside the same loop... no need to have a more loops in an "expensive" object
 '''lowptElectronsWithSeed = cms.EDProducer(
   'PATLowPtElectronSeedingEmbedder',
@@ -45,7 +50,7 @@ electronsForAnalysis = cms.EDProducer(
   dzForCleaning = cms.double(0.01),
   ptMin = cms.double(1.),
   etaMax = cms.double(2.5),
-  bdtMin = cms.double(15), #this cut can be used to deactivate low pT e if set to >12
+    bdtMin = cms.double(0), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
 )
 
@@ -80,6 +85,7 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         isLowPt = Var("userInt('isLowPt')",bool,doc="electron is LowPt candidate"),
         ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT 20 for pfEle"), 
         unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
+        mvaId = Var("userFloat('mvaId')",float,doc="MVA ID for low pT, 20 for pfEle"),
         fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8)
         )
 )
@@ -96,6 +102,7 @@ electronsBParkMCMatchForTable = cms.EDProducer("MCMatcher",  # cut on deltaR, de
     maxDPtRel   = cms.double(0.5),              # Minimum deltaPt/Pt for the match
     resolveAmbiguities    = cms.bool(True),     # Forbid two RECO objects to match to the same GEN object
     resolveByMatchQuality = cms.bool(True),    # False = just match input in order; True = pick lowest deltaR pair first
+    
 )
 
 electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
@@ -109,7 +116,8 @@ electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
 
 
 electronsBParkSequence = cms.Sequence(
-  electronsForAnalysis
+  lowPtGsfElectronLatestID
+  +electronsForAnalysis
 )
 
 

@@ -164,7 +164,10 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
    pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
    pcand.addUserFloat("DCASig", DCASig);
    //adding the candidate in the composite stuff for fit (need to test)
-//   pcand.addUserCand("cand",trk.sourceCandidatePtr(0));
+   if ( itrk < nTracks )
+     pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, itrk ));
+   else 
+     pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( lostTracks, itrk-nTracks ));
     
    tracks_out->emplace_back(pcand);
  }
