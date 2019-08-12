@@ -1,3 +1,5 @@
+// class that creates common vertex using kinematic fit
+
 #ifndef KINFITTER_H
 #define KINFITTER_H
 
@@ -22,58 +24,102 @@
 #include <vector>
 #include <cmath>
 
+
+
+
 class KinFitter{
-public: 
+
+ public: 
+
+  // several constractors for every need
   KinFitter();
-  KinFitter(std::vector<RefCountedKinematicParticle>& allParticles);
-  KinFitter(std::vector<RefCountedKinematicParticle>& allParticles,ParticleMass Kstar_m);    
+  // if refit option set to true will refit daughters before returning them
+  // same for mother. If false is the normal p4 sum
+  KinFitter( std::vector< RefCountedKinematicParticle >& vallParticles, bool vrefit );
+  // fit with mass constraint
+  KinFitter( std::vector< RefCountedKinematicParticle >& vallParticles, 
+             bool vrefit,
+             ParticleMass vKstar_m 
+             );
+
+  // destructor    
   virtual ~KinFitter();
-  bool success() {return m_success;}
-  void SetKinFitTracks(std::vector<RefCountedKinematicParticle>& allParticles);
-  GlobalVector Mother_Momentum(bool refit) {
-    if (refit) return bs_state.globalMomentum();
-    else return UnfittedMotherMomentum();    
+
+  // returns false if fit is unseccesfull
+  bool success() { return m_success; }
+
+  // set tracks to fit 
+  void SetKinFitTracks( std::vector< RefCountedKinematicParticle >& vallParticles,
+                        bool vrefit
+                        );
+
+  // momentum of mother
+  GlobalVector Mother_Momentum() {
+    if ( refit )
+       return bs_state.globalMomentum();
+    else 
+       return UnfittedMotherMomentum();    
   }  
-  ParticleMass Mother_Mass(bool refit) {
-    if (refit)
-      return bs_state.mass();
+  // mass of mother
+  ParticleMass Mother_Mass() {
+    if ( refit )
+       return bs_state.mass();
     else
-      return UnfittedMotherMass();
+       return UnfittedMotherMass();
 }
-  float Mother_Charge(){
+  // charge
+  float Mother_Charge() {
        return bs_state.particleCharge();
   }
-  float Mother_Energy(bool refit) {
-    if (refit)
-      return 
-         TMath::Sqrt(bs_state.globalMomentum().mag2() 
-                     + pow(bs_state.mass(),2));
-    else
-      return 
-	TMath::Sqrt(UnfittedMotherMomentum().mag2() 
-                    + pow(UnfittedMotherMass(),2));
-   }
   
-  float chi() {return b_dec_vertex->chiSquared();}
-  float dof() {return b_dec_vertex->degreesOfFreedom();}
-  float prob() {return ChiSquaredProbability( b_dec_vertex->chiSquared(),b_dec_vertex->degreesOfFreedom());}
-  GlobalVector Daughter_Momentum(unsigned int idaughter,bool refit);
-  ParticleMass Daughter_Mass(unsigned int idaughter,bool refit);
-  GlobalVector UnfittedMotherMomentum();
-  ParticleMass UnfittedMotherMass();
-  float Daughter_Charge(unsigned int idaughter,bool refit);
+  // energy
+  float Mother_Energy() {
+    if ( refit )
+      return TMath::Sqrt( bs_state.globalMomentum().mag2()                      
+                          + pow( bs_state.mass(), 2 )
+                          );
+    else
+      return TMath::Sqrt( UnfittedMotherMomentum().mag2() 
+                          + pow( UnfittedMotherMass(), 2 )
+                          );
+   }
+
+  // chi 
+  float chi() { return b_dec_vertex->chiSquared(); }
+  // dof
+  float dof() { return b_dec_vertex->degreesOfFreedom(); }
+  // prob
+  float prob() { return ChiSquaredProbability( b_dec_vertex->chiSquared(),
+                                               b_dec_vertex->degreesOfFreedom()
+                                               ); }
+  // momentum of daughters
+  GlobalVector Daughter_Momentum( unsigned int vdaughter );
+  // mass
+  ParticleMass Daughter_Mass( unsigned int vdaughter );
+  // charge
+  float Daughter_Charge( unsigned int vdaughter );
+  // B decay point
   GlobalPoint Mother_XYZ(){ return b_dec_vertex->position(); }
+  // error
   GlobalError Mother_XYZError(){ return b_dec_vertex->error(); }
+  // errors in kinematic vars
   double Mother_PtError(){ return bs_track.track().ptError(); }
   double Mother_EtaError(){ return bs_track.track().etaError(); }
   double Mother_PhiError(){ return bs_track.track().phiError(); }
 
 
 private:
-  bool m_success; bool KinFit; RefCountedKinematicTree bsTree;
-  RefCountedKinematicVertex b_dec_vertex; KinematicState bs_state;
+  
+  bool m_success = false;        bool refit = false;
+  RefCountedKinematicTree bsTree;
+  RefCountedKinematicVertex b_dec_vertex; 
+  KinematicState bs_state;
   RefCountedKinematicParticle b_s;
   std::vector< RefCountedKinematicParticle > bs_children;
-  reco::TransientTrack bs_track; unsigned int m_npart;
+  reco::TransientTrack bs_track; 
+  unsigned int m_npart;
+  GlobalVector UnfittedMotherMomentum();
+  ParticleMass UnfittedMotherMass();
+
 };
 #endif
