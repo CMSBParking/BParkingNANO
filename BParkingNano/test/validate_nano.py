@@ -8,7 +8,7 @@ parser = ArgumentParser()
 parser.add_argument('f_old', help='file path')
 parser.add_argument('f_new', help='file path')
 parser.add_argument('--legacy', action='store_true', help='compare against legacy version')
-parser.add_argument('--noplot', default='HLT_*,L1_*', help='coma-separated list of names not to plot, default HLT_*,L1_*')
+parser.add_argument('--noplot', default='HLT_*,L1_*,Flag_*', help='coma-separated list of names not to plot, default HLT_*,L1_*')
 args = parser.parse_args()
 
 import fnmatch
@@ -188,7 +188,7 @@ for branch in (old_k - new_k):
 
 log('\n\n')
 
-for branch in intersection:
+for branch in sorted(intersection):
   v_old = old[branch]
   v_new = new[branch]
 
