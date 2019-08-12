@@ -27,8 +27,9 @@ echo "Done! Now for MC..."
 cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
 
 echo "Now merging the changes for PR #"$PRID
-git fetch $remote pull/$PRID/head:TEST_PR$PRID
-git checkout TEST_PR$PRID
+git fetch $remote pull/$PRID/head:TEMP_PR$PRID
+git checkout official_current_master -b TEST_PR$PRID
+git merge TEMP_PR$PRID
 cd $CMSSW_BASE/src
 echo "Compiling..."
 scram b -j 4 > PhysicsTools/BParkingNano/test/compilation_PR$PRID.log
@@ -58,6 +59,7 @@ mv validation $TAG/validation_mc
 echo "Getting rid of unused branches"
 git checkout master
 git branch -D TEST_PR$PRID
+git branch -D TEMP_PR$PRID
 git branch -D official_current_master
 
 echo "EVERYTHING DONE! you can find the validation plots and html-based text in:" $CMSSW_BASE/src/PhysicsTools/BParkingNano/test/$TAG
