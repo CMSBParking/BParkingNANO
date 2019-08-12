@@ -8,8 +8,10 @@ parser = ArgumentParser()
 parser.add_argument('f_old', help='file path')
 parser.add_argument('f_new', help='file path')
 parser.add_argument('--legacy', action='store_true', help='compare against legacy version')
+parser.add_argument('--noplot', default='HLT_*,L1_*,Flag_*', help='coma-separated list of names not to plot, default HLT_*,L1_*')
 args = parser.parse_args()
 
+import fnmatch
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -19,6 +21,23 @@ eps = 10**-7
 
 if not os.path.isdir('validation'):
   os.makedirs('validation')
+
+# probably logging would be better
+logfile = open('validation/validation_log.raw_txt', 'w')
+
+def to_html(txt):
+  return txt.replace('<', '&lt;').replace('>', '&gt;')
+
+color_code = {
+  'green' : '\033[1;32m %s \033[0m',
+  'red' : '\033[1;31m %s \033[0m',
+  'orange' : '\033[1;35m %s \033[0m', # Could not find it, use purple
+  'black' : '%s',
+}
+def log(txt, color = 'black'):
+  print color_code[color] % txt
+  logfile.write('<code style="color: %s">%s</code>\n' % (color, to_html(txt)))
+
 
 legacy_mapping = { #mapping between George's Ntuples and Nano
   'nmuon' : 'nMuon',
@@ -56,23 +75,24 @@ class NanoFrame(object):
     return legacy_mapping.keys() if self.legacy else self.tt.keys()
 
 def byval_validation(v1, v2):
-  if np.isinf(v2).any() or np.isnan(v2).any():
-    v1 = v1[np.invert(np.isinf(v1) | np.isnan(v1).any())]
-    v2 = v2[np.invert(np.isinf(v2) | np.isnan(v2).any())]
+  if np.isfinite(v1).any() or np.isfinite(v2).any():
+    v1 = v1[np.invert(np.isfinite(v1))]
+    v2 = v2[np.invert(np.isfinite(v2))]
 
   try:
     if v1.dtype == 'bool' or np.issubdtype(v1.dtype, np.integer):
-      return (v1 == v2).all()
+      return np.array_equal(v1, v2)
     else:
       return ((np.abs(v1 - v2) / (abs(v1) + eps)) < 0.001).all()
   except ValueError:
     return False
 
+noplot = args.noplot.split(',')
 def stat_validation(v1, v2, name = '', nbins = 20):
-  if np.isinf(v2).any() or np.isnan(v2).any():
-    print '\033[1;35m', name, '--> CONTAINS INFs/NANs!\033[0m'
-    v1 = v1[np.invert(np.isinf(v1) | np.isnan(v1).any())]
-    v2 = v2[np.invert(np.isinf(v2) | np.isnan(v2).any())]
+  if not np.isfinite(v1).all() or not np.isfinite(v2).all():
+    log(name + '--> CONTAINS INFs/NANs!', 'orange')
+    v1 = v1[np.isfinite(v1)]
+    v2 = v2[np.isfinite(v2)]
 
   if v1.shape[0] == 0 and v2.shape[0] == 0:
     return True
@@ -91,7 +111,9 @@ def stat_validation(v1, v2, name = '', nbins = 20):
   h1, _, _ = plt.hist(v1, range = (m,M), bins = nbins, label = 'old', histtype = 'step')
   h2, _, _ = plt.hist(v2, range = (m,M), bins = nbins, label = 'new', histtype = 'step')
   plt.legend(loc='best')
-  plt.savefig('validation/%s.png' % name)
+  skip = any(fnmatch.fnmatch(name, i) for i in noplot)
+  if not skip:
+    plt.savefig('validation/%s.png' % name)
   plt.clf()
   return (h1 == h2).all()
 
@@ -101,55 +123,54 @@ new = NanoFrame(args.f_new)
 #
 # Size Checks
 #
-uf = new.uf
-tt = new.tt
-
-branches_and_size = {i.name : i.compressedbytes() for i in tt.allvalues()}
-tot_branches = sum(branches_and_size.values())
-n_entries = len(tt)
-try:
-  n_processed = int(uf['tag'].split('nevts:')[1])
-except:
-  n_processed = -1
-
-from collections import defaultdict
-groups = defaultdict(long)
-for name, size in branches_and_size.iteritems():
-    group = name.split('_')[0] if '_' in name else 'other'
-    groups[group] += size
-
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from cycler import cycler
-
-import matplotlib.colors as colors
-import matplotlib.cm as cmx
-cm = plt.get_cmap('rainbow')
-cNorm  = colors.Normalize(vmin=0, vmax=len(groups)-1)
-scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-cols = [scalarMap.to_rgba(i) for i in range(len(groups))]
-
 def writer(pct):
   if pct < 5: return ''
   else: return '%.1f%%' % pct
 
-plt.clf()
-fig = plt.figure(
+def size_plot(frame, nametag):
+  uf = frame.uf
+  tt = frame.tt
+
+  branches_and_size = {i.name : i.compressedbytes() for i in tt.allvalues()}
+  tot_branches = sum(branches_and_size.values())
+  n_entries = len(tt)
+  try:
+    n_processed = int(uf['tag'].split('nevts:')[1])
+  except:
+    n_processed = -1
+
+  from collections import defaultdict
+  groups = defaultdict(long)
+  for name, size in branches_and_size.iteritems():
+    group = name.split('_')[0] if '_' in name else 'other'
+    groups[group] += size
+
+  import matplotlib.colors as colors
+  import matplotlib.cm as cmx
+  cm = plt.get_cmap('rainbow')
+  cNorm  = colors.Normalize(vmin=0, vmax=len(groups)-1)
+  scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+  cols = [scalarMap.to_rgba(i) for i in range(len(groups))]
+
+  plt.clf()
+  fig = plt.figure(
     figsize=(12, 6), 
-)
-plt.subplot(1, 2, 1)
-wedges = plt.pie(groups.values(), autopct = writer, colors = cols)
-names = ['%s (%.1f%%)' % (n, float(p)*100/tot_branches) for n, p in groups.iteritems()]
-leg = plt.legend(
+  )
+  plt.subplot(1, 2, 1)
+  wedges = plt.pie(groups.values(), autopct = writer, colors = cols)
+  names = ['%s (%.1f%%)' % (n, float(p)*100/tot_branches) for n, p in groups.iteritems()]
+  leg = plt.legend(
     wedges[0], names, loc = 5,
     bbox_to_anchor = (0.95, 0.5),
     mode="expand", borderaxespad=0., frameon=False
-)
-title = 'Total size: %.3f kB / evt (%d events / %d processed)' % (tot_branches/(10.**3 * n_entries), n_entries, n_processed)
-print title
-plt.title(title)
-fig.savefig('validation/size.png')
+  )
+  title = 'Total size: %.3f kB / evt (%d events / %d processed)' % (tot_branches/(10.**3 * n_entries), n_entries, n_processed)
+  log(' '.join([nametag, title]), 'black')
+  plt.title(title)
+  fig.savefig('validation/%s_size.png' % nametag)
+
+size_plot(new, 'new')
+size_plot(old, 'old')
 
 #
 # Branch checks
@@ -158,7 +179,16 @@ old_k = set(old.keys())
 new_k = set(new.keys())
 intersection = old_k.intersection(new_k)
 
-for branch in intersection:
+log('Branch diff:')
+for branch in (new_k - old_k):
+  log(' '.join(['+', branch]), 'green')
+
+for branch in (old_k - new_k):
+  log(' '.join(['-', branch]), 'red')
+
+log('\n\n')
+
+for branch in sorted(intersection):
   v_old = old[branch]
   v_new = new[branch]
 
@@ -170,8 +200,8 @@ for branch in intersection:
   val_valid  = byval_validation(v_old, v_new)
 
   if val_valid and stat_valid:
-    print '\033[1;32m', branch, '--> OK!\033[0m'
+    log(' '.join([branch, '--> OK!']), 'green')
   elif stat_valid:
-    print '\033[1;35m', branch, '--> FAILS BY VALUE CHECK ONLY!\033[0m'
+    log(' '.join([branch, '--> FAILS BY VALUE CHECK ONLY!']), 'orange')
   else:
-    print '\033[1;31m', branch, '--> FAILS ALL CHECKS!\033[0m'
+    log(' '.join([branch, '--> FAILS ALL CHECKS!']), 'red')

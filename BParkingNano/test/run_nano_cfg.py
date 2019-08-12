@@ -26,16 +26,15 @@ options.register('reportEvery', 1000,
 
 options.setDefault('maxEvents', 1000)
 options.setDefault('tag', '10215')
-options.setDefault('inputFiles', ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'])
 options.parseArguments()
 
 globaltag = '102X_dataRun2_Sep2018Rereco_v1' if options.isMC else '102X_upgrade2018_realistic_v15'
 extension = {False : 'data', True : 'mc'}
 outputFileNANO = cms.untracked.string('_'.join(['testBParkNANO', extension[options.isMC], options.tag])+'.root')
 outputFileFEVT = cms.untracked.string('_'.join(['testBParkFullEvt', extension[options.isMC], options.tag])+'.root')
-if options.isMC and not options._beenSet['inputFiles']:
-    options.inputFiles.pop()
-    options.inputFiles = ['/store/user/bainbrid/lowpteleid/BuToKJpsi_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/crab_lowpteleid/190328_152903/0000/step3_inMINIAODSIM_99.root']
+if not options.inputFiles:
+    options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
+                         ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)
 
 from Configuration.StandardSequences.Eras import eras
