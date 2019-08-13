@@ -81,7 +81,9 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
         filterName = cms.untracked.string('')
     ),
     fileName = outputFileFEVT,
-    outputCommands = (cms.untracked.vstring('keep *')),
+    outputCommands = (cms.untracked.vstring('keep *',
+                                            'drop *_*_SelectedTransient*_*',
+                     )),
     splitLevel = cms.untracked.int32(0)
 )
 

@@ -26,9 +26,11 @@
 #include "DataFormats/PatCandidates/interface/TriggerEvent.h"
 #include "DataFormats/PatCandidates/interface/TriggerAlgorithm.h"
 
-
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include <TLorentzVector.h>
+#include "helper.h"
 
 using namespace std;
 
@@ -83,12 +85,16 @@ MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   // produce 2 collections: trgMuons (tags) and SelectedMuons (probes & tags)
     produces<pat::MuonCollection>("trgMuons"); 
     produces<pat::MuonCollection>("SelectedMuons");
+    produces<TransientTrackCollection>("SelectedTransientMuons");  
 }
 
 
 
 void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     
+
+    edm::ESHandle<MagneticField> bFieldHandle;
+    iSetup.get<IdealMagneticFieldRecord>().get(bFieldHandle);
 
     edm::Handle<reco::VertexCollection> vertexHandle;
     iEvent.getByToken(vertexSrc_, vertexHandle);
@@ -146,8 +152,9 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     }
 
 
-    std::unique_ptr<pat::MuonCollection> trgmuons_out( new pat::MuonCollection );
-    std::unique_ptr<pat::MuonCollection> muons_out( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection>      trgmuons_out   ( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection>      muons_out      ( new pat::MuonCollection );
+    std::unique_ptr<TransientTrackCollection> trans_muons_out( new TransientTrackCollection );
 
 
     //now check for reco muons matched to triggering muons
@@ -205,12 +212,19 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
        } 
        // needs decission: what about events without trg muon? now we SKIP them
        if (SkipMuon)  continue;
+       
+       // build transient track
+       const reco::TransientTrack muonTT((*(mu.bestTrack())), &(*bFieldHandle)); //sara: check, why not using inner track for muons?
+       if (!muonTT.isValid()) continue;
+
        muons_out->emplace_back(mu);
+       trans_muons_out->emplace_back(muonTT);
     }
 
 
-    iEvent.put(std::move(trgmuons_out), "trgMuons");
-    iEvent.put(std::move(muons_out), "SelectedMuons");
+    iEvent.put(std::move(trgmuons_out),    "trgMuons");
+    iEvent.put(std::move(muons_out),       "SelectedMuons");
+    iEvent.put(std::move(trans_muons_out), "SelectedTransientMuons");
 }
 
 
