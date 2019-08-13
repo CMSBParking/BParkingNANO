@@ -11,8 +11,13 @@
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
+
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+
 #include <limits>
 #include <algorithm>
+#include "helper.h"
 
 class ElectronMerger : public edm::global::EDProducer<> {
 
@@ -38,6 +43,7 @@ public:
     use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")} 
     {
        produces<pat::ElectronCollection>("SelectedElectrons");
+       produces<TransientTrackCollection>("SelectedTransientElectrons");  
     }
 
   ~ElectronMerger() override {}
@@ -63,7 +69,7 @@ private:
   const bool use_gsf_mode_for_p4_;
 };
 
-void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const & iSetup) const {
 
   //input
   edm::Handle<pat::MuonCollection> trgMuon;
@@ -78,9 +84,13 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.getByToken(unBiased_src_, unBiased);
   edm::Handle<edm::ValueMap<float> > mvaId;  
   evt.getByToken(mvaId_src_, mvaId);
+// 
+  edm::ESHandle<TransientTrackBuilder> theB ;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
 
   // output
-  std::unique_ptr<pat::ElectronCollection> ele_out(new pat::ElectronCollection);
+  std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
+  std::unique_ptr<TransientTrackCollection> trans_ele_out(new TransientTrackCollection);
 
   
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
@@ -104,6 +114,16 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    // we skip evts without trg muon
    if (skipEle) continue;
 
+    // build transient track
+    // FIXME: this NEEDS to be modified so that the transientTrack is built from the gsfTrack;
+    //        needs modification in transientTrack builders and GsfTransientTrack classes in cmssw 
+    //        already prepared by Arabella but not included here yet in the repo/cmssw. 
+    //        For now using "standard" transientTrack builder just to move on.  
+    //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
+    //        https://github.com/CMSBParking/BParkingNANO/blob/410bddcf56b33de73d22f4a6b34fefb588b5b741/BParkingNano/plugins/PreFitter.h#L81 
+   const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
+   if (!eleTT.isValid()) continue;
+
    // for PF e we set BDT outputs to much higher number than the max
    ele.addUserInt("isPF", 1);
    ele.addUserInt("isLowPt", 0);
@@ -111,7 +131,9 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20);
    ele.addUserFloat("chargeMode", ele.charge());
-   ele_out->emplace_back(ele);
+
+   ele_out       -> emplace_back(ele);
+   trans_ele_out -> emplace_back(eleTT);
  }
 
 
@@ -151,7 +173,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    }
    // same here Do we need evts without trg muon? now we skip them
    if (skipEle) continue;   
-
+   
    //pf cleaning    
    bool clean_out = false;
    for(const auto& pfele : *pf) {
@@ -160,6 +182,16 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
                    reco::deltaR(ele, pfele) < dr_cleaning_   );
    }
    if(clean_out) continue;
+
+   // build transient track
+   // FIXME: this NEEDS to be modified so that the transientTrack is built from the gsfTrack;
+   //        needs modification in transientTrack builders and GsfTransientTrack classes in cmssw 
+   //        already prepared by Arabella but not included here yet in the repo/cmssw. 
+   //        For now using "standard" transientTrack builder just to move on.  
+   //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
+   const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
+   if (!eleTT.isValid()) continue;
+
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
    ele.addUserInt("isPF", 0);
@@ -168,16 +200,20 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("ptBiased", ptbiased_seedBDT);
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
-   ele_out->emplace_back(ele);
- }
+
+   ele_out       -> emplace_back(ele);
+   trans_ele_out -> emplace_back(eleTT);
+}
 
 //is this nescaisery ? because it is additional loop
    /* std::sort( out->begin(), out->end(), [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();}
 	      );
+   in case we re-add the sorting, the same should be done for the ele transient tracks	      
   }*/
 
   //adding label to be consistent with the muon and track naming
-  evt.put(std::move(ele_out),"SelectedElectrons");
+  evt.put(std::move(ele_out),      "SelectedElectrons");
+  evt.put(std::move(trans_ele_out),"SelectedTransientElectrons");
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
