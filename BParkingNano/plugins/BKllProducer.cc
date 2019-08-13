@@ -39,8 +39,8 @@ BKllProducer::~BKllProducer()
 }
 
 
-bool
-BKllProducer::filter( edm::Event& iEvent, edm::EventSetup const& iSetup )
+void
+BKllProducer::produce( edm::Event& iEvent, edm::EventSetup const& iSetup )
 { 
    // get needed objects
    edm::Handle<std::vector<pat::Electron>> electrons;
@@ -66,16 +66,8 @@ BKllProducer::filter( edm::Event& iEvent, edm::EventSetup const& iSetup )
      std::unique_ptr< std::vector<pat::CompositeCandidate> > recoB(
                                            Kmumu.ReconstructB( K_MASS ) );
  
-     if ( recoB->size() == 0 && SkipNoRecoBEvt ) {
-        // if there is not a single B and the skipping flag is on return false
-          return false;
-     // if there are B return them or if we dont want to skip empty evts
-     } else {    
+     iEvent.put( std::move( recoB ), name );
 
-       iEvent.put( std::move( recoB ), name );
-       return true;
-
-     }
 
   } else if ( LeptonPdgId == 11 ){
 
@@ -85,21 +77,14 @@ BKllProducer::filter( edm::Event& iEvent, edm::EventSetup const& iSetup )
     std::unique_ptr< std::vector<pat::CompositeCandidate> > recoB(
 						Kee.ReconstructB( K_MASS ) );
 
-    if ( recoB->size() == 0 && SkipNoRecoBEvt ) {
-
-       return false;
-
-    } else {
-
-       iEvent.put( std::move( recoB ), name );
-       return true;
-
-    }  
-
+    iEvent.put( std::move( recoB ), name );
+   
   } else {
        // If pdg id is not 11 or 13 print warning
        std::cout<<"Lepton can be ONLY 13(mu) or 11(e). B will not be reconstructed. Please fix "<<std::endl;
-       return true;
+       std::unique_ptr< std::vector<pat::CompositeCandidate> > recoB ( new std::vector<pat::CompositeCandidate> () );
+
+       iEvent.put( std::move( recoB ), name );
    }
 }
 

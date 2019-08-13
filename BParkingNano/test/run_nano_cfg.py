@@ -18,13 +18,13 @@ options.register('wantFullRECO', False,
     VarParsing.varType.bool,
     "Run this on real data"
 )
-options.register('reportEvery', 1000,
+options.register('reportEvery', 10,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.int,
     "report every N events"
 )
 
-options.setDefault('maxEvents', 1000)
+options.setDefault('maxEvents', 100)
 options.setDefault('tag', '10215')
 options.setDefault('inputFiles', ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'])
 options.parseArguments()
@@ -123,6 +123,9 @@ from PhysicsTools.BParkingNano.nanoBPark_cff import *
 process = nanoAOD_customizeMuonTriggerBPark(process)
 process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
+process = nanoAOD_customizeTrackFilteredBPark(process)
+process = nanoAOD_customizeBreconstructionBPark(process)
+
 
 # customisation of the process.
 if options.isMC:

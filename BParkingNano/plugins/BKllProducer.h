@@ -7,7 +7,7 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-#include "FWCore/Framework/interface/one/EDFilter.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Common/interface/Handle.h"
@@ -24,7 +24,7 @@
 #include "BtoXLLTemplateFitter.h"
 
 
-class BKllProducer : public edm::one::EDFilter<edm::one::SharedResources,edm::one::WatchRuns> {
+class BKllProducer : public edm::one::EDProducer<edm::one::SharedResources,edm::one::WatchRuns> {
 
 public:
 
@@ -42,7 +42,7 @@ private:
 
   virtual void beginJob() override;
   void         beginRun( edm::Run const& iEvent, edm::EventSetup const& );
-  virtual bool filter( edm::Event&, edm::EventSetup const& ) override;
+  virtual void produce( edm::Event&, edm::EventSetup const& ) override;
   void         endRun( edm::Run const& iEvent, edm::EventSetup const& ) {};
   virtual void endJob() override;
 
