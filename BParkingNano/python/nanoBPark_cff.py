@@ -16,7 +16,8 @@ from PhysicsTools.BParkingNano.muonsBPark_cff import *
 from PhysicsTools.BParkingNano.electronsBPark_cff import * 
 from PhysicsTools.BParkingNano.tracksBPark_cff import *
 
-
+## B collections
+from PhysicsTools.BParkingNano.BToKLL_cff import *
 
 
 nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
@@ -24,8 +25,9 @@ nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
 nanoSequence = cms.Sequence(nanoMetadata + 
                             vertexSequence +           
                             muonBParkSequence +
+                            BToKLLSequence +
                             globalTables + vertexTables + 
-                            triggerObjectBParkTables + l1bits)
+                            triggerObjectBParkTables + l1bits + BToKLLTables)
 
 nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + genParticleBParkSequence + 
                               muonBParkMC + electronBParkMC +
