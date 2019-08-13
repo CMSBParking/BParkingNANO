@@ -20,6 +20,9 @@
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/Common/interface/AssociationVector.h"
 
+#include "helper.h"
+
+// typedef std::vector<reco::TransientTrack> TransientTrackCollection;
 
 class TrackMerger : public edm::global::EDProducer<> {
 
@@ -46,14 +49,16 @@ public:
   // removed until we see the plot
 //    produces<pat::CompositeCandidateCollection>("TagSide");
     produces<pat::CompositeCandidateCollection>("SelectedTracks");  
+    produces<TransientTrackCollection>("SelectedTransientTracks");  
 }
 
   ~TrackMerger() override {}
 
   void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
 
-  std::pair<double,double> computeDCA(const pat::PackedCandidate &pfCand,
-				      edm::ESHandle<MagneticField> bFieldHandle,
+  std::pair<double,double> computeDCA(const reco::TransientTrack trackTT,
+//                                       const pat::PackedCandidate &pfCand,
+// 				      edm::ESHandle<MagneticField> bFieldHandle,
 				      const GlobalPoint& refP) const;
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
@@ -102,95 +107,103 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 //  std::unique_ptr<pat::CompositeCandidateCollection> outTag(new pat::CompositeCandidateCollection());
 
 //ok this was CompositeCandidateCollection 
-  std::unique_ptr<pat::CompositeCandidateCollection> tracks_out(new pat::CompositeCandidateCollection);
+  std::unique_ptr<pat::CompositeCandidateCollection> tracks_out      (new pat::CompositeCandidateCollection);
+  std::unique_ptr<TransientTrackCollection>          trans_tracks_out(new TransientTrackCollection);
 
 
-//correct logic but a bit convoluted -> changing to smthn simpler
- std::vector<pat::PackedCandidate> totalTracks(*tracks);
+  //correct logic but a bit convoluted -> changing to smthn simpler
+  std::vector<pat::PackedCandidate> totalTracks(*tracks);
 
- totalTracks.insert(totalTracks.end(),lostTracks->begin(),lostTracks->end());
+  totalTracks.insert(totalTracks.end(),lostTracks->begin(),lostTracks->end());
 
  
- // for loop is better to be range based - especially for large ensembles  
- for( const pat::PackedCandidate & trk: totalTracks){
+  // for loop is better to be range based - especially for large ensembles  
+  for( const pat::PackedCandidate & trk: totalTracks){
 
-   //arranging cuts for speed
-   if(!trk.hasTrackDetails()) continue;
-   if(abs(trk.pdgId()) != 211) continue; //do we want also to keep muons?
-   if(trk.pt() < trkPtCut_ ) continue;
-   if(fabs(trk.eta()) > trkEtaCut_) continue;
+    //arranging cuts for speed
+    if(!trk.hasTrackDetails()) continue;
+    if(abs(trk.pdgId()) != 211) continue; //do we want also to keep muons?
+    if(trk.pt() < trkPtCut_ ) continue;
+    if(fabs(trk.eta()) > trkEtaCut_) continue;
 
-   if( (trk.pseudoTrack().normalizedChi2() < trkNormChiMin_ &&
-        trkNormChiMin_>=0 ) ||
-       (trk.pseudoTrack().normalizedChi2() > trkNormChiMax_ &&
-        trkNormChiMax_>0)  )    continue; 
+    if( (trk.pseudoTrack().normalizedChi2() < trkNormChiMin_ &&
+         trkNormChiMin_>=0 ) ||
+        (trk.pseudoTrack().normalizedChi2() > trkNormChiMax_ &&
+         trkNormChiMax_>0)  )    continue; 
 
-   bool skipTrack=true;
-   GlobalPoint trgvtx;
-   for (const pat::Muon & mu: *trgMuons){
-    //remove tracks inside trg muons jet
-    if(reco::deltaR(trk, mu) < drTrg_Cleaning_ && drTrg_Cleaning_ >0) 
-      continue;
-    //if dz is negative it is deactivated
-    if((fabs(trk.vz() - mu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ > 0))
-       continue;
-    skipTrack=false;
-    trgvtx=GlobalPoint(mu.vx(),mu.vy(),mu.vz());
-    break; // at least for one trg muon to pass this cuts
-   }
-   // if track is closer to at least a triggering muon keep it
-   if (skipTrack) continue;
+    bool skipTrack=true;
+    GlobalPoint trgvtx;
+    for (const pat::Muon & mu: *trgMuons){
+      //remove tracks inside trg muons jet
+      if(reco::deltaR(trk, mu) < drTrg_Cleaning_ && drTrg_Cleaning_ >0) 
+        continue;
+      //if dz is negative it is deactivated
+      if((fabs(trk.vz() - mu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ > 0))
+        continue;
+      skipTrack=false;
+      trgvtx=GlobalPoint(mu.vx(),mu.vy(),mu.vz());
+      break; // at least for one trg muon to pass this cuts
+    }
+    // if track is closer to at least a triggering muon keep it
+    if (skipTrack) continue;
 
-   // high purity requirment applied only in packedCands
-   unsigned int itrk=&trk-&totalTracks[0];
-   if( itrk < nTracks && !trk.trackHighPurity()) continue;
+    // high purity requirment applied only in packedCands
+    unsigned int itrk=&trk-&totalTracks[0];
+    if( itrk < nTracks && !trk.trackHighPurity()) continue;
    
-   //distance closest approach in x,y wrt triggeringMuon
-   std::pair<double,double> DCA = computeDCA(trk, bFieldHandle, trgvtx);
-   float DCABS = DCA.first;
-   float DCABSErr = DCA.second;
-   float DCASig = DCABS/DCABSErr;
-   if (DCASig >  dcaSig_  && dcaSig_ >0) continue;
-   pat::CompositeCandidate pcand;
+    // build transient track
+    const reco::TransientTrack trackTT((*(trk.bestTrack())), &(*bFieldHandle));
+    if (!trackTT.isValid()) continue;
    
-   pcand.setP4(trk.p4());
-   pcand.setCharge(trk.charge());
-   pcand.setVertex(trk.vertex());
-   pcand.addUserInt("isPacked", (itrk < nTracks) ? 1 : 0);
-   pcand.addUserInt("isLostTrk", (itrk < nTracks) ? 0 : 1);      
-   pcand.addUserFloat("dxy", trk.dxy());
-   pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
-   pcand.addUserFloat("dz", trk.dz()); 
-   pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
-   pcand.addUserFloat("DCASig", DCASig);
-   //adding the candidate in the composite stuff for fit (need to test)
-   if ( itrk < nTracks )
-     pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, itrk ));
-   else 
-     pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( lostTracks, itrk-nTracks ));
+    //distance closest approach in x,y wrt triggeringMuon
+    std::pair<double,double> DCA = computeDCA(trackTT, trgvtx);
+    float DCABS = DCA.first;
+    float DCABSErr = DCA.second;
+    float DCASig = DCABS/DCABSErr;
+    if (DCASig >  dcaSig_  && dcaSig_ >0) continue;
+   
+    pat::CompositeCandidate pcand;
+    pcand.setP4(trk.p4());
+    pcand.setCharge(trk.charge());
+    pcand.setVertex(trk.vertex());
+    pcand.addUserInt("isPacked", (itrk < nTracks) ? 1 : 0);
+    pcand.addUserInt("isLostTrk", (itrk < nTracks) ? 0 : 1);      
+    pcand.addUserFloat("dxy", trk.dxy());
+    pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
+    pcand.addUserFloat("dz", trk.dz()); 
+    pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
+    pcand.addUserFloat("DCASig", DCASig);
+    //adding the candidate in the composite stuff for fit (need to test)
+    if ( itrk < nTracks )
+      pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, itrk ));
+    else 
+      pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( lostTracks, itrk-nTracks ));
     
-   tracks_out->emplace_back(pcand);
- }
+    tracks_out       -> emplace_back(pcand);
+    trans_tracks_out -> emplace_back(trackTT);
+   
+  }
  
-//evt.put(std::move(outTag), "TagSide");
-  evt.put(std::move(tracks_out), "SelectedTracks");
+  //evt.put(std::move(outTag), "TagSide");
+  evt.put(std::move(tracks_out),       "SelectedTracks");
+  evt.put(std::move(trans_tracks_out), "SelectedTransientTracks");
 }
 
 
-std::pair<double,double> TrackMerger::computeDCA(const pat::PackedCandidate &pfCand,
-						 edm::ESHandle<MagneticField> bFieldHandle,
+std::pair<double,double> TrackMerger::computeDCA(const reco::TransientTrack trackTT,
 						 const GlobalPoint& refP) const 
 {
   
-  const reco::TransientTrack trackTT((*(pfCand.bestTrack())), &(*bFieldHandle));
-
+  double DCABS    = -1.; 
+  double DCABSErr = -1.; 
+  
   TrajectoryStateClosestToPoint theDCAXBS = trackTT.trajectoryStateClosestToPoint(refP);
+  if (theDCAXBS.isValid()) {
+    DCABS    = theDCAXBS.perigeeParameters().transverseImpactParameter();
+    DCABSErr = theDCAXBS.perigeeError().transverseImpactParameterError();
+  }
 
-  double DCABS = theDCAXBS.perigeeParameters().transverseImpactParameter();
-  double DCABSErr = theDCAXBS.perigeeError().transverseImpactParameterError();
-
-  std::pair<double,double> DCA = std::make_pair(DCABS,DCABSErr);
-  return DCA;
+  return std::make_pair(DCABS,DCABSErr);
 }
 
 
