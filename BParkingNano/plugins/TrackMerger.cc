@@ -57,8 +57,6 @@ public:
   void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
 
   std::pair<double,double> computeDCA(const reco::TransientTrack trackTT,
-//                                       const pat::PackedCandidate &pfCand,
-// 				      edm::ESHandle<MagneticField> bFieldHandle,
 				      const GlobalPoint& refP) const;
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
