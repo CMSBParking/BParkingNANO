@@ -22,8 +22,6 @@
 
 #include "helper.h"
 
-// typedef std::vector<reco::TransientTrack> TransientTrackCollection;
-
 class TrackMerger : public edm::global::EDProducer<> {
 
 
