@@ -90,7 +90,7 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
       // Use UserCands as they should not use memory but keep the Ptr itself
       // Put the lepton passing the corresponding selection
       lepton_pair.addUserCand("l1", l1_as_l1 ? l1_ptr : l2_ptr);
-      lepton_pair.addUserCand("l2", l1_as_l2 ? l1_ptr : l2_ptr);
+      lepton_pair.addUserCand("l2", l1_as_l1 ? l2_ptr : l1_ptr);
 
       if( !pre_vtx_selection_(lepton_pair) ) continue; // before making the SV, cut on the info we have
 
