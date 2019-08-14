@@ -75,9 +75,9 @@ class NanoFrame(object):
     return legacy_mapping.keys() if self.legacy else self.tt.keys()
 
 def byval_validation(v1, v2):
-  if np.isfinite(v1).any() or np.isfinite(v2).any():
-    v1 = v1[np.invert(np.isfinite(v1))]
-    v2 = v2[np.invert(np.isfinite(v2))]
+  if not np.isfinite(v1).all() or not np.isfinite(v2).all():
+    v1 = v1[np.isfinite(v1)]
+    v2 = v2[np.isfinite(v2)]
 
   try:
     if v1.dtype == 'bool' or np.issubdtype(v1.dtype, np.integer):
