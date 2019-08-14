@@ -33,7 +33,7 @@ public:
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     dileptons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("dileptons") )},
     leptons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("leptonTransientTracks") )},
-    kaons_{consumes<pat::PackedCandidateCollection>( cfg.getParameter<edm::InputTag>("kaons") )},
+    kaons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("kaons") )},
     kaons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("kaonsTransientTracks") )},
     beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
       produces<pat::CompositeCandidateCollection>();
@@ -46,13 +46,13 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
   
 private:
-  const StringCutObjectSelector<pat::PackedCandidate> k_selection_; // cut on sub-leading lepton
+  const StringCutObjectSelector<pat::CompositeCandidate> k_selection_; // cut on sub-leading lepton
   const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_; // cut on the di-lepton before the SV fit
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_; // cut on the di-lepton after the SV fit
 
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> dileptons_;
   const edm::EDGetTokenT<TransientTrackCollection> leptons_ttracks_;
-  const edm::EDGetTokenT<pat::PackedCandidateCollection> kaons_;
+  const edm::EDGetTokenT<pat::CompositeCandidateCollection> kaons_;
   const edm::EDGetTokenT<TransientTrackCollection> kaons_ttracks_;
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
 };
@@ -66,7 +66,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   edm::Handle<TransientTrackCollection> leptons_ttracks;
   evt.getByToken(leptons_ttracks_, leptons_ttracks);
 
-  edm::Handle<pat::PackedCandidateCollection> kaons;
+  edm::Handle<pat::CompositeCandidateCollection> kaons;
   evt.getByToken(kaons_, kaons);
   
   edm::Handle<TransientTrackCollection> kaons_ttracks;
@@ -79,7 +79,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   
   for(size_t k_idx = 0; k_idx < kaons->size(); ++k_idx) {
-    edm::Ptr<pat::PackedCandidate> k_ptr(kaons, k_idx);
+    edm::Ptr<pat::CompositeCandidate> k_ptr(kaons, k_idx);
     if( !k_selection_(*k_ptr) ) continue;
     
     math::PtEtaPhiMLorentzVector k_p4(
@@ -114,7 +114,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("min_dr", dr_info.first);
       cand.addUserFloat("max_dr", dr_info.second);
       // TODO add meaningful variables
-    
+      
       if( !pre_vtx_selection_(cand) ) continue;
     
       KinVtxFitter fitter(
@@ -122,6 +122,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
         {l1_ptr->mass(), l1_ptr->mass(), K_MASS},
         {LEP_SIGMA, LEP_SIGMA, K_SIGMA} //some small sigma for the lepton mass
         );
+      if(!fitter.success()) continue; // hardcoded, but do we need otherwise?
       cand.setVertex( 
         reco::Candidate::Point( 
           fitter.fitted_vtx().x(),
@@ -134,11 +135,12 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("sv_ndof", fitter.dof()); // float??
       cand.addUserFloat("sv_prob", fitter.prob());
       cand.addUserFloat("fitted_mass", fitter.fitted_candidate().mass());      
-      cand.addUserFloat("fitted_mll", (fitter.daughter_p4(0) + fitter.daughter_p4(1)).mass());
-      // Failing, need to figur out a way to get them
-      cand.addUserFloat("fitted_pt" , fitter.fitted_candidate().globalMomentum().perp()); // CHECK: is this right?
-      cand.addUserFloat("fitted_eta", fitter.fitted_candidate().globalMomentum().eta());
-      cand.addUserFloat("fitted_phi", fitter.fitted_candidate().globalMomentum().phi());
+      cand.addUserFloat("fitted_mll" , (fitter.daughter_p4(0) + fitter.daughter_p4(1)).mass());
+      // Failing, need to figur out a way to get them 
+      // CHECK: is this right?
+      cand.addUserFloat("fitted_pt" , fitter.fitted_candidate().globalMomentum().perp()); 
+      cand.addUserFloat("fitted_eta", fitter.fitted_candidate().globalMomentum().eta() );
+      cand.addUserFloat("fitted_phi", fitter.fitted_candidate().globalMomentum().phi() );
       cand.addUserFloat(
         "cos_theta_2D", 
         cos_theta_2D(fitter, *beamspot, cand.p4())

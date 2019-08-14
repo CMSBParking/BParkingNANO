@@ -4,9 +4,9 @@ from PhysicsTools.BParkingNano.common_cff import *
 electronPairsForKee = cms.EDProducer(
     'DiElectronBuilder',
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
-    transientTracksSrc = cms.InputTag('electronsForAnalysis', 'FIXME'),
-    lep1Selection = cms.string('pt > 1.5 && (userInt("isPF") == 1 || electronID("unbiased_seed") >= 3 )'),
-    lep2Selection = cms.string('pt > 0.5 && (userInt("isPF") == 1 || electronID("unbiased_seed") >= -4)'),
+    transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
+    lep1Selection = cms.string('pt > 1.5 && (userInt("isPF") == 1 || userFloat("unBiased") >= 3 )'),
+    lep2Selection = cms.string('pt > 0.5 && (userInt("isPF") == 1 || userFloat("unBiased") >= -4)'),
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
         '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'
@@ -19,7 +19,7 @@ BToKee = cms.EDProducer(
     dileptons = cms.InputTag('electronPairsForKee'),
     leptonTransientTracks = electronPairsForKee.transientTracksSrc,
     kaons = cms.InputTag('tracksBPark', 'SelectedTracks'),
-    kaonsTransientTracks = cms.InputTag('tracksBPark', 'FIXME'),
+    kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     beamSpot = cms.InputTag("offlineBeamSpot"),
     kaonSelection = cms.string(''),
     preVtxSelection = cms.string(
@@ -35,7 +35,7 @@ BToKee = cms.EDProducer(
 muonPairsForKmumu = cms.EDProducer(
     'DiMuonBuilder',
     src = cms.InputTag('muonTrgSelector', 'SelectedMuons'),
-    transientTracksSrc = cms.InputTag('muonTrgSelector', 'FIXME'),
+    transientTracksSrc = cms.InputTag('muonTrgSelector', 'SelectedTransientMuons'),
     lep1Selection = cms.string(''), #FIXME
     lep2Selection = cms.string(''),
     preVtxSelection = electronPairsForKee.preVtxSelection,
@@ -46,8 +46,8 @@ BToKmumu = cms.EDProducer(
     'BToKLLBuilder',
     dileptons = cms.InputTag('muonPairsForKmumu'),
     leptonTransientTracks = muonPairsForKmumu.transientTracksSrc,
-    kaons = cms.InputTag('tracksBPark', 'SelectedTracks'),
-    kaonsTransientTracks = cms.InputTag('tracksBPark', 'FIXME'),
+    kaons = BToKee.kaons,
+    kaonsTransientTracks = BToKee.kaonsTransientTracks,
     beamSpot = cms.InputTag("offlineBeamSpot"),
     kaonSelection = cms.string(''),
     # This in principle can be different between electrons and muons

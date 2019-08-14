@@ -102,7 +102,7 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
       lepton_pair.addUserFloat("sv_chi2", fitter.chi2());
       lepton_pair.addUserFloat("sv_ndof", fitter.dof()); // float??
       lepton_pair.addUserFloat("sv_prob", fitter.prob());
-      lepton_pair.addUserFloat("fitted_mass", fitter.fitted_candidate().mass());
+      lepton_pair.addUserFloat("fitted_mass", fitter.success() ? fitter.fitted_candidate().mass() : -1);
       // if needed, add here more stuff
 
       // cut on the SV info

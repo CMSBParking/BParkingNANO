@@ -25,9 +25,8 @@ nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
 nanoSequence = cms.Sequence(nanoMetadata + 
                             vertexSequence +           
                             muonBParkSequence +
-                            BToKLLSequence +
                             globalTables + vertexTables + 
-                            triggerObjectBParkTables + l1bits + BToKLLTables)
+                            triggerObjectBParkTables + l1bits)
 
 nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + genParticleBParkSequence + 
                               muonBParkMC + electronBParkMC +
@@ -49,5 +48,9 @@ def nanoAOD_customizeElectronFilteredBPark(process):
 
 def nanoAOD_customizeTrackFilteredBPark(process):
     process.nanoSequence = cms.Sequence( process.nanoSequence + tracksBParkSequence + tracksBParkTables)
+    return process
+
+def nanoAOD_customizeBToKLL(process):
+    process.nanoSequence = cms.Sequence( process.nanoSequence + BToKLLSequence + BToKLLTables)
     return process
 
