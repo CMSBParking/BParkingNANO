@@ -71,8 +71,8 @@ BToKeeTable = cms.EDProducer(
     extension=cms.bool(False),
     variables=cms.PSet(
         CandVars,
-        el1Idx = uint('l1_idx'),
-        el2Idx = uint('l2_idx'),
+        l1Idx = uint('l1_idx'),
+        l2Idx = uint('l2_idx'),
         kIdx = uint('k_idx'),
         chi2 = ufloat('sv_chi2'),
         svprob = ufloat('sv_prob'),

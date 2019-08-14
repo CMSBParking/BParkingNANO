@@ -33,13 +33,13 @@ public:
   float kin_ndof() const {return kin_ndof_;}
   
   const KinematicState fitted_daughter(size_t i) const { 
-    return fitted_children_.at(i)->initialState(); // CHECK: is inital right?
+    return fitted_children_.at(i)->currentState(); 
   }
 
   const math::PtEtaPhiMLorentzVector daughter_p4(size_t i) const { 
-    const auto& state = fitted_children_.at(i)->initialState();
+    const auto& state = fitted_children_.at(i)->currentState();
     return math::PtEtaPhiMLorentzVector(
-      state.globalMomentum().perp(), // CHECK: is this right?
+      state.globalMomentum().perp(), 
       state.globalMomentum().eta() ,
       state.globalMomentum().phi() ,
       state.mass()
