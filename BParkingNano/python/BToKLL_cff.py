@@ -83,6 +83,8 @@ BToKeeTable = cms.EDProducer(
         fit_mass = ufloat('fitted_mass'),
         l_xy = ufloat('l_xy'),
         l_xy_unc = ufloat('l_xy_unc'),
+        minDR = ufloat('min_dr'),
+        maxDR = ufloat('max_dr'),
     )
 )
 
