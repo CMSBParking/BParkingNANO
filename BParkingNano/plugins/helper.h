@@ -57,4 +57,3 @@ inline Measurement1D l_xy(const FITTER& fitter, const reco::BeamSpot &bs) {
 }
 
 #endif
->>>>>>> expanded common helpers
