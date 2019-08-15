@@ -40,7 +40,8 @@ public:
     ptMin_{cfg.getParameter<double>("ptMin")},
     etaMax_{cfg.getParameter<double>("etaMax")},
     bdtMin_{cfg.getParameter<double>("bdtMin")},
-    use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")} 
+    use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
+    sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")} 
     {
        produces<pat::ElectronCollection>("SelectedElectrons");
        produces<TransientTrackCollection>("SelectedTransientElectrons");  
@@ -67,6 +68,7 @@ private:
   const double etaMax_; //eta max cut
   const double bdtMin_; //bdt min cut
   const bool use_gsf_mode_for_p4_;
+  const bool sortOutputCollections_;
 };
 
 void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const & iSetup) const {
@@ -84,17 +86,16 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.getByToken(unBiased_src_, unBiased);
   edm::Handle<edm::ValueMap<float> > mvaId;  
   evt.getByToken(mvaId_src_, mvaId);
-// 
+  // 
   edm::ESHandle<TransientTrackBuilder> theB ;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
 
   // output
   std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
   std::unique_ptr<TransientTrackCollection> trans_ele_out(new TransientTrackCollection);
-
   
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
- for(auto ele : *pf) {
+  for(auto ele : *pf) {
    //cuts
    if (ele.pt()<ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
@@ -114,16 +115,6 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    // we skip evts without trg muon
    if (skipEle) continue;
 
-    // build transient track
-    // FIXME: this NEEDS to be modified so that the transientTrack is built from the gsfTrack;
-    //        needs modification in transientTrack builders and GsfTransientTrack classes in cmssw 
-    //        already prepared by Arabella but not included here yet in the repo/cmssw. 
-    //        For now using "standard" transientTrack builder just to move on.  
-    //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
-    //        https://github.com/CMSBParking/BParkingNANO/blob/410bddcf56b33de73d22f4a6b34fefb588b5b741/BParkingNano/plugins/PreFitter.h#L81 
-   const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
-   if (!eleTT.isValid()) continue;
-
    // for PF e we set BDT outputs to much higher number than the max
    ele.addUserInt("isPF", 1);
    ele.addUserInt("isLowPt", 0);
@@ -133,12 +124,11 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("chargeMode", ele.charge());
 
    ele_out       -> emplace_back(ele);
-   trans_ele_out -> emplace_back(eleTT);
- }
+  }
 
 
- size_t iele=-1;
- /// add and clean low pT e
+  size_t iele=-1;
+  /// add and clean low pT e
   for(auto ele : *lowpt) {
     iele++;
     //take modes
@@ -183,15 +173,6 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    }
    if(clean_out) continue;
 
-   // build transient track
-   // FIXME: this NEEDS to be modified so that the transientTrack is built from the gsfTrack;
-   //        needs modification in transientTrack builders and GsfTransientTrack classes in cmssw 
-   //        already prepared by Arabella but not included here yet in the repo/cmssw. 
-   //        For now using "standard" transientTrack builder just to move on.  
-   //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
-   const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
-   if (!eleTT.isValid()) continue;
-
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
    ele.addUserInt("isPF", 0);
@@ -202,19 +183,33 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("mvaId", mva_id);
 
    ele_out       -> emplace_back(ele);
-   trans_ele_out -> emplace_back(eleTT);
-}
+  }
 
-//is this nescaisery ? because it is additional loop
-   /* std::sort( out->begin(), out->end(), [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();}
-	      );
-   in case we re-add the sorting, the same should be done for the ele transient tracks	      
-  }*/
+  if(sortOutputCollections_){
 
+    //sorting increases sligtly the time but improves the code efficiency in the Bcandidate builder
+    //easier identification of leading and subleading with smarter loop
+    std::sort( ele_out->begin(), ele_out->end(), [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();}
+             );
+  }
+
+  // build transient track collection
+  // FIXME: this NEEDS to be modified so that the transientTrack is built from the gsfTrack;
+  //        needs modification in transientTrack builders and GsfTransientTrack classes in cmssw 
+  //        already prepared by Arabella but not included here yet in the repo/cmssw. 
+  //        For now using "standard" transientTrack builder just to move on.  
+  //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
+  //        https://github.com/CMSBParking/BParkingNANO/blob/410bddcf56b33de73d22f4a6b34fefb588b5b741/BParkingNano/plugins/PreFitter.h#L81 
+  for(auto ele : *ele_out){
+    const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
+    trans_ele_out -> emplace_back(eleTT);
+  }
+   
   //adding label to be consistent with the muon and track naming
   evt.put(std::move(ele_out),      "SelectedElectrons");
   evt.put(std::move(trans_ele_out),"SelectedTransientElectrons");
 }
+
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(ElectronMerger);
