@@ -46,12 +46,12 @@ rm -rf validation
 mkdir $TAG
 mv compilation_PR$PRID.log $TAG/.
 
-python validate_nano.py testBParkNANO_data_HEAD.root testBParkNANO_data_$TAG.root
+python validate_nano.py testBParkNANO_data_HEAD.root testBParkNANO_data_$TAG.root --plot-only-failing
 python time_analysis.py nano_HEAD_data.log --tag=HEAD
 python time_analysis.py nano_$TAG'_data.log' --tag=$TAG
 mv validation $TAG/validation_data
 
-python validate_nano.py testBParkNANO_mc_HEAD.root testBParkNANO_mc_$TAG.root
+python validate_nano.py testBParkNANO_mc_HEAD.root testBParkNANO_mc_$TAG.root --plot-only-failing
 python time_analysis.py nano_HEAD_mc.log --tag=HEAD
 python time_analysis.py nano_$TAG'_mc.log' --tag=$TAG
 mv validation $TAG/validation_mc
