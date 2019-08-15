@@ -219,7 +219,7 @@ for branch in (old_k - new_k):
   log(' '.join(['-', branch]), 'red')
 
 log('\n\n')
-exit()
+
 for branch in sorted(intersection):
   v_old = old[branch]
   v_new = new[branch]
