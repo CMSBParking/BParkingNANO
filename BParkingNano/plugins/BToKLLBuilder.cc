@@ -119,7 +119,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
     
       KinVtxFitter fitter(
         {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
-        {l1_ptr->mass(), l1_ptr->mass(), K_MASS},
+        {l1_ptr->mass(), l2_ptr->mass(), K_MASS},
         {LEP_SIGMA, LEP_SIGMA, K_SIGMA} //some small sigma for the lepton mass
         );
       if(!fitter.success()) continue; // hardcoded, but do we need otherwise?
@@ -134,16 +134,19 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("sv_chi2", fitter.chi2());
       cand.addUserFloat("sv_ndof", fitter.dof()); // float??
       cand.addUserFloat("sv_prob", fitter.prob());
-      cand.addUserFloat("fitted_mass", fitter.fitted_candidate().mass());      
       cand.addUserFloat("fitted_mll" , (fitter.daughter_p4(0) + fitter.daughter_p4(1)).mass());
-      // Failing, need to figur out a way to get them 
-      // CHECK: is this right?
-      cand.addUserFloat("fitted_pt" , fitter.fitted_candidate().globalMomentum().perp()); 
-      cand.addUserFloat("fitted_eta", fitter.fitted_candidate().globalMomentum().eta() );
-      cand.addUserFloat("fitted_phi", fitter.fitted_candidate().globalMomentum().phi() );
+      auto fit_p4 = fitter.fitted_p4();
+      cand.addUserFloat("fitted_pt"  , fit_p4.pt()); 
+      cand.addUserFloat("fitted_eta" , fit_p4.eta());
+      cand.addUserFloat("fitted_phi" , fit_p4.phi());
+      cand.addUserFloat("fitted_mass", fit_p4.mass());      
       cand.addUserFloat(
         "cos_theta_2D", 
         cos_theta_2D(fitter, *beamspot, cand.p4())
+        );
+      cand.addUserFloat(
+        "fitted_cos_theta_2D", 
+        cos_theta_2D(fitter, *beamspot, fit_p4)
         );
       auto lxy = l_xy(fitter, *beamspot);
       cand.addUserFloat("l_xy", lxy.value());

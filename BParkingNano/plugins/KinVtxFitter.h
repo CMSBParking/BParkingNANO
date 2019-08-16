@@ -49,12 +49,24 @@ public:
   const KinematicState fitted_candidate() const {
     return fitted_state_;
   }
+
+  const math::PtEtaPhiMLorentzVector fitted_p4() const { 
+    return math::PtEtaPhiMLorentzVector(
+      fitted_state_.globalMomentum().perp(), 
+      fitted_state_.globalMomentum().eta() ,
+      fitted_state_.globalMomentum().phi() ,
+      fitted_state_.mass()
+      );
+  }
+
   const reco::TransientTrack& fitted_candidate_ttrk() const {
     return fitted_track_;
   }
+
   GlobalPoint fitted_vtx() const {
     return fitted_vtx_->position();
   }
+
   GlobalError fitted_vtx_uncertainty() const {
     return fitted_vtx_->error();
   }

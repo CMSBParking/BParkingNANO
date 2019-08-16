@@ -35,8 +35,8 @@ inline std::pair<float, float> min_max_dr(const std::vector< edm::Ptr<reco::Cand
   return std::make_pair(min_dr, max_dr);
 }
 
-template<typename FITTER>
-inline double cos_theta_2D(const FITTER& fitter, const reco::BeamSpot &bs, const reco::Candidate::LorentzVector& p4) {
+template<typename FITTER, typename LORENTZ_VEC>
+inline double cos_theta_2D(const FITTER& fitter, const reco::BeamSpot &bs, const LORENTZ_VEC& p4) {
   if(!fitter.success()) return -2;
   GlobalPoint point = fitter.fitted_vtx();
   auto bs_pos = bs.position(point.z());
