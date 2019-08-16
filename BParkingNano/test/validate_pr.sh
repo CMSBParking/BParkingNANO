@@ -22,9 +22,9 @@ echo "...Done!"
 cd $CMSSW_BASE/src/PhysicsTools/BParkingNano/test
 TAG=HEAD
 echo "Getting reference for data..."
-cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG &> nano_$TAG'_data.log'
+cmsRun run_nano_cfg.py maxEvents=1000 reportEvery=10 tag=$TAG &> nano_$TAG'_data.log'
 echo "Done! Now for MC..."
-cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
+cmsRun run_nano_cfg.py maxEvents=1000 reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
 
 echo "Now merging the changes for PR #"$PRID
 git fetch $remote pull/$PRID/head:TEMP_PR$PRID
@@ -37,9 +37,9 @@ echo "...Done!"
 cd $CMSSW_BASE/src/PhysicsTools/BParkingNano/test
 TAG=PR$PRID
 echo "Testing on data..."
-cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG &> nano_$TAG'_data.log'
+cmsRun run_nano_cfg.py maxEvents=1000 reportEvery=10 tag=$TAG &> nano_$TAG'_data.log'
 echo "... Done! And now on MC..."
-cmsRun run_nano_cfg.py reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
+cmsRun run_nano_cfg.py maxEvents=1000 reportEvery=10 tag=$TAG isMC=True &> nano_$TAG'_mc.log'
 echo "...Done! Making validation plots"
 
 rm -rf validation
