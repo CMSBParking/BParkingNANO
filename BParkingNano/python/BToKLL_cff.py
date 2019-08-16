@@ -70,21 +70,30 @@ BToKeeTable = cms.EDProducer(
     singleton=cms.bool(False),
     extension=cms.bool(False),
     variables=cms.PSet(
+        # pre-fit quantities
         CandVars,
         l1Idx = uint('l1_idx'),
         l2Idx = uint('l2_idx'),
         kIdx = uint('k_idx'),
+        minDR = ufloat('min_dr'),
+        maxDR = ufloat('max_dr'),
+        # fit and vtx info
         chi2 = ufloat('sv_chi2'),
         svprob = ufloat('sv_prob'),
+        l_xy = ufloat('l_xy'),
+        l_xy_unc = ufloat('l_xy_unc'),
+        # Mll
         mll_raw = Var('userCand("dilepton").mass()', float),
         mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float), # this might not work
         mll_fullfit = ufloat('fitted_mll'),
+        # Cos(theta)
         cos2D = ufloat('cos_theta_2D'),
+        fit_cos2D = ufloat('fitted_cos_theta_2D'),
+        # post-fit momentum
         fit_mass = ufloat('fitted_mass'),
-        l_xy = ufloat('l_xy'),
-        l_xy_unc = ufloat('l_xy_unc'),
-        minDR = ufloat('min_dr'),
-        maxDR = ufloat('max_dr'),
+        fit_pt = ufloat('fitted_pt'),
+        fit_eta = ufloat('fitted_eta'),
+        fit_phi = ufloat('fitted_phi'),
     )
 )
 
