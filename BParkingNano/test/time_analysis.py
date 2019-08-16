@@ -46,6 +46,10 @@ for inval in args.invals:
       groups['GEN'] += time
     elif 'Table' in name:
       groups['Tables (not GEN)'] += time
+    elif 'kee' in name.lower():
+      groups['BToKee'] += time
+    elif 'kmumu' in name.lower():
+      groups['BToKmumu'] += time
     elif 'electron' in name.lower():
       groups['Electrons'] += time
     elif 'track' in name.lower():
