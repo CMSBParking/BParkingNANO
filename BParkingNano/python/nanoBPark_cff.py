@@ -15,9 +15,9 @@ from PhysicsTools.BParkingNano.muonsBPark_cff import *
 ## filtered input collections
 from PhysicsTools.BParkingNano.electronsBPark_cff import * 
 from PhysicsTools.BParkingNano.tracksBPark_cff import *
-from PhysicsTools.BParkingNano.recoBKll_cff import *
 
-
+## B collections
+from PhysicsTools.BParkingNano.BToKLL_cff import *
 
 nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
 
@@ -49,7 +49,7 @@ def nanoAOD_customizeTrackFilteredBPark(process):
     process.nanoSequence = cms.Sequence( process.nanoSequence + tracksBParkSequence + tracksBParkTables)
     return process
 
-def nanoAOD_customizeBreconstructionBPark(process):
-    process.nanoSequence = cms.Sequence( process.nanoSequence + recoBSequence + recoBTableSequence )
+def nanoAOD_customizeBToKLL(process):
+    process.nanoSequence = cms.Sequence( process.nanoSequence + BToKLLSequence + BToKLLTables)
     return process
 

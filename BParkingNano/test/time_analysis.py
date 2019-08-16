@@ -29,6 +29,7 @@ tot_time = sum(i for _, i in module_times)
 from collections import defaultdict
 groups = defaultdict(float)
 
+# This part is ugly, but I have no better idea
 for name, time in module_times:
   if 'gen' in name.lower():
     groups['GEN'] += time
@@ -36,6 +37,10 @@ for name, time in module_times:
     groups['GEN'] += time
   elif 'Table' in name:
     groups['Tables (not GEN)'] += time
+  elif 'kee' in name.lower():
+    groups['BToKee'] += time
+  elif 'kmumu' in name.lower():
+    groups['BToKmumu'] += time
   elif 'electron' in name.lower():
     groups['Electrons'] += time
   elif 'track' in name.lower():
