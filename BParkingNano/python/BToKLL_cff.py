@@ -27,8 +27,8 @@ BToKee = cms.EDProducer(
         '&& mass < 6 && mass > 4.5'
         ),
     postVtxSelection = cms.string(
-        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.00000001 '
-        '&& userFloat("cos_theta_2D") >= 0'
+        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
+        '&& userFloat("fitted_cos_theta_2D") >= 0'
     )
 )
 
@@ -36,9 +36,10 @@ muonPairsForKmumu = cms.EDProducer(
     'DiMuonBuilder',
     src = cms.InputTag('muonTrgSelector', 'SelectedMuons'),
     transientTracksSrc = cms.InputTag('muonTrgSelector', 'SelectedTransientMuons'),
-    lep1Selection = cms.string(''), #FIXME
+    lep1Selection = cms.string('pt > 1.5'),
     lep2Selection = cms.string(''),
-    preVtxSelection = electronPairsForKee.preVtxSelection,
+    preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
+                                 '&& mass() > 0 && charge() == 0'),
     postVtxSelection = electronPairsForKee.postVtxSelection,
 )
 
@@ -56,8 +57,8 @@ BToKmumu = cms.EDProducer(
         '&& mass < 6 && mass > 4.5'
         ),
     postVtxSelection = cms.string(
-        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.00000001 '
-        '&& userFloat("cos_theta_2D") >= 0'
+        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
+        '&& userFloat("fitted_cos_theta_2D") >= 0'
     )
 )
 
