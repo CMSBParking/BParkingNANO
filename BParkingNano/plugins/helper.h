@@ -20,7 +20,7 @@ constexpr float MOUN_MASS = 0.10565837;
 
 
 
- GlobalPoint FlightDistVector (const reco::BeamSpot & bm, GlobalPoint Bvtx)
+inline GlobalPoint FlightDistVector (const reco::BeamSpot & bm, GlobalPoint Bvtx)
 {
    GlobalPoint Dispbeamspot(-1*( (bm.x0()-Bvtx.x()) + (Bvtx.z()-bm.z0()) * bm.dxdz()),
 			   -1*( (bm.y0()-Bvtx.y()) + (Bvtx.z()-bm.z0()) * bm.dydz()), 
@@ -29,7 +29,7 @@ constexpr float MOUN_MASS = 0.10565837;
 }
 
 
-  float CosA(GlobalPoint & dist, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> & Bp4)
+inline float CosA(GlobalPoint & dist, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> & Bp4)
 {
     math::XYZVector vperp(dist.x(),dist.y(),0);
     math::XYZVector pperp(Bp4.Px(),Bp4.Py(),0); 
