@@ -8,6 +8,8 @@
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/GeometryCommonDetAlgo/interface/GlobalError.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "DataFormats/GeometryVector/interface/PV3DBase.h"
+#include "Math/LorentzVector.h"
 
 #include <vector>
 #include <algorithm>
@@ -21,6 +23,7 @@ constexpr float PI_MASS = 0.139571;
 constexpr float LEP_SIGMA = 0.0000001;
 constexpr float K_SIGMA = 0.000016;
 constexpr float PI_SIGMA = 0.000016;
+constexpr float MUON_MASS = 0.10565837;
 
 inline std::pair<float, float> min_max_dr(const std::vector< edm::Ptr<reco::Candidate> > & cands) {
   float min_dr = std::numeric_limits<float>::max();
@@ -56,4 +59,21 @@ inline Measurement1D l_xy(const FITTER& fitter, const reco::BeamSpot &bs) {
   return {delta.perp(), err.rerr(delta)};
 }
 
+
+inline GlobalPoint FlightDistVector (const reco::BeamSpot & bm, GlobalPoint Bvtx)
+{
+   GlobalPoint Dispbeamspot(-1*( (bm.x0()-Bvtx.x()) + (Bvtx.z()-bm.z0()) * bm.dxdz()),
+			   -1*( (bm.y0()-Bvtx.y()) + (Bvtx.z()-bm.z0()) * bm.dydz()), 
+                            0);                    
+   return std::move(Dispbeamspot);
+}
+
+
+inline float CosA(GlobalPoint & dist, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> & Bp4)
+{
+    math::XYZVector vperp(dist.x(),dist.y(),0);
+    math::XYZVector pperp(Bp4.Px(),Bp4.Py(),0); 
+    return std::move(vperp.Dot(pperp)/(vperp.R()*pperp.R()));
+}
+ 
 #endif
