@@ -8,8 +8,8 @@ tracksBPark = cms.EDProducer('TrackMerger',
                              lostTracks = cms.InputTag("lostTracks"),
                              trkPtCut = cms.double(0.5),    
                              trkEtaCut = cms.double(2.5),
-                             dzTrg_cleaning = cms.double(-1.),
-                             drTrg_Cleaning = cms.double(-0.4),
+                             dzTrg_cleaning = cms.double(-1.), ##next step change to 1
+                             drTrg_Cleaning = cms.double(-0.4),  ##next step move to 0.01
                              dcaSig = cms.double(-100000),
                              trkNormChiMin = cms.int32(-1),
                              trkNormChiMax = cms.int32(-1)
@@ -26,9 +26,9 @@ trackBParkTable = cms.EDProducer(
     extension = cms.bool(False), 
     variables = cms.PSet(
          CandVars,
-        #vx = Var("daughter(0).vx()", float, doc="x coordinate of vertex position, in cm", precision=10),
-        #vy = Var("daughter(0).vy()", float, doc="y coordinate of vertex position, in cm", precision=10),
-        #vz = Var("daughter(0).vz()", float, doc="z coordinate of vertex position, in cm", precision=10),
+        vx = Var("daughter(0).vx()", float, doc="x coordinate of vertex position, in cm", precision=10),
+        vy = Var("daughter(0).vy()", float, doc="y coordinate of vertex position, in cm", precision=10),
+        vz = Var("daughter(0).vz()", float, doc="z coordinate of vertex position, in cm", precision=10),
         isPacked = Var("userInt('isPacked')",int,doc="track from packedCandidate collection", precision=10),
         isLostTrk = Var("userInt('isLostTrk')",int,doc="track from lostTrack collection", precision=10),
         dz = Var("userFloat('dz')",float,doc="dz (with sign) wrt first PV, in cm", precision=10),
