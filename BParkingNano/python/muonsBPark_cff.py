@@ -10,14 +10,12 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  objects = cms.InputTag("slimmedPatTrigger"),
                                  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
                                  
-                                 ##for the output matched collection                                                                                                     
-                                 maxdR_matching = cms.double(0.01),
+                                 ##for the output trigger matched collection
+                                 maxdR_matching = cms.double(0.01), #too tight 0.05 already better + check
                                  
-                                 ## for the output filtered collection                                                                                         
+                                 ## for the output selected collection (tag + all compatible in dZ)
                                  dzForCleaning_wrtTrgMuon = cms.double(1.),
-                                 # gives the possibility to run only on probe side - used in other objects
-                                 #deactivated now
-                                 drForCleaning_wrtTrgMuon = cms.double (-1.),
+
                                  ptMin = cms.double(1.),
                                  absEtaMax = cms.double(2.4),
                                  # keeps only muons with at soft Quality flag
@@ -66,6 +64,7 @@ muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         multiIsoId = Var("?passed('MultiIsoMedium')?2:passed('MultiIsoLoose')","uint8",doc="MultiIsoId from miniAOD selector (1=MultiIsoLoose, 2=MultiIsoMedium)"),
         triggerIdLoose = Var("passed('TriggerIdLoose')",bool,doc="TriggerIdLoose ID"),
         inTimeMuon = Var("passed('InTimeMuon')",bool,doc="inTimeMuon ID"),
+        isTriggering = Var("userInt('isTriggering')", int,doc="flag the reco muon is also triggering")
     ),
 )
 
