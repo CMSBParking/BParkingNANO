@@ -79,9 +79,9 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   edm::Handle<reco::BeamSpot> beamSpotHandle;
   evt.getByToken(beamSpotSrc_, beamSpotHandle);
   if ( ! beamSpotHandle.isValid() ) {
-    edm::LogError("BToKstllProducer") << "No beam spot available from EventSetup" ;
+    edm::LogError("BToKstllProducer") << "No beam spot available from Event" ;
   }  
-  reco::BeamSpot beamSpot = *beamSpotHandle;
+  const reco::BeamSpot& beamSpot = *beamSpotHandle;
 
   edm::ESHandle<MagneticField> bFieldHandle;
   stp.get<IdealMagneticFieldRecord>().get(bFieldHandle);
@@ -109,7 +109,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   */
  
   // for loop is better to be range based - especially for large ensembles  
-  for(unsigned int iTrk=0; iTrk<totalTracks; ++iTrk){
+  for( unsigned int iTrk=0; iTrk<totalTracks; ++iTrk ) {
     const pat::PackedCandidate & trk = (iTrk < nTracks) ? (*tracks)[iTrk] : (*lostTracks)[iTrk-nTracks];
 
     //arranging cuts for speed
@@ -156,7 +156,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.setCharge(trk.charge());
     pcand.setVertex(trk.vertex());
     pcand.setPdgId(trk.pdgId());
-    pcand.addUserInt("isPacked", (iTrk < nTracks) ? 1 : 0);
+    pcand.addUserInt("isPacked", (iTrk < nTracks));
     pcand.addUserInt("isLostTrk", (iTrk < nTracks) ? 0 : 1);      
     pcand.addUserFloat("dxy", trk.dxy());
     pcand.addUserFloat("dxyS", trk.dxy()/trk.dxyError());
