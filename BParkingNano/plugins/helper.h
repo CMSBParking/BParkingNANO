@@ -75,5 +75,23 @@ inline float CosA(GlobalPoint & dist, ROOT::Math::LorentzVector<ROOT::Math::PxPy
     math::XYZVector pperp(Bp4.Px(),Bp4.Py(),0); 
     return std::move(vperp.Dot(pperp)/(vperp.R()*pperp.R()));
 }
+
+
+inline std::pair<double,double> computeDCA(const reco::TransientTrack& trackTT,
+					   const reco::BeamSpot& beamSpot)
+{
+  double DCABS    = -1.;
+  double DCABSErr = -1.;
+
+  TrajectoryStateClosestToPoint theDCAXBS = 
+    trackTT.trajectoryStateClosestToPoint(GlobalPoint(beamSpot.position().x(),beamSpot.position().y(),beamSpot.position().z()));
+  if (theDCAXBS.isValid()) {
+    DCABS    = theDCAXBS.perigeeParameters().transverseImpactParameter();
+    DCABSErr = theDCAXBS.perigeeError().transverseImpactParameterError();
+  }
+
+  return std::make_pair(DCABS,DCABSErr);
+}
+
  
 #endif
