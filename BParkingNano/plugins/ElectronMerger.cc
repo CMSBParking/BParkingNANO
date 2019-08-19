@@ -14,6 +14,10 @@
 
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
+#include "TrackingTools/IPTools/interface/IPTools.h"
+
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
 
 #include <limits>
 #include <algorithm>
@@ -33,6 +37,7 @@ public:
     ptBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("ptbiasedSeeding") )},
     unBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("unbiasedSeeding") )},
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
+    vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
     dr_cleaning_{cfg.getParameter<double>("drForCleaning")},
@@ -60,6 +65,7 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<float>> ptBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> unBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> mvaId_src_;
+  const edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   const double drTrg_cleaning_;
   const double dzTrg_cleaning_;
   const double dr_cleaning_;
@@ -89,6 +95,10 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   // 
   edm::ESHandle<TransientTrackBuilder> theB ;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
+  //
+  edm::Handle<reco::VertexCollection> vertexHandle;
+  evt.getByToken(vertexSrc_, vertexHandle);
+  const reco::Vertex & PV = vertexHandle->front();
 
   // output
   std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
@@ -122,6 +132,12 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20);
    ele.addUserFloat("chargeMode", ele.charge());
+   // ele.addUserFloat("dxy", ele.dB(pat::Electron::PV2D));
+   // ele.addUserFloat("dz", ele.dB(pat::Electron::PVDZ));
+   // ele.addUserFloat("dxyErr", ele.edB(pat::Electron::PV2D));
+   // ele.addUserFloat("dzErr", ele.edB(pat::Electron::PVDZ));
+   // ele.addUserFloat("ip3d", ele.dB(pat::Electron::PV3D));
+   // ele.addUserFloat("sip3d", abs(ele.dB(pat::Electron::PV3D)/ele.edB(pat::Electron::PV3D)));
 
    ele_out       -> emplace_back(ele);
   }
@@ -181,6 +197,12 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("ptBiased", ptbiased_seedBDT);
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
+   ele.addUserFloat("dxy", gsfTrk->dxy());
+   ele.addUserFloat("dz", gsfTrk->dz());
+   ele.addUserFloat("dxyErr", gsfTrk->dxy()/gsfTrk->dxyError());
+   ele.addUserFloat("dzErr", gsfTrk->dz()/gsfTrk->dzError());
+   ele.addUserFloat("ip3d", ele.dB(pat::Electron::PV3D));
+   ele.addUserFloat("sip3d", abs(ele.dB(pat::Electron::PV3D)/ele.edB(pat::Electron::PV3D)));
 
    ele_out       -> emplace_back(ele);
   }
@@ -200,9 +222,26 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   //        For now using "standard" transientTrack builder just to move on.  
   //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
   //        https://github.com/CMSBParking/BParkingNANO/blob/410bddcf56b33de73d22f4a6b34fefb588b5b741/BParkingNano/plugins/PreFitter.h#L81 
-  for(auto ele : *ele_out){
+  for(auto &ele : *ele_out){
     const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
     trans_ele_out -> emplace_back(eleTT);
+
+    //compute IP for electrons: need transient track
+    const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
+    // PVDZ
+    ele.setDB(gsfTrk->dz(PV.position()), std::hypot(gsfTrk->dzError(), PV.zError()), pat::Electron::PVDZ);
+
+    //PV2D
+    std::pair<bool, Measurement1D> result = IPTools::signedTransverseImpactParameter(eleTT, GlobalVector(gsfTrk->px(), gsfTrk->py(), gsfTrk->pz()), PV);
+    double d0_corr = result.second.value();
+    double d0_err = PV.isValid() ? result.second.error() : -1.0;
+    ele.setDB(d0_corr, d0_err, pat::Electron::PV2D);
+
+    // PV3D
+    result = IPTools::signedImpactParameter3D(eleTT, GlobalVector(gsfTrk->px(), gsfTrk->py(), gsfTrk->pz()), PV);
+    d0_corr = result.second.value();
+    d0_err = PV.isValid() ? result.second.error() : -1.0;
+    ele.setDB(d0_corr, d0_err, pat::Electron::PV3D);
   }
    
   //adding label to be consistent with the muon and track naming

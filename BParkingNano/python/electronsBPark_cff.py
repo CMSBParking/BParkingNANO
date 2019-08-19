@@ -42,6 +42,7 @@ electronsForAnalysis = cms.EDProducer(
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
   mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
+  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
   drForCleaning_wrtTrgMuon = cms.double(-1.),
   dzForCleaning_wrtTrgMuon = cms.double(-1.),
