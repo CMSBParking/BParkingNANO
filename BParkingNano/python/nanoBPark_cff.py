@@ -27,7 +27,6 @@ nanoSequence = cms.Sequence(nanoMetadata +
                             triggerObjectBParkTables + l1bits)
 
 nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + genParticleBParkSequence + 
-                              muonBParkMC + electronBParkMC +
                               globalTablesMC + genWeightsTable + genParticleBParkTables + particleLevelBParkTables + lheInfoTable) 
 
 
@@ -50,8 +49,14 @@ def nanoAOD_customizeBToKLL(process):
     return process
 
 def nanoAOD_customizeMC(process):
-    process.nanoSequenceMC = cms.Sequence(  nanoSequenceMC)
-#     process.nanoSequence = cms.Sequence( process.nanoSequence + nanoSequenceMC)
-    return process
-
+    for ipath in process._Process__paths.items():
+        path = process.paths[ipath[0]]
+        try:
+            index  = path.index(process.nanoBKeeSequence)
+            path.insert(index+1, electronBParkMC)
+        except:
+            pass
+        
+        path.insert(0, nanoSequenceMC)
+        path.insert(3, muonBParkMC)
 

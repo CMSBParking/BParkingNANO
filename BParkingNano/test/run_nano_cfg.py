@@ -112,14 +112,14 @@ process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
 
+# Path and EndPath definitions
+process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence)
+process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence  )
+
 # customisation of the process.
 if options.isMC:
     from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMC
-    process = nanoAOD_customizeMC(process)
-
-# Path and EndPath definitions
-process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + process.nanoSequenceMC)
-process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence   + process.nanoSequenceMC)
+    nanoAOD_customizeMC(process)
 
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
@@ -137,7 +137,8 @@ if options.wantFullRECO:
                                     process.nanoAOD_Kee_step, 
                                     process.endjob_step, 
                                     process.FEVTDEBUGHLToutput_step, 
-                                    process.NANOAODoutput_step)
+                                    process.NANOAODoutput_step
+                                    )
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
