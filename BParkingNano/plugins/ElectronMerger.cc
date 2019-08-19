@@ -215,6 +215,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
     trans_ele_out -> emplace_back(eleTT);
 
     //compute IP for electrons: need transient track
+    //from PhysicsTools/PatAlgos/plugins/LeptonUpdater.cc
     const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
     // PVDZ
     ele.setDB(gsfTrk->dz(PV.position()), std::hypot(gsfTrk->dzError(), PV.zError()), pat::Electron::PVDZ);
