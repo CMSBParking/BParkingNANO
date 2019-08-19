@@ -106,26 +106,40 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, globaltag, '')
 
 
-# Path and EndPath definitions
-process.nanoAOD_step = cms.Path(process.nanoSequence)
-process.endjob_step = cms.EndPath(process.endOfProcess)
-process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
-process.NANOAODoutput_step = cms.EndPath(process.NANOAODoutput)
-
-
-# Schedule definition
-process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step, process.NANOAODoutput_step)
-if options.wantFullRECO:
-    process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step, process.FEVTDEBUGHLToutput_step, process.NANOAODoutput_step)
-from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
-associatePatAlgosToolsTask(process)
-
 from PhysicsTools.BParkingNano.nanoBPark_cff import *
 process = nanoAOD_customizeMuonTriggerBPark(process)
 process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
 
+# Path and EndPath definitions
+process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence)
+process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence  )
+
+# process.nanoAOD_step = cms.Path(process.nanoSequence)
+process.endjob_step = cms.EndPath(process.endOfProcess)
+process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
+process.NANOAODoutput_step = cms.EndPath(process.NANOAODoutput)
+
+# Schedule definition
+process.schedule = cms.Schedule(
+                                process.nanoAOD_KMuMu_step,
+                                process.nanoAOD_Kee_step, 
+                                process.endjob_step, 
+                                process.NANOAODoutput_step
+                               )
+if options.wantFullRECO:
+    process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step, process.FEVTDEBUGHLToutput_step, process.NANOAODoutput_step)
+from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
+associatePatAlgosToolsTask(process)
+
+process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
+        SelectEvents = cms.vstring(
+                                   'nanoAOD_KMuMu_step', 
+                                   'nanoAOD_Kee_step'
+                                   )
+)
+    
 # customisation of the process.
 if options.isMC:
     from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMC
