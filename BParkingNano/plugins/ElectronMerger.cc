@@ -214,6 +214,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
     const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
     trans_ele_out -> emplace_back(eleTT);
 
+    if(ele.userInt("isPF")) continue;
     //compute IP for electrons: need transient track
     //from PhysicsTools/PatAlgos/plugins/LeptonUpdater.cc
     const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
