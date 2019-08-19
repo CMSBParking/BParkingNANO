@@ -156,7 +156,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     edm::Handle<std::vector<pat::Muon>> muons;
     iEvent.getByToken(muonSrc_, muons);
 
-    std::vector<int> isTriggerMuon(muons->size(), 0);
+    std::vector<int> muonIsTrigger(muons->size(), 0);
 
     for(const pat::Muon & muon : *muons){
       //this is for triggering muon not really need to be configurable
@@ -187,7 +187,7 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 	trgmuons_out->emplace_back(recoTriggerMuonCand);
 
 	//keep track of original muon index for SelectedMuons collection
-	isTriggerMuon[iMuo] = 1;
+	muonIsTrigger[iMuo] = 1;
       }
     }
 
@@ -195,37 +195,35 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
     // now produce output for analysis (code simplified loop of trg inside)
     // trigger muon + all compatible in dz with any tag
-    int muIdx = -1;
-    for(auto mu : *muons) {
-      ++muIdx;
+      for(unsigned int muIdx=0; muIdx<muons->size(); ++muIdx) {
+       const pat::Muon& mu = (*muons)[muIdx];
+       //selection cuts
+       if (mu.pt() < ptMin_) continue;
+       if (fabs(mu.eta()) > absEtaMax_) continue;
+       //following ID is needed for trigger muons not here
+       // anyway it is off in the configuration
+       if (softMuonsOnly_ && !mu.isSoftMuon(PV)) continue;
 
-      //selection cuts
-      if (mu.pt() < ptMin_) continue;
-      if (fabs(mu.eta()) > absEtaMax_) continue;
-      //following ID is needed for trigger muons not here
-      // anyway it is off in the configuration
-      if (softMuonsOnly_ && !mu.isSoftMuon(PV)) continue; 
+       // same PV as the tag muon, both tag and probe only dz selection
+       bool SkipMuon=true;
+       for (const pat::Muon & trgmu : *trgmuons_out) {
+	 if( fabs(mu.vz()-trgmu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ >0 )
+	   continue;
+	 SkipMuon=false;
+       } 
+       // needs decission: what about events without trg muon? now we SKIP them
+       if (SkipMuon)  continue;
+       
 
-      // same PV as the tag muon, both tag and probe only dz selection
-      bool SkipMuon=true;
-      for (const pat::Muon & trgmu : *trgmuons_out) {
-	if( fabs(mu.vz()-trgmu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ >0 )
-	  continue;
-	SkipMuon=false;
-      } 
-      // needs decission: what about events without trg muon? now we SKIP them
-      if (SkipMuon)  continue;
+       // build transient track
+       const reco::TransientTrack muonTT((*(mu.bestTrack())), &(*bFieldHandle)); //sara: check, why not using inner track for muons? 
+       if (!muonTT.isValid()) continue;
 
+       muons_out->emplace_back(mu);
+       muons_out->back().addUserInt("isTriggering", muonIsTrigger[muIdx]);
 
-      // build transient track
-      const reco::TransientTrack muonTT((*(mu.bestTrack())), &(*bFieldHandle)); //sara: check, why not using inner track for muons? 
-      if (!muonTT.isValid()) continue;
-
-      mu.addUserInt("isTriggering", isTriggerMuon[muIdx]);
-
-      muons_out->emplace_back(mu);
-      trans_muons_out->emplace_back(muonTT);
-    }
+       trans_muons_out->emplace_back(muonTT);
+      }
 
     iEvent.put(std::move(trgmuons_out),    "trgMuons");
     iEvent.put(std::move(muons_out),       "SelectedMuons");
