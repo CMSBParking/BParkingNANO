@@ -132,12 +132,6 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20);
    ele.addUserFloat("chargeMode", ele.charge());
-   // ele.addUserFloat("dxy", ele.dB(pat::Electron::PV2D));
-   // ele.addUserFloat("dz", ele.dB(pat::Electron::PVDZ));
-   // ele.addUserFloat("dxyErr", ele.edB(pat::Electron::PV2D));
-   // ele.addUserFloat("dzErr", ele.edB(pat::Electron::PVDZ));
-   // ele.addUserFloat("ip3d", ele.dB(pat::Electron::PV3D));
-   // ele.addUserFloat("sip3d", abs(ele.dB(pat::Electron::PV3D)/ele.edB(pat::Electron::PV3D)));
 
    ele_out       -> emplace_back(ele);
   }
@@ -197,12 +191,6 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("ptBiased", ptbiased_seedBDT);
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
-   ele.addUserFloat("dxy", gsfTrk->dxy());
-   ele.addUserFloat("dz", gsfTrk->dz());
-   ele.addUserFloat("dxyErr", gsfTrk->dxy()/gsfTrk->dxyError());
-   ele.addUserFloat("dzErr", gsfTrk->dz()/gsfTrk->dzError());
-   ele.addUserFloat("ip3d", ele.dB(pat::Electron::PV3D));
-   ele.addUserFloat("sip3d", abs(ele.dB(pat::Electron::PV3D)/ele.edB(pat::Electron::PV3D)));
 
    ele_out       -> emplace_back(ele);
   }
