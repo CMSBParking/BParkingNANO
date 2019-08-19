@@ -112,11 +112,15 @@ process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
 
-# Path and EndPath definitions
-process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence)
-process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence  )
+# customisation of the process.
+if options.isMC:
+    from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMC
+    process = nanoAOD_customizeMC(process)
 
-# process.nanoAOD_step = cms.Path(process.nanoSequence)
+# Path and EndPath definitions
+process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + process.nanoSequenceMC)
+process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence   + process.nanoSequenceMC)
+
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
 process.NANOAODoutput_step = cms.EndPath(process.NANOAODoutput)
@@ -129,7 +133,11 @@ process.schedule = cms.Schedule(
                                 process.NANOAODoutput_step
                                )
 if options.wantFullRECO:
-    process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step, process.FEVTDEBUGHLToutput_step, process.NANOAODoutput_step)
+    process.schedule = cms.Schedule(process.nanoAOD_KMuMu_step,
+                                    process.nanoAOD_Kee_step, 
+                                    process.endjob_step, 
+                                    process.FEVTDEBUGHLToutput_step, 
+                                    process.NANOAODoutput_step)
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
@@ -140,11 +148,6 @@ process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
                                    )
 )
     
-# customisation of the process.
-if options.isMC:
-    from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMC
-    process = nanoAOD_customizeMC(process)
-
 
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
