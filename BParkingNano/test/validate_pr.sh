@@ -46,14 +46,16 @@ rm -rf validation
 mkdir $TAG
 mv compilation_PR$PRID.log $TAG/.
 
-python validate_nano.py testBParkNANO_data_HEAD.root testBParkNANO_data_$TAG.root
-python time_analysis.py nano_HEAD_data.log --tag=HEAD
-python time_analysis.py nano_$TAG'_data.log' --tag=$TAG
+python validate_nano.py testBParkNANO_data_HEAD.root testBParkNANO_data_$TAG.root --plot-only-failing
+python time_analysis.py nano_HEAD_data.log:HEAD nano_$TAG'_data.log':$TAG
+$CMSSW_BASE/src/PhysicsTools/NanoAOD/test/inspectNanoFile.py testBParkNANO_data_HEAD.root -s validation/size_HEAD.html
+$CMSSW_BASE/src/PhysicsTools/NanoAOD/test/inspectNanoFile.py testBParkNANO_data_$TAG.root -s validation/size_$TAG.html
 mv validation $TAG/validation_data
 
-python validate_nano.py testBParkNANO_mc_HEAD.root testBParkNANO_mc_$TAG.root
-python time_analysis.py nano_HEAD_mc.log --tag=HEAD
-python time_analysis.py nano_$TAG'_mc.log' --tag=$TAG
+python validate_nano.py testBParkNANO_mc_HEAD.root testBParkNANO_mc_$TAG.root --plot-only-failing
+python time_analysis.py nano_HEAD_mc.log:HEAD nano_$TAG'_mc.log':$TAG
+$CMSSW_BASE/src/PhysicsTools/NanoAOD/test/inspectNanoFile.py testBParkNANO_mc_HEAD.root -s validation/size_HEAD.html
+$CMSSW_BASE/src/PhysicsTools/NanoAOD/test/inspectNanoFile.py testBParkNANO_mc_$TAG.root -s validation/size_$TAG.html
 mv validation $TAG/validation_mc
 
 echo "Getting rid of unused branches"
