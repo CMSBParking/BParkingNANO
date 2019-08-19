@@ -148,13 +148,14 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     std::pair<double,double> DCA = computeDCA(trackTT, beamSpot);
     float DCABS = DCA.first;
     float DCABSErr = DCA.second;
-    float DCASig = DCABS/DCABSErr;
+    float DCASig = (DCABSErr != 0 && float(DCABSErr) == DCABSErr) ? fabs(DCABS/DCABSErr) : -1;
     if (DCASig >  dcaSig_  && dcaSig_ >0) continue;
-   
+
     pat::CompositeCandidate pcand;
     pcand.setP4(trk.p4());
     pcand.setCharge(trk.charge());
     pcand.setVertex(trk.vertex());
+    pcand.setPdgId(trk.pdgId());
     pcand.addUserInt("isPacked", (iTrk < nTracks) ? 1 : 0);
     pcand.addUserInt("isLostTrk", (iTrk < nTracks) ? 0 : 1);      
     pcand.addUserFloat("dxy", trk.dxy());
