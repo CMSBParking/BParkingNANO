@@ -104,6 +104,25 @@ BToKmumuTable = BToKeeTable.clone(
     doc = cms.string("BToKMuMu Variable")
 )
 
+
+CountBToKee = cms.EDFilter("PATCandViewCountFilter",
+    minNumber = cms.uint32(1),
+    maxNumber = cms.uint32(999999),
+    src = cms.InputTag("BToKee")
+)    
+CountBToKmumu = CountBToKee.clone(
+    minNumber = cms.uint32(1),
+    src = cms.InputTag("BToKmumu")
+)
+
+
+BToKMuMuSequence = cms.Sequence(
+    (muonPairsForKmumu * BToKmumu)
+)
+BToKEESequence = cms.Sequence(
+    (electronPairsForKee * BToKee)
+)
+
 BToKLLSequence = cms.Sequence(
     (electronPairsForKee * BToKee) +
     (muonPairsForKmumu * BToKmumu)

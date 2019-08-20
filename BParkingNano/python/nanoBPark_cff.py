@@ -23,33 +23,40 @@ nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
 
 nanoSequence = cms.Sequence(nanoMetadata + 
                             vertexSequence +           
-                            muonBParkSequence +
                             globalTables + vertexTables + 
                             triggerObjectBParkTables + l1bits)
 
 nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + genParticleBParkSequence + 
-                              muonBParkMC + electronBParkMC +
                               globalTablesMC + genWeightsTable + genParticleBParkTables + particleLevelBParkTables + lheInfoTable) 
 
 
 
-def nanoAOD_customizeMC(process):
-    process.nanoSequence = cms.Sequence( process.nanoSequence + nanoSequenceMC)
-    return process
-
 def nanoAOD_customizeMuonTriggerBPark(process):
     process.nanoSequence = cms.Sequence( process.nanoSequence + muonBParkSequence + muonTriggerMatchedTables + muonBParkTables)
-    return process
-
-def nanoAOD_customizeElectronFilteredBPark(process):
-    process.nanoSequence = cms.Sequence( process.nanoSequence + electronsBParkSequence + electronBParkTables)
     return process
 
 def nanoAOD_customizeTrackFilteredBPark(process):
     process.nanoSequence = cms.Sequence( process.nanoSequence + tracksBParkSequence + tracksBParkTables)
     return process
 
-def nanoAOD_customizeBToKLL(process):
-    process.nanoSequence = cms.Sequence( process.nanoSequence + BToKLLSequence + BToKLLTables)
+def nanoAOD_customizeElectronFilteredBPark(process):
+    process.nanoBKeeSequence = cms.Sequence( electronsBParkSequence + electronBParkTables)
     return process
+
+def nanoAOD_customizeBToKLL(process):
+    process.nanoBKeeSequence   = cms.Sequence( process.nanoBKeeSequence + BToKEESequence    + BToKeeTable   + CountBToKee)
+    process.nanoBKMuMuSequence = cms.Sequence(                            BToKMuMuSequence  + BToKmumuTable + CountBToKmumu)
+    return process
+
+def nanoAOD_customizeMC(process):
+    for ipath in process._Process__paths.items():
+        path = process.paths[ipath[0]]
+        try:
+            index  = path.index(process.nanoBKeeSequence)
+            path.insert(index+1, electronBParkMC)
+        except:
+            pass
+        
+        path.insert(0, nanoSequenceMC)
+        path.insert(3, muonBParkMC)
 

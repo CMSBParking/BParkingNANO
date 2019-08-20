@@ -22,6 +22,12 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  softMuonsOnly = cms.bool(False)
                              )
 
+countTrgMuons = cms.EDFilter("PATCandViewCountFilter",
+    minNumber = cms.uint32(1),
+    maxNumber = cms.uint32(999999),
+    src = cms.InputTag("muonTrgSelector", "trgMuons")
+)
+
 
 muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     src = cms.InputTag("muonTrgSelector:SelectedMuons"),
@@ -105,7 +111,8 @@ muonTriggerMatchedTable = muonBParkTable.clone(
 )
 
 
-muonBParkSequence = cms.Sequence(muonTrgSelector)
+
+muonBParkSequence = cms.Sequence(muonTrgSelector * countTrgMuons)
 muonBParkMC = cms.Sequence(muonsBParkMCMatchForTable + muonBParkMCTable)
 muonBParkTables = cms.Sequence(muonBParkTable)
 muonTriggerMatchedTables = cms.Sequence(muonTriggerMatchedTable)
