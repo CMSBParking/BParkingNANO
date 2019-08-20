@@ -42,6 +42,7 @@ electronsForAnalysis = cms.EDProducer(
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
   mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
+  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
   drForCleaning_wrtTrgMuon = cms.double(-1.),
   dzForCleaning_wrtTrgMuon = cms.double(-1.),
@@ -52,6 +53,7 @@ electronsForAnalysis = cms.EDProducer(
   etaMax = cms.double(2.5),
     bdtMin = cms.double(0), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
+    sortOutputCollections = cms.bool(True)
 )
 
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -76,7 +78,6 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         deltaEtaSC = Var("superCluster().eta()-eta()",float,doc="delta eta (SC,ele) with sign",precision=10),
         r9 = Var("full5x5_r9()",float,doc="R9 of the supercluster, calculated with full 5x5 region",precision=10),
         sieie = Var("full5x5_sigmaIetaIeta()",float,doc="sigma_IetaIeta of the supercluster, calculated with full 5x5 region",precision=10),
-        eInvMinusPInv = Var("(1-eSuperClusterOverP())/ecalEnergy()",float,doc="1/E_SC - 1/p_trk",precision=10),
         hoe = Var("hadronicOverEm()",float,doc="H over E",precision=8),
         tightCharge = Var("isGsfCtfScPixChargeConsistent() + isGsfScPixChargeConsistent()",int,doc="Tight charge criteria (0:none, 1:isGsfScPixChargeConsistent, 2:isGsfCtfScPixChargeConsistent)"),
         convVeto = Var("passConversionVeto()",bool,doc="pass conversion veto"),
