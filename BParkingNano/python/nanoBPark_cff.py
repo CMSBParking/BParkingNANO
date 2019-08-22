@@ -44,8 +44,8 @@ def nanoAOD_customizeElectronFilteredBPark(process):
     return process
 
 def nanoAOD_customizeBToKLL(process):
-    process.nanoBKeeSequence   = cms.Sequence( process.nanoBKeeSequence + BToKEESequence    + BToKeeTable   + CountBToKee)
-    process.nanoBKMuMuSequence = cms.Sequence(                            BToKMuMuSequence  + BToKmumuTable + CountBToKmumu)
+    process.nanoBKeeSequence   = cms.Sequence( process.nanoBKeeSequence + BToKEESequence    + BToKeeTable   )
+    process.nanoBKMuMuSequence = cms.Sequence(                            BToKMuMuSequence  + BToKmumuTable )
     return process
 
 def nanoAOD_customizeMC(process):
@@ -56,7 +56,7 @@ def nanoAOD_customizeMC(process):
             path.insert(index+1, electronBParkMC)
         except:
             pass
-        
+
         path.insert(0, nanoSequenceMC)
         path.insert(3, muonBParkMC)
 

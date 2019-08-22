@@ -113,8 +113,9 @@ process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
 
 # Path and EndPath definitions
-process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence)
-process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence  )
+process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + CountBToKmumu )
+process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence   + CountBToKee   )
+
 
 # customisation of the process.
 if options.isMC:
