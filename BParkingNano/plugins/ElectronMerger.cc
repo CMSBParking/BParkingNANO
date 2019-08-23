@@ -42,6 +42,8 @@ public:
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
     dr_cleaning_{cfg.getParameter<double>("drForCleaning")},
     dz_cleaning_{cfg.getParameter<double>("dzForCleaning")},
+    flagAndclean_{cfg.getParameter<bool>("flagAndclean")},
+    pf_ptMin_{cfg.getParameter<double>("pf_ptMin")},
     ptMin_{cfg.getParameter<double>("ptMin")},
     etaMax_{cfg.getParameter<double>("etaMax")},
     bdtMin_{cfg.getParameter<double>("bdtMin")},
@@ -70,6 +72,8 @@ private:
   const double dzTrg_cleaning_;
   const double dr_cleaning_;
   const double dz_cleaning_;
+  const bool flagAndclean_;
+  const double pf_ptMin_;
   const double ptMin_; //pt min cut
   const double etaMax_; //eta max cut
   const double bdtMin_; //bdt min cut
@@ -107,7 +111,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
   for(auto ele : *pf) {
    //cuts
-   if (ele.pt()<ptMin_) continue;
+   if (ele.pt()<ptMin_ || ele.pt() < pf_ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
    // apply conversion veto unless we want conversions
    if (!ele.passConversionVeto()) continue;
@@ -132,6 +136,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20);
    ele.addUserFloat("chargeMode", ele.charge());
+   ele.addUserInt("overlapPFindex", -1);
 
    ele_out       -> emplace_back(ele);
   }
@@ -174,14 +179,19 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    // same here Do we need evts without trg muon? now we skip them
    if (skipEle) continue;   
    
+
    //pf cleaning    
    bool clean_out = false;
-   for(const auto& pfele : *pf) {
+   for(const auto& pfele : *ele_out) {
       clean_out |= (
 	           fabs(pfele.vz() - ele.vz()) < dz_cleaning_ &&
                    reco::deltaR(ele, pfele) < dr_cleaning_   );
+
+      if(clean_out)
+	ele.addUserInt("overlapPFindex", (&pfele - &(ele_out->at(0))));
    }
-   if(clean_out) continue;
+   if(!clean_out) ele.addUserInt("overlapPFindex", -1);
+   else if (flagAndclean_) continue;
 
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
