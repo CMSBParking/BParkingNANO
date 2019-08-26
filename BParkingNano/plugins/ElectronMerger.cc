@@ -136,11 +136,12 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20);
    ele.addUserFloat("chargeMode", ele.charge());
-   ele.addUserInt("overlapPFindex", -1);
+   ele.addUserInt("isPFoverlap", 0);
 
    ele_out       -> emplace_back(ele);
   }
 
+  unsigned int pfSelectedSize = ele_out->size();
 
   size_t iele=-1;
   /// add and clean low pT e
@@ -182,16 +183,16 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
    //pf cleaning    
    bool clean_out = false;
-   for(const auto& pfele : *ele_out) {
+   for(unsigned int iEle=0; iEle<pfSelectedSize; ++iEle) {
+     const auto& pfele = (*ele_out)[iEle];
       clean_out |= (
 	           fabs(pfele.vz() - ele.vz()) < dz_cleaning_ &&
                    reco::deltaR(ele, pfele) < dr_cleaning_   );
 
-      if(clean_out)
-	ele.addUserInt("overlapPFindex", (&pfele - &(ele_out->at(0))));
    }
-   if(!clean_out) ele.addUserInt("overlapPFindex", -1);
-   else if (flagAndclean_) continue;
+   if(clean_out && flagAndclean_) continue;
+   else if(clean_out) ele.addUserInt("isPFoverlap", 1);
+   else ele.addUserInt("isPFoverlap", 0);
 
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);

@@ -91,7 +91,7 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
         mvaId = Var("userFloat('mvaId')",float,doc="MVA ID for low pT, 20 for pfEle"),
         fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8),
-        overlapPFindex = Var("userInt('overlapPFindex')",float,doc="index of overlapping pf in selected_pf_collection",precision=8),
+        isPFoverlap = Var("userInt('isPFoverlap')",bool,doc="flag lowPt ele overlapping with pf in selected_pf_collection",precision=8),
         )
 )
 
