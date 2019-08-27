@@ -21,7 +21,7 @@ mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/
 ## Add the modification needed to use post-fit quantities for electrons  
 ```
 git cms-addpkg TrackingTools/TransientTrack
-git cms-merge-topic CMSBParking:GsfTransientTracks
+git cms-merge-topic -u CMSBParking:GsfTransientTracks
 ```
 
 ## Add the BParkingNano package and build everything
