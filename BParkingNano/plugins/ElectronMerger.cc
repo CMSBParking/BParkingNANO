@@ -107,7 +107,9 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   // output
   std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
   std::unique_ptr<TransientTrackCollection> trans_ele_out(new TransientTrackCollection);
-  
+  std::vector<std::pair<float, float>> pfEtaPhi;
+  std::vector<float> pfVz;
+
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
   for(auto ele : *pf) {
    //cuts
@@ -138,10 +140,12 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("chargeMode", ele.charge());
    ele.addUserInt("isPFoverlap", 0);
 
+   pfEtaPhi.push_back(std::pair<float, float>(ele.eta(), ele.phi()));
+   pfVz.push_back(ele.vz());
    ele_out       -> emplace_back(ele);
   }
 
-  unsigned int pfSelectedSize = ele_out->size();
+  unsigned int pfSelectedSize = pfEtaPhi.size();
 
   size_t iele=-1;
   /// add and clean low pT e
@@ -184,10 +188,10 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    //pf cleaning    
    bool clean_out = false;
    for(unsigned int iEle=0; iEle<pfSelectedSize; ++iEle) {
-     const auto& pfele = (*ele_out)[iEle];
+
       clean_out |= (
-	           fabs(pfele.vz() - ele.vz()) < dz_cleaning_ &&
-                   reco::deltaR(ele, pfele) < dr_cleaning_   );
+	           fabs(pfVz[iEle] - ele.vz()) < dz_cleaning_ &&
+                   reco::deltaR(ele.eta(), ele.phi(), pfEtaPhi[iEle].first, pfEtaPhi[iEle].second) < dr_cleaning_   );
 
    }
    if(clean_out && flagAndclean_) continue;
