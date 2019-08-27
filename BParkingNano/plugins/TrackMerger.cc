@@ -173,26 +173,19 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     int matchedToMediumMuon = 0;
     for (const pat::Muon &imutmp : *muons) {
         for (unsigned int i = 0; i < imutmp.numberOfSourceCandidatePtrs(); ++i) {
-            
-            const edm::Ptr<reco::Candidate> & source = imutmp.sourceCandidatePtr(i);
             if (! ((imutmp.sourceCandidatePtr(i)).isNonnull() && 
                    (imutmp.sourceCandidatePtr(i)).isAvailable())
                )   continue;
-
-            const reco::Candidate & cand = *(source);
-            if (cand.charge() == 0 || cand.bestTrack() == nullptr) continue;
-            try { cand.bestTrack()->eta(); }
-            catch(...) {continue;}
             
-            if (deltaR(trk.eta(),trk.phi(),cand.bestTrack()->eta(),cand.bestTrack()->phi()) < 1.E-5){
-                matchedToMuon   = 1;   
+            const edm::Ptr<reco::Candidate> & source = imutmp.sourceCandidatePtr(i);
+            if (source.id() == tracks.id() && source.key() == iTrk){
+                matchedToMuon =1;
                 if (imutmp.isLooseMuon())    matchedToLooseMuon  = 1;
                 if (imutmp.isSoftMuon(PV))   matchedToSoftMuon   = 1;
                 if (imutmp.isMediumMuon())   matchedToMediumMuon = 1;
                 break;
             }
         }
-
     }
 
     // clean tracks wrt to all pf electrons
@@ -200,20 +193,14 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     for (const pat::Electron &ietmp : *pfele) {
         for (unsigned int i = 0; i < ietmp.numberOfSourceCandidatePtrs(); ++i) {
             
-            const edm::Ptr<reco::Candidate> & source = ietmp.sourceCandidatePtr(i);
             if (! ((ietmp.sourceCandidatePtr(i)).isNonnull() && 
                    (ietmp.sourceCandidatePtr(i)).isAvailable())
                )   continue;
-
-            const reco::Candidate & cand = *(source);
-            if (cand.charge() == 0 || cand.bestTrack() == nullptr) continue;
-            try { cand.bestTrack()->eta(); }
-            catch(...) {continue;}
-            
-            if (deltaR(trk.eta(),trk.phi(),cand.bestTrack()->eta(),cand.bestTrack()->phi()) < 1.E-5){
-                matchedToEle   = 1;   
+            const edm::Ptr<reco::Candidate> & source = ietmp.sourceCandidatePtr(i);
+            if (source.id() == tracks.id() && source.key() == iTrk){
+                matchedToEle =1;
                 break;
-            }
+            }        
         }
 
     }
