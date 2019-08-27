@@ -39,8 +39,8 @@ public:
     trackSelection_(cfg.getParameter<std::string>("trackSelection")),
     sortOutputCollections_(cfg.getParameter<bool>("sortOutputCollections"))
 {
-    produces<pat::CompositeCandidateCollection>("SelectedMuonsTracks");  
-    produces<TransientTrackCollection>("SelectedTransientMuonsTracks");  
+    produces<pat::CompositeCandidateCollection>("SelectedMuonsTracks");
+    produces<TransientTrackCollection>("SelectedTransientMuonsTracks");
 }
 
   ~MuonTrackMerger() override {}
@@ -48,7 +48,7 @@ public:
   void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
-  
+
 
 private:
   const edm::EDGetTokenT<pat::MuonCollection> muonsToken_;
@@ -56,7 +56,7 @@ private:
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> tracksToken_;
   const edm::EDGetTokenT<TransientTrackCollection> tracks_ttracks_;
 
-  const StringCutObjectSelector<pat::CompositeCandidate> muonSelection_; 
+  const StringCutObjectSelector<pat::CompositeCandidate> muonSelection_;
   const StringCutObjectSelector<pat::CompositeCandidate> trackSelection_;
 
   const bool sortOutputCollections_;
@@ -84,7 +84,7 @@ void MuonTrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup co
 
 
 
-  // output                                                                                                                                                                   
+  // output
   std::unique_ptr<pat::CompositeCandidateCollection> muonTrack_out  (new pat::CompositeCandidateCollection);
   std::unique_ptr<TransientTrackCollection> trans_muonTrack_out     (new TransientTrackCollection);
   std::vector<float> pts;
@@ -132,11 +132,9 @@ void MuonTrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup co
     pcand.addUserFloat("dzS", trk.userFloat("dzS"));
 
     muonTrack_out->emplace_back(pcand);
-    trans_muonTrack_out->emplace_back(muonsTT->at(trk_idx));
+    trans_muonTrack_out->emplace_back(tracksTT->at(trk_idx));
     pts.push_back(pcand.pt());
   }
-
-  for(auto ij : pts) std::cout << " pre sort pt = " << ij << std::endl;
 
   if(sortOutputCollections_){
     std::vector<size_t> sortedIndex = decrease_sorted_indices(pts);
@@ -153,8 +151,6 @@ void MuonTrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup co
     muonTrack_out.swap(out_tmp);
     trans_muonTrack_out.swap(trans_out_tmp);
   }
-
-  for(auto ij : *muonTrack_out) std::cout << " post sort pt = " << ij.pt() << std::endl;
 
   evt.put(std::move(muonTrack_out),       "SelectedMuonsTracks");
   evt.put(std::move(trans_muonTrack_out), "SelectedTransientMuonsTracks");
