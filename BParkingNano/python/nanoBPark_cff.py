@@ -15,6 +15,7 @@ from PhysicsTools.BParkingNano.muonsBPark_cff import *
 ## filtered input collections
 from PhysicsTools.BParkingNano.electronsBPark_cff import * 
 from PhysicsTools.BParkingNano.tracksBPark_cff import *
+from PhysicsTools.BParkingNano.muonsTracksBPark_cff import *
 
 ## B collections
 from PhysicsTools.BParkingNano.BToKLL_cff import *
@@ -37,6 +38,10 @@ def nanoAOD_customizeMuonTriggerBPark(process):
 
 def nanoAOD_customizeTrackFilteredBPark(process):
     process.nanoSequence = cms.Sequence( process.nanoSequence + tracksBParkSequence + tracksBParkTables)
+    return process
+
+def nanoAOD_customizeMuonTrackFilteredBPark(process):
+    process.nanoSequence = cms.Sequence( process.nanoSequence + muonsTracksBParkSequence + muonsTracksBParkTables)
     return process
 
 def nanoAOD_customizeElectronFilteredBPark(process):
