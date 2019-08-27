@@ -211,7 +211,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   //        Also, George here was using ele.bestTrack() instead of ele.gsfTrack()
   //        https://github.com/CMSBParking/BParkingNANO/blob/410bddcf56b33de73d22f4a6b34fefb588b5b741/BParkingNano/plugins/PreFitter.h#L81 
   for(auto &ele : *ele_out){
-    const reco::TransientTrack eleTT =(*theB).build( ele.gsfTrack() );
+    const reco::TransientTrack eleTT =(*theB).buildfromGSF( ele.gsfTrack() );
     trans_ele_out -> emplace_back(eleTT);
 
     if(ele.userInt("isPF")) continue;
