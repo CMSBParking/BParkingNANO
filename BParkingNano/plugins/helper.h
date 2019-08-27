@@ -96,7 +96,7 @@ inline std::pair<double,double> computeDCA(const reco::TransientTrack& trackTT,
 
 inline std::vector<size_t> decrease_sorted_indices(const std::vector<float>& v)
 {
-  // initialize original index locations                                                                                               
+  // initialize original index locations
   std::vector<size_t> idx(v.size());
   for (size_t i = 0; i != idx.size(); ++i) idx[i] = i;
 
@@ -105,6 +105,6 @@ inline std::vector<size_t> decrease_sorted_indices(const std::vector<float>& v)
             [&v](size_t i1, size_t i2) {return v[i1] > v[i2];} );
 
   return idx;
-} 
+}
 
 #endif
