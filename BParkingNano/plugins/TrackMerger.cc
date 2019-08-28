@@ -18,6 +18,7 @@
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/Common/interface/AssociationVector.h"
 
 #include "helper.h"
@@ -33,6 +34,9 @@ public:
     tracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     lostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     trgMuonToken_(consumes<pat::MuonCollection>(cfg.getParameter<edm::InputTag>("trgMuon"))),
+    muonToken_(consumes<pat::MuonCollection>(cfg.getParameter<edm::InputTag>("muons"))),
+    eleToken_(consumes<pat::ElectronCollection>(cfg.getParameter<edm::InputTag>("pfElectrons"))),
+    vertexToken_(consumes<reco::VertexCollection> (cfg.getParameter<edm::InputTag>( "vertices" ))), 
     trkPtCut_(cfg.getParameter<double>("trkPtCut")),
     trkEtaCut_(cfg.getParameter<double>("trkEtaCut")),
     dzTrg_cleaning_(cfg.getParameter<double>("dzTrg_cleaning")),
@@ -57,6 +61,9 @@ private:
   const edm::EDGetTokenT<pat::PackedCandidateCollection> tracksToken_;
   const edm::EDGetTokenT<pat::PackedCandidateCollection> lostTracksToken_;
   const edm::EDGetTokenT<pat::MuonCollection> trgMuonToken_;
+  const edm::EDGetTokenT<pat::MuonCollection> muonToken_;
+  const edm::EDGetTokenT<pat::ElectronCollection> eleToken_;
+  const edm::EDGetTokenT<reco::VertexCollection> vertexToken_;
 
   //selections                                                                 
   const double trkPtCut_;
@@ -91,6 +98,14 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   evt.getByToken(lostTracksToken_, lostTracks);
   edm::Handle<pat::MuonCollection> trgMuons;
   evt.getByToken(trgMuonToken_, trgMuons);
+
+  edm::Handle<pat::MuonCollection> muons;
+  evt.getByToken(muonToken_, muons);
+  edm::Handle<pat::ElectronCollection> pfele;
+  evt.getByToken(eleToken_, pfele);
+  edm::Handle<reco::VertexCollection> vertexHandle;
+  evt.getByToken(vertexToken_, vertexHandle);
+  const reco::Vertex & PV = vertexHandle->front();
 
   //for lost tracks / pf discrimination
   unsigned int nTracks = tracks->size();
@@ -151,6 +166,48 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     float DCASig = (DCABSErr != 0 && float(DCABSErr) == DCABSErr) ? fabs(DCABS/DCABSErr) : -1;
     if (DCASig >  dcaSig_  && dcaSig_ >0) continue;
 
+    // clean tracks wrt to all muons
+    int matchedToMuon       = 0;
+    int matchedToLooseMuon  = 0;
+    int matchedToSoftMuon   = 0;
+    int matchedToMediumMuon = 0;
+    for (const pat::Muon &imutmp : *muons) {
+        for (unsigned int i = 0; i < imutmp.numberOfSourceCandidatePtrs(); ++i) {
+            if (! ((imutmp.sourceCandidatePtr(i)).isNonnull() && 
+                   (imutmp.sourceCandidatePtr(i)).isAvailable())
+               )   continue;
+            
+            const edm::Ptr<reco::Candidate> & source = imutmp.sourceCandidatePtr(i);
+            if (source.id() == tracks.id() && source.key() == iTrk){
+                matchedToMuon =1;
+                if (imutmp.isLooseMuon())    matchedToLooseMuon  = 1;
+                if (imutmp.isSoftMuon(PV))   matchedToSoftMuon   = 1;
+                if (imutmp.isMediumMuon())   matchedToMediumMuon = 1;
+                break;
+            }
+        }
+    }
+
+    // clean tracks wrt to all pf electrons
+    int matchedToEle        = 0;
+    for (const pat::Electron &ietmp : *pfele) {
+        for (unsigned int i = 0; i < ietmp.numberOfSourceCandidatePtrs(); ++i) {
+            
+            if (! ((ietmp.sourceCandidatePtr(i)).isNonnull() && 
+                   (ietmp.sourceCandidatePtr(i)).isAvailable())
+               )   continue;
+            const edm::Ptr<reco::Candidate> & source = ietmp.sourceCandidatePtr(i);
+            if (source.id() == tracks.id() && source.key() == iTrk){
+                matchedToEle =1;
+                break;
+            }        
+        }
+
+    }
+
+
+
+
     pat::CompositeCandidate pcand;
     pcand.setP4(trk.p4());
     pcand.setCharge(trk.charge());
@@ -163,6 +220,11 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.addUserFloat("dz", trk.dz()); 
     pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
     pcand.addUserFloat("DCASig", DCASig);
+    pcand.addUserInt("isMatchedToMuon", matchedToMuon);
+    pcand.addUserInt("isMatchedToLooseMuon", matchedToLooseMuon);
+    pcand.addUserInt("isMatchedToSoftMuon", matchedToSoftMuon);
+    pcand.addUserInt("isMatchedToMediumMuon", matchedToMediumMuon);
+    pcand.addUserInt("isMatchedToEle", matchedToEle);
     //adding the candidate in the composite stuff for fit (need to test)
     if ( iTrk < nTracks )
       pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, iTrk ));
