@@ -18,6 +18,12 @@ git clone --single-branch --branch 102X_LowPtElectrons_2019Jun28 git@github.com:
 mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data # this is required if running on CRAB
 ```
 
+## Add the modification needed to use post-fit quantities for electrons  
+```
+git cms-addpkg TrackingTools/TransientTrack
+git cms-merge-topic -u CMSBParking:GsfTransientTracks
+```
+
 ## Add the BParkingNano package and build everything
 
 ```
