@@ -44,15 +44,15 @@ electronsForAnalysis = cms.EDProducer(
   mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
   vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
-  drForCleaning_wrtTrgMuon = cms.double(-1.),
-  dzForCleaning_wrtTrgMuon = cms.double(-1.),
+  drForCleaning_wrtTrgMuon = cms.double(0.03),
+  dzForCleaning_wrtTrgMuon = cms.double(1.),
   ## cleaning between pfEle and lowPtGsf
-  drForCleaning = cms.double(0.01),
-  dzForCleaning = cms.double(0.01),
+  drForCleaning = cms.double(0.03),
+  dzForCleaning = cms.double(0.7), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
   ## true = flag and clean; false = only flag
   flagAndclean = cms.bool(False),
-  pf_ptMin = cms.double(1.),  ## move to 2 next
-  ptMin = cms.double(1.),
+  pf_ptMin = cms.double(1.),
+  ptMin = cms.double(0.5),
   etaMax = cms.double(2.5),
     bdtMin = cms.double(0), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
