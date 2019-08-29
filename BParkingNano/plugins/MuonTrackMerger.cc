@@ -22,6 +22,10 @@
 #include "DataFormats/Common/interface/AssociationVector.h"
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 
+#include "DataFormats/Math/interface/LorentzVector.h"
+
+#include "TLorentzVector.h"
+
 #include "helper.h"
 
 class MuonTrackMerger : public edm::global::EDProducer<> {
@@ -56,7 +60,7 @@ private:
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> tracksToken_;
   const edm::EDGetTokenT<TransientTrackCollection> tracks_ttracks_;
 
-  const StringCutObjectSelector<pat::CompositeCandidate> muonSelection_;
+  const StringCutObjectSelector<pat::Muon> muonSelection_;
   const StringCutObjectSelector<pat::CompositeCandidate> trackSelection_;
 
   const bool sortOutputCollections_;
@@ -94,19 +98,20 @@ void MuonTrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup co
 
     const pat::Muon& mu = (*muons)[mu_idx];
 
+    if(!muonSelection_(mu)) continue;
+
     pat::CompositeCandidate pcand;
     pcand.setP4(mu.p4());
     pcand.setCharge(mu.charge());
     pcand.setVertex(mu.vertex());
     pcand.setPdgId(mu.pdgId());
-    pcand.addUserInt("isPF", 1);
+    pcand.addUserInt("originalIndex", mu_idx);
+    pcand.addUserInt("isMuon", 1);
     pcand.addUserInt("isTrack", 0);
     pcand.addUserFloat("dxy", mu.dB(pat::Muon::PV2D));
     pcand.addUserFloat("dxyS", mu.edB(pat::Muon::PV2D));
     pcand.addUserFloat("dz", mu.dB(pat::Muon::PVDZ));
     pcand.addUserFloat("dzS", mu.edB(pat::Muon::PVDZ));
-
-    if(!muonSelection_(pcand)) continue;
 
     muonTrack_out->emplace_back(pcand);
     trans_muonTrack_out->emplace_back(muonsTT->at(mu_idx));
@@ -119,21 +124,29 @@ void MuonTrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup co
     const pat::CompositeCandidate& trk = (*tracks)[trk_idx];
     if(!trackSelection_(trk)) continue;
 
-    pat::CompositeCandidate pcand;
-    pcand.setP4(trk.p4());
-    pcand.setCharge(trk.charge());
-    pcand.setVertex(trk.vertex());
-    pcand.setPdgId(trk.pdgId());
-    pcand.addUserInt("isPF", 0);
-    pcand.addUserInt("isTrack", 1);
-    pcand.addUserFloat("dxy", trk.userFloat("dxy"));
-    pcand.addUserFloat("dxyS", trk.userFloat("dxyS"));
-    pcand.addUserFloat("dz", trk.userFloat("dz"));
-    pcand.addUserFloat("dzS", trk.userFloat("dzS"));
+    //    pat::CompositeCandidate& pcand(trk);
+    // pcand.setP4(trk.p4());
+    // pcand.setCharge(trk.charge());
+    // pcand.setVertex(trk.vertex());
+    // pcand.setPdgId(trk.pdgId());
+    // pcand.addUserInt("isPF", 0);
+    // pcand.addUserInt("isTrack", 1);
+    // pcand.addUserFloat("dxy", trk.userFloat("dxy"));
+    // pcand.addUserFloat("dxyS", trk.userFloat("dxyS"));
+    // pcand.addUserFloat("dz", trk.userFloat("dz"));
+    // pcand.addUserFloat("dzS", trk.userFloat("dzS"));
 
-    muonTrack_out->emplace_back(pcand);
+    //    pcand.addUserInt("originalIndex", trk_idx);
+
+    muonTrack_out->emplace_back(trk);
+    TLorentzVector trkP4;
+    trkP4.SetPtEtaPhiM(trk.pt(), trk.eta(), trk.phi(), MUON_MASS);
+    muonTrack_out->back().setP4(math::XYZTLorentzVector(trkP4.X(), trkP4.Y(), trkP4.Z(), trkP4.T()));
+    muonTrack_out->back().addUserInt("originalIndex", trk_idx);
+    muonTrack_out->back().addUserInt("isMuon", 0);
+    muonTrack_out->back().addUserInt("isTrack", 1);;
     trans_muonTrack_out->emplace_back(tracksTT->at(trk_idx));
-    pts.push_back(pcand.pt());
+    pts.push_back(trk.pt());
   }
 
   if(sortOutputCollections_){

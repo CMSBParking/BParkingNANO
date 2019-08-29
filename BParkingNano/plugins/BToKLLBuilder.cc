@@ -75,6 +75,11 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
 
+  std::cout << " Bcand qui ci sono " << std::endl;
+
+  std::cout << " dileptons.size() = " << dileptons->size() 
+	    << " leptons_ttracks.size() = " << leptons_ttracks->size() << std::endl;
+
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   
@@ -95,6 +100,11 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       edm::Ptr<reco::Candidate> l2_ptr = ll_prt->userCand("l2");
       int l1_idx = ll_prt->userInt("l1_idx");
       int l2_idx = ll_prt->userInt("l2_idx");
+
+      std::cout << " l1_idx = " << l1_idx << " l2_idx = " << l2_idx << std::endl;
+
+      if((ll_prt->userInt("is_l1Track") && (unsigned int)ll_prt->userInt("l1_original_idx") == k_idx) ||
+	 (ll_prt->userInt("is_l2Track") && (unsigned int)ll_prt->userInt("l2_original_idx") == k_idx)) continue;
     
       pat::CompositeCandidate cand;
       cand.setP4(ll_prt->p4() + k_p4);
@@ -119,7 +129,8 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
     
       KinVtxFitter fitter(
         {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
-        {l1_ptr->mass(), l2_ptr->mass(), K_MASS},
+	{l1_ptr->mass(), l2_ptr->mass(), K_MASS},
+        //{ (ll_prt->userInt("is_l1Track") ? MUON_MASS : l1_ptr->mass()), (ll_prt->userInt("is_l2Track") ? MUON_MASS : l2_ptr->mass()), K_MASS},
         {LEP_SIGMA, LEP_SIGMA, K_SIGMA} //some small sigma for the lepton mass
         );
       if(!fitter.success()) continue; // hardcoded, but do we need otherwise?
