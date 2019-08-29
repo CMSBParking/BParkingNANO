@@ -64,14 +64,20 @@ if __name__ == '__main__':
                 'lumimask', 
                 common[common_branch].get('lumimask', None)
             )
-            config.Data.unitsPerJob = info.get(
-                'splitting',
-                common[common_branch].get('splitting', None)
-                )
+
+        config.Data.unitsPerJob = info.get(
+            'splitting',
+            common[common_branch].get('splitting', None)
+        )
+        globaltag = info.get(
+            'globaltag',
+            common[common_branch].get('globaltag', None)
+        )
         
         config.JobType.pyCfgParams = [
             'isMC=%s' % isMC, 'reportEvery=1000',
-            'tag=%s' % production_tag
+            'tag=%s' % production_tag,
+            'globalTag=%s' % globaltag,
         ]
      
         crabCommand('submit', config = config, dryrun = False)

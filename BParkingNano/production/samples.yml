@@ -2,8 +2,10 @@ common:
   data:
     lumimask : https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt
     splitting: 20
+    globaltag: 102X_dataRun2_v11
   mc:
     splitting: 1
+    globaltag: 102X_upgrade2018_realistic_v15
 
 samples:
   data_Run2018A_part%d:    
@@ -39,6 +41,7 @@ samples:
   data_Run2018D_part%d:
     dataset: /ParkingBPH%d/Run2018D-05May2019promptD-v1/MINIAOD
     isMC: False
+    globaltag: 102X_dataRun2_Prompt_v14
     parts:
       - 1
       - 2
