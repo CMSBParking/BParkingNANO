@@ -74,7 +74,5 @@ if __name__ == '__main__':
             'tag=%s' % production_tag
         ]
      
-        #crabCommand('submit', config = config, dryrun = False)
-        print config.pythonise_()
-        print '\n\n\n'
+        crabCommand('submit', config = config, dryrun = False)
 
