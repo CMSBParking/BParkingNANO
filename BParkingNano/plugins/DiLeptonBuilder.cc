@@ -68,7 +68,8 @@ void DiLeptonBuilder<Particle>::produce(edm::StreamID, edm::Event &evt, edm::Eve
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_value(new pat::CompositeCandidateCollection());
-  
+
+  //change logic in the loop exploiting the sorted input collections  
   for(size_t l1_idx = 0; l1_idx < leptons->size(); ++l1_idx) {
     edm::Ptr<Particle> l1_ptr(leptons, l1_idx);
     if(!l1_selection_(*l1_ptr)) continue;
@@ -77,6 +78,8 @@ void DiLeptonBuilder<Particle>::produce(edm::StreamID, edm::Event &evt, edm::Eve
       edm::Ptr<Particle> l2_ptr(leptons, l2_idx);
       if(!l2_selection_(*l2_ptr)) continue;
 
+      //these cuts are already applied in preVtxSelection
+      //not sure there is a gain in cutting earlier
       int diLepton_charge = l1_ptr->charge() + l2_ptr->charge();
       if(diLepton_charge != 0) continue;
       float diLepton_deltaR = reco::deltaR(*l1_ptr, *l2_ptr);
@@ -98,6 +101,7 @@ void DiLeptonBuilder<Particle>::produce(edm::StreamID, edm::Event &evt, edm::Eve
 	lepton_pair.addUserInt("is_l2PF", l2_ptr->userInt("isMuon"));
 	lepton_pair.addUserInt("is_l2Track", l2_ptr->userInt("isTrack"));
 
+	//original index in muon and/or track collections
 	lepton_pair.addUserInt("l1_original_idx", l1_ptr->userInt("originalIndex"));
 	lepton_pair.addUserInt("l2_original_idx", l2_ptr->userInt("originalIndex"));
       }
@@ -121,8 +125,7 @@ void DiLeptonBuilder<Particle>::produce(edm::StreamID, edm::Event &evt, edm::Eve
 
       KinVtxFitter fitter(
         {ttracks->at(l1_idx), ttracks->at(l2_idx)},
-	{l1_ptr->mass(), l2_ptr->mass()},
-	//        { (isMuonTrack_ && l1_ptr->userInt("isTrack")) ? MUON_MASS : l1_ptr->mass(), (isMuonTrack_ && l2_ptr->userInt("isTrack")) ? MUON_MASS : l2_ptr->mass()},
+	{l1_ptr->mass(), l2_ptr->mass()}, // in case of lepton from "muonTrack" the p4 is already set with MUON_MASS
         {LEP_SIGMA, LEP_SIGMA} //some small sigma for the particle mass
         );
       lepton_pair.addUserFloat("sv_chi2", fitter.chi2());

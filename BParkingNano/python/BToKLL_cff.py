@@ -7,7 +7,7 @@ electronPairsForKee = cms.EDProducer(
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
     lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 1'),
     lep2Selection = cms.string(''),
-    min_dr = cms.double(0.01), ##for the moment than we will see
+    min_dr = cms.double(0.03), ##for the moment than we will see
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
         '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'
@@ -97,7 +97,13 @@ BToKeeTable = cms.EDProducer(
         CandVars,
         l1Idx = uint('l1_idx'),
         l2Idx = uint('l2_idx'),
+        l1OrigIdx = uint('l1_original_idx'),
+        l2OrigIdx = uint('l2_original_idx'),
         kIdx = uint('k_idx'),
+        l1_isPF = uint('l1_isPF'),
+        l1_isTrack = uint('l1_isTrack'),
+        l2_isPF = uint('l2_isPF'),
+        l2_isTrack = uint('l2_isTrack'),
         minDR = ufloat('min_dr'),
         maxDR = ufloat('max_dr'),
         # fit and vtx info

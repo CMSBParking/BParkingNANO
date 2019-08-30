@@ -124,20 +124,6 @@ void MuonTrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup co
     const pat::CompositeCandidate& trk = (*tracks)[trk_idx];
     if(!trackSelection_(trk)) continue;
 
-    //    pat::CompositeCandidate& pcand(trk);
-    // pcand.setP4(trk.p4());
-    // pcand.setCharge(trk.charge());
-    // pcand.setVertex(trk.vertex());
-    // pcand.setPdgId(trk.pdgId());
-    // pcand.addUserInt("isPF", 0);
-    // pcand.addUserInt("isTrack", 1);
-    // pcand.addUserFloat("dxy", trk.userFloat("dxy"));
-    // pcand.addUserFloat("dxyS", trk.userFloat("dxyS"));
-    // pcand.addUserFloat("dz", trk.userFloat("dz"));
-    // pcand.addUserFloat("dzS", trk.userFloat("dzS"));
-
-    //    pcand.addUserInt("originalIndex", trk_idx);
-
     muonTrack_out->emplace_back(trk);
     TLorentzVector trkP4;
     trkP4.SetPtEtaPhiM(trk.pt(), trk.eta(), trk.phi(), MUON_MASS);
