@@ -110,7 +110,7 @@ electronsBParkMCMatchForTable = cms.EDProducer("MCMatcher",  # cut on deltaR, de
     
 )
 
-electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
+electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     src     = electronBParkTable.src,
     mcMap   = cms.InputTag("electronsBParkMCMatchForTable"),
     objName = electronBParkTable.name,

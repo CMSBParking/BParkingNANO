@@ -87,7 +87,7 @@ muonsBParkMCMatchForTable = cms.EDProducer("MCMatcher",            # cut on delt
     resolveByMatchQuality = cms.bool(True),                   # False = just match input in order; True = pick lowest deltaR pair first
 )
 
-muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
+muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     src     = muonBParkTable.src,
     mcMap   = cms.InputTag("muonsBParkMCMatchForTable"),
     objName = muonBParkTable.name,
