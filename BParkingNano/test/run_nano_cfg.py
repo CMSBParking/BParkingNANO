@@ -110,7 +110,6 @@ from PhysicsTools.BParkingNano.nanoBPark_cff import *
 process = nanoAOD_customizeMuonTriggerBPark(process)
 process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
-process = nanoAOD_customizeMuonTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
 
 # Path and EndPath definitions
