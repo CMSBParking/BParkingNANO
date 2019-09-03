@@ -8,6 +8,11 @@ options.register('isMC', False,
     VarParsing.varType.bool,
     "Run this on real data"
 )
+options.register('globalTag', 'NOTSET',
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.string,
+    "Set global tag"
+)
 options.register('wantSummary', True,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.bool,
@@ -18,17 +23,20 @@ options.register('wantFullRECO', False,
     VarParsing.varType.bool,
     "Run this on real data"
 )
-options.register('reportEvery', 1000,
+options.register('reportEvery', 10,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.int,
     "report every N events"
 )
 
-options.setDefault('maxEvents', 1000)
+options.setDefault('maxEvents', 100)
 options.setDefault('tag', '10215')
 options.parseArguments()
 
-globaltag = '102X_dataRun2_Sep2018Rereco_v1' if options.isMC else '102X_upgrade2018_realistic_v15'
+globaltag = '102X_dataRun2_v11' if not options.isMC else '102X_upgrade2018_realistic_v15'
+if options._beenSet['globalTag']:
+    globaltag = options.globalTag
+
 extension = {False : 'data', True : 'mc'}
 outputFileNANO = cms.untracked.string('_'.join(['testBParkNANO', extension[options.isMC], options.tag])+'.root')
 outputFileFEVT = cms.untracked.string('_'.join(['testBParkFullEvt', extension[options.isMC], options.tag])+'.root')
@@ -46,7 +54,7 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
-process.load('Configuration.StandardSequences.MagneticField_AutoFromDBCurrent_cff')
+process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load('PhysicsTools.BParkingNano.nanoBPark_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -81,7 +89,9 @@ process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
         filterName = cms.untracked.string('')
     ),
     fileName = outputFileFEVT,
-    outputCommands = (cms.untracked.vstring('keep *')),
+    outputCommands = (cms.untracked.vstring('keep *',
+                                            'drop *_*_SelectedTransient*_*',
+                     )),
     splitLevel = cms.untracked.int32(0)
 )
 
@@ -104,30 +114,50 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, globaltag, '')
 
 
-# Path and EndPath definitions
-process.nanoAOD_step = cms.Path(process.nanoSequence)
-process.endjob_step = cms.EndPath(process.endOfProcess)
-process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
-process.NANOAODoutput_step = cms.EndPath(process.NANOAODoutput)
-
-
-# Schedule definition
-process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step, process.NANOAODoutput_step)
-if options.wantFullRECO:
-    process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step, process.FEVTDEBUGHLToutput_step, process.NANOAODoutput_step)
-from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
-associatePatAlgosToolsTask(process)
-
 from PhysicsTools.BParkingNano.nanoBPark_cff import *
 process = nanoAOD_customizeMuonTriggerBPark(process)
 process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
+process = nanoAOD_customizeBToKLL(process)
+
+# Path and EndPath definitions
+process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + CountBToKmumu )
+process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence   + CountBToKee   )
+
 
 # customisation of the process.
 if options.isMC:
     from PhysicsTools.BParkingNano.nanoBPark_cff import nanoAOD_customizeMC
-    process = nanoAOD_customizeMC(process)
+    nanoAOD_customizeMC(process)
 
+process.endjob_step = cms.EndPath(process.endOfProcess)
+process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
+process.NANOAODoutput_step = cms.EndPath(process.NANOAODoutput)
+
+# Schedule definition
+process.schedule = cms.Schedule(
+                                process.nanoAOD_KMuMu_step,
+                                process.nanoAOD_Kee_step, 
+                                process.endjob_step, 
+                                process.NANOAODoutput_step
+                               )
+if options.wantFullRECO:
+    process.schedule = cms.Schedule(process.nanoAOD_KMuMu_step,
+                                    process.nanoAOD_Kee_step, 
+                                    process.endjob_step, 
+                                    process.FEVTDEBUGHLToutput_step, 
+                                    process.NANOAODoutput_step
+                                    )
+from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
+associatePatAlgosToolsTask(process)
+
+process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
+        SelectEvents = cms.vstring(
+                                   'nanoAOD_KMuMu_step', 
+                                   'nanoAOD_Kee_step'
+                                   )
+)
+    
 
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete

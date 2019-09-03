@@ -42,16 +42,21 @@ electronsForAnalysis = cms.EDProducer(
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
   mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
+  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
   drForCleaning_wrtTrgMuon = cms.double(-1.),
   dzForCleaning_wrtTrgMuon = cms.double(-1.),
   ## cleaning between pfEle and lowPtGsf
   drForCleaning = cms.double(0.01),
   dzForCleaning = cms.double(0.01),
+  ## true = flag and clean; false = only flag
+  flagAndclean = cms.bool(False),
+  pf_ptMin = cms.double(1.),  ## move to 2 next
   ptMin = cms.double(1.),
   etaMax = cms.double(2.5),
     bdtMin = cms.double(0), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
+    sortOutputCollections = cms.bool(True)
 )
 
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -76,7 +81,6 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         deltaEtaSC = Var("superCluster().eta()-eta()",float,doc="delta eta (SC,ele) with sign",precision=10),
         r9 = Var("full5x5_r9()",float,doc="R9 of the supercluster, calculated with full 5x5 region",precision=10),
         sieie = Var("full5x5_sigmaIetaIeta()",float,doc="sigma_IetaIeta of the supercluster, calculated with full 5x5 region",precision=10),
-        eInvMinusPInv = Var("(1-eSuperClusterOverP())/ecalEnergy()",float,doc="1/E_SC - 1/p_trk",precision=10),
         hoe = Var("hadronicOverEm()",float,doc="H over E",precision=8),
         tightCharge = Var("isGsfCtfScPixChargeConsistent() + isGsfScPixChargeConsistent()",int,doc="Tight charge criteria (0:none, 1:isGsfScPixChargeConsistent, 2:isGsfCtfScPixChargeConsistent)"),
         convVeto = Var("passConversionVeto()",bool,doc="pass conversion veto"),
@@ -86,7 +90,8 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT 20 for pfEle"), 
         unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
         mvaId = Var("userFloat('mvaId')",float,doc="MVA ID for low pT, 20 for pfEle"),
-        fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8)
+        fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8),
+        isPFoverlap = Var("userInt('isPFoverlap')",bool,doc="flag lowPt ele overlapping with pf in selected_pf_collection",precision=8),
         )
 )
 
@@ -105,7 +110,7 @@ electronsBParkMCMatchForTable = cms.EDProducer("MCMatcher",  # cut on deltaR, de
     
 )
 
-electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
+electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     src     = electronBParkTable.src,
     mcMap   = cms.InputTag("electronsBParkMCMatchForTable"),
     objName = electronBParkTable.name,

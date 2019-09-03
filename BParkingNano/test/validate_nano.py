@@ -9,6 +9,7 @@ parser.add_argument('f_old', help='file path')
 parser.add_argument('f_new', help='file path')
 parser.add_argument('--legacy', action='store_true', help='compare against legacy version')
 parser.add_argument('--noplot', default='HLT_*,L1_*,Flag_*', help='coma-separated list of names not to plot, default HLT_*,L1_*')
+parser.add_argument('--plot-only-failing', dest='plot_fail_only', action='store_true')
 args = parser.parse_args()
 
 import fnmatch
@@ -75,9 +76,9 @@ class NanoFrame(object):
     return legacy_mapping.keys() if self.legacy else self.tt.keys()
 
 def byval_validation(v1, v2):
-  if np.isfinite(v1).any() or np.isfinite(v2).any():
-    v1 = v1[np.invert(np.isfinite(v1))]
-    v2 = v2[np.invert(np.isfinite(v2))]
+  if not np.isfinite(v1).all() or not np.isfinite(v2).all():
+    v1 = v1[np.isfinite(v1)]
+    v2 = v2[np.isfinite(v2)]
 
   try:
     if v1.dtype == 'bool' or np.issubdtype(v1.dtype, np.integer):
@@ -88,7 +89,7 @@ def byval_validation(v1, v2):
     return False
 
 noplot = args.noplot.split(',')
-def stat_validation(v1, v2, name = '', nbins = 20):
+def stat_validation(v1, v2, name = '', val_valid = False, nbins = 20):
   if not np.isfinite(v1).all() or not np.isfinite(v2).all():
     log(name + '--> CONTAINS INFs/NANs!', 'orange')
     v1 = v1[np.isfinite(v1)]
@@ -110,12 +111,39 @@ def stat_validation(v1, v2, name = '', nbins = 20):
   plt.clf()
   h1, _, _ = plt.hist(v1, range = (m,M), bins = nbins, label = 'old', histtype = 'step')
   h2, _, _ = plt.hist(v2, range = (m,M), bins = nbins, label = 'new', histtype = 'step')
+  ret_val = (h1 == h2).all()
   plt.legend(loc='best')
   skip = any(fnmatch.fnmatch(name, i) for i in noplot)
+  skip = skip or (args.plot_fail_only and ret_val and val_valid)
   if not skip:
     plt.savefig('validation/%s.png' % name)
   plt.clf()
-  return (h1 == h2).all()
+  return ret_val
+
+def plot_branch(vals, name = '', nbins = 20):
+  if not np.isfinite(vals).all():
+    log(name + '--> CONTAINS INFs/NANs!', 'orange')
+    vals = vals[np.isfinite(vals)]
+
+  if vals.shape[0] == 0:
+    return 
+
+  M = vals.max()
+  m = vals.min()
+  m = m * 0.9 if m > 0 else m * 1.2
+  M = M * 1.2 if M > 0 else M * 0.9
+  if 'int' in str(vals.dtype):
+    m = int(m) - 1
+    M = int(M) + 1
+    nbins = min(M - m, nbins*2)
+  
+  plt.clf()
+  plt.hist(vals, range = (m,M), bins = nbins, label = 'new', histtype = 'step')
+  plt.legend(loc='best')
+  plt.savefig('validation/%s.png' % name)
+  plt.clf()
+  return 
+
 
 old = NanoFrame(args.f_old, args.legacy)
 new = NanoFrame(args.f_new)
@@ -181,6 +209,10 @@ intersection = old_k.intersection(new_k)
 
 log('Branch diff:')
 for branch in (new_k - old_k):
+  v_new = new[branch]
+  if hasattr(v_new, 'content'):
+    v_new = v_new.content
+  plot_branch(v_new, branch)
   log(' '.join(['+', branch]), 'green')
 
 for branch in (old_k - new_k):
@@ -196,8 +228,8 @@ for branch in sorted(intersection):
     v_old = v_old.content
     v_new = v_new.content
 
-  stat_valid = stat_validation(v_old, v_new, branch)
   val_valid  = byval_validation(v_old, v_new)
+  stat_valid = stat_validation(v_old, v_new, branch, val_valid)
 
   if val_valid and stat_valid:
     log(' '.join([branch, '--> OK!']), 'green')

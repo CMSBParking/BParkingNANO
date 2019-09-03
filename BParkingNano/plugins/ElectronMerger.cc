@@ -11,8 +11,17 @@
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
+
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+#include "TrackingTools/IPTools/interface/IPTools.h"
+
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
+
 #include <limits>
 #include <algorithm>
+#include "helper.h"
 
 class ElectronMerger : public edm::global::EDProducer<> {
 
@@ -28,16 +37,21 @@ public:
     ptBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("ptbiasedSeeding") )},
     unBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("unbiasedSeeding") )},
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
+    vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
     dr_cleaning_{cfg.getParameter<double>("drForCleaning")},
     dz_cleaning_{cfg.getParameter<double>("dzForCleaning")},
+    flagAndclean_{cfg.getParameter<bool>("flagAndclean")},
+    pf_ptMin_{cfg.getParameter<double>("pf_ptMin")},
     ptMin_{cfg.getParameter<double>("ptMin")},
     etaMax_{cfg.getParameter<double>("etaMax")},
     bdtMin_{cfg.getParameter<double>("bdtMin")},
-    use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")} 
+    use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
+    sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")} 
     {
        produces<pat::ElectronCollection>("SelectedElectrons");
+       produces<TransientTrackCollection>("SelectedTransientElectrons");  
     }
 
   ~ElectronMerger() override {}
@@ -53,17 +67,21 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<float>> ptBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> unBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> mvaId_src_;
+  const edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   const double drTrg_cleaning_;
   const double dzTrg_cleaning_;
   const double dr_cleaning_;
   const double dz_cleaning_;
+  const bool flagAndclean_;
+  const double pf_ptMin_;
   const double ptMin_; //pt min cut
   const double etaMax_; //eta max cut
   const double bdtMin_; //bdt min cut
   const bool use_gsf_mode_for_p4_;
+  const bool sortOutputCollections_;
 };
 
-void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const & iSetup) const {
 
   //input
   edm::Handle<pat::MuonCollection> trgMuon;
@@ -78,15 +96,24 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.getByToken(unBiased_src_, unBiased);
   edm::Handle<edm::ValueMap<float> > mvaId;  
   evt.getByToken(mvaId_src_, mvaId);
+  // 
+  edm::ESHandle<TransientTrackBuilder> theB ;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
+  //
+  edm::Handle<reco::VertexCollection> vertexHandle;
+  evt.getByToken(vertexSrc_, vertexHandle);
+  const reco::Vertex & PV = vertexHandle->front();
 
   // output
-  std::unique_ptr<pat::ElectronCollection> ele_out(new pat::ElectronCollection);
+  std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
+  std::unique_ptr<TransientTrackCollection> trans_ele_out(new TransientTrackCollection);
+  std::vector<std::pair<float, float>> pfEtaPhi;
+  std::vector<float> pfVz;
 
-  
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
- for(auto ele : *pf) {
+  for(auto ele : *pf) {
    //cuts
-   if (ele.pt()<ptMin_) continue;
+   if (ele.pt()<ptMin_ || ele.pt() < pf_ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
    // apply conversion veto unless we want conversions
    if (!ele.passConversionVeto()) continue;
@@ -111,12 +138,17 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20);
    ele.addUserFloat("chargeMode", ele.charge());
-   ele_out->emplace_back(ele);
- }
+   ele.addUserInt("isPFoverlap", 0);
 
+   pfEtaPhi.push_back(std::pair<float, float>(ele.eta(), ele.phi()));
+   pfVz.push_back(ele.vz());
+   ele_out       -> emplace_back(ele);
+  }
 
- size_t iele=-1;
- /// add and clean low pT e
+  unsigned int pfSelectedSize = pfEtaPhi.size();
+
+  size_t iele=-1;
+  /// add and clean low pT e
   for(auto ele : *lowpt) {
     iele++;
     //take modes
@@ -151,15 +183,21 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    }
    // same here Do we need evts without trg muon? now we skip them
    if (skipEle) continue;   
+   
 
    //pf cleaning    
    bool clean_out = false;
-   for(const auto& pfele : *pf) {
+   for(unsigned int iEle=0; iEle<pfSelectedSize; ++iEle) {
+
       clean_out |= (
-	           fabs(pfele.vz() - ele.vz()) < dz_cleaning_ &&
-                   reco::deltaR(ele, pfele) < dr_cleaning_   );
+	           fabs(pfVz[iEle] - ele.vz()) < dz_cleaning_ &&
+                   reco::deltaR(ele.eta(), ele.phi(), pfEtaPhi[iEle].first, pfEtaPhi[iEle].second) < dr_cleaning_   );
+
    }
-   if(clean_out) continue;
+   if(clean_out && flagAndclean_) continue;
+   else if(clean_out) ele.addUserInt("isPFoverlap", 1);
+   else ele.addUserInt("isPFoverlap", 0);
+
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
    ele.addUserInt("isPF", 0);
@@ -168,17 +206,48 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("ptBiased", ptbiased_seedBDT);
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
-   ele_out->emplace_back(ele);
- }
 
-//is this nescaisery ? because it is additional loop
-   /* std::sort( out->begin(), out->end(), [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();}
-	      );
-  }*/
+   ele_out       -> emplace_back(ele);
+  }
 
+  if(sortOutputCollections_){
+
+    //sorting increases sligtly the time but improves the code efficiency in the Bcandidate builder
+    //easier identification of leading and subleading with smarter loop
+    std::sort( ele_out->begin(), ele_out->end(), [] (pat::Electron e1, pat::Electron e2) -> bool {return e1.pt() > e2.pt();}
+             );
+  }
+
+  // build transient track collection
+  for(auto &ele : *ele_out){
+    const reco::TransientTrack eleTT =(*theB).buildfromGSF( ele.gsfTrack() );
+    trans_ele_out -> emplace_back(eleTT);
+
+    if(ele.userInt("isPF")) continue;
+    //compute IP for electrons: need transient track
+    //from PhysicsTools/PatAlgos/plugins/LeptonUpdater.cc
+    const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
+    // PVDZ
+    ele.setDB(gsfTrk->dz(PV.position()), std::hypot(gsfTrk->dzError(), PV.zError()), pat::Electron::PVDZ);
+
+    //PV2D
+    std::pair<bool, Measurement1D> result = IPTools::signedTransverseImpactParameter(eleTT, GlobalVector(gsfTrk->px(), gsfTrk->py(), gsfTrk->pz()), PV);
+    double d0_corr = result.second.value();
+    double d0_err = PV.isValid() ? result.second.error() : -1.0;
+    ele.setDB(d0_corr, d0_err, pat::Electron::PV2D);
+
+    // PV3D
+    result = IPTools::signedImpactParameter3D(eleTT, GlobalVector(gsfTrk->px(), gsfTrk->py(), gsfTrk->pz()), PV);
+    d0_corr = result.second.value();
+    d0_err = PV.isValid() ? result.second.error() : -1.0;
+    ele.setDB(d0_corr, d0_err, pat::Electron::PV3D);
+  }
+   
   //adding label to be consistent with the muon and track naming
-  evt.put(std::move(ele_out),"SelectedElectrons");
+  evt.put(std::move(ele_out),      "SelectedElectrons");
+  evt.put(std::move(trans_ele_out),"SelectedTransientElectrons");
 }
+
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(ElectronMerger);

@@ -12,12 +12,11 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 
-#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
-#include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
-#include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/PatCandidates/interface/TriggerObjectStandAlone.h"
@@ -26,14 +25,14 @@
 #include "DataFormats/PatCandidates/interface/TriggerEvent.h"
 #include "DataFormats/PatCandidates/interface/TriggerAlgorithm.h"
 
-
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include <TLorentzVector.h>
+#include "helper.h"
 
 using namespace std;
 
-
-constexpr float MuonMass_ = 0.10565837;
 constexpr bool debug = false;
 
 class MuonTriggerSelector : public edm::EDProducer {
@@ -60,7 +59,7 @@ private:
 
     //for filter wrt trigger
     const double dzTrg_cleaning_; // selects primary vertex
-    const double drTrg_cleaning_; //to be used only when we want to remove tag
+
     const double ptMin_;          // min pT in all muons for B candidates
     const double absEtaMax_;      //max eta ""
     const bool softMuonsOnly_;    //cuts muons without soft ID
@@ -75,20 +74,22 @@ MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   vertexSrc_( consumes<reco::VertexCollection> ( iConfig.getParameter<edm::InputTag>( "vertexCollection" ) ) ), 
   maxdR_(iConfig.getParameter<double>("maxdR_matching")),
   dzTrg_cleaning_(iConfig.getParameter<double>("dzForCleaning_wrtTrgMuon")),
-  drTrg_cleaning_(iConfig.getParameter<double>("drForCleaning_wrtTrgMuon")),
   ptMin_(iConfig.getParameter<double>("ptMin")),
   absEtaMax_(iConfig.getParameter<double>("absEtaMax")),
   softMuonsOnly_(iConfig.getParameter<bool>("softMuonsOnly"))
 {
-  // produce 2 collections: trgMuons (tags) and SelectedMuons (probes & tags)
+  // produce 2 collections: trgMuons (tags) and SelectedMuons (probes & tags if survive preselection cuts)
     produces<pat::MuonCollection>("trgMuons"); 
     produces<pat::MuonCollection>("SelectedMuons");
+    produces<TransientTrackCollection>("SelectedTransientMuons");  
 }
 
 
 
 void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     
+    edm::ESHandle<MagneticField> bFieldHandle;
+    iSetup.get<IdealMagneticFieldRecord>().get(bFieldHandle);
 
     edm::Handle<reco::VertexCollection> vertexHandle;
     iEvent.getByToken(vertexSrc_, vertexHandle);
@@ -146,13 +147,16 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     }
 
 
-    std::unique_ptr<pat::MuonCollection> trgmuons_out( new pat::MuonCollection );
-    std::unique_ptr<pat::MuonCollection> muons_out( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection>      trgmuons_out   ( new pat::MuonCollection );
+    std::unique_ptr<pat::MuonCollection>      muons_out      ( new pat::MuonCollection );
+    std::unique_ptr<TransientTrackCollection> trans_muons_out( new TransientTrackCollection );
 
 
     //now check for reco muons matched to triggering muons
     edm::Handle<std::vector<pat::Muon>> muons;
     iEvent.getByToken(muonSrc_, muons);
+
+    std::vector<int> muonIsTrigger(muons->size(), 0);
 
     for(const pat::Muon & muon : *muons){
       //this is for triggering muon not really need to be configurable
@@ -177,40 +181,53 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
       }
 
       //save reco muon 
-      //since we do not store full muon collection => useless to save original muon index
       if(recoMuonMatching_index != -1){
 	pat::Muon recoTriggerMuonCand (muon);
 	recoTriggerMuonCand.addUserInt("trgMuonIndex", trgMuonMatching_index);
 	trgmuons_out->emplace_back(recoTriggerMuonCand);
+
+	//keep track of original muon index for SelectedMuons collection
+	muonIsTrigger[iMuo] = 1;
       }
     }
-    
 
-    
-    // code simplified loop of trg inside
-      for(const pat::Muon &mu : *muons) {
-	//election cuts
+
+
+    // now produce output for analysis (code simplified loop of trg inside)
+    // trigger muon + all compatible in dz with any tag
+      for(unsigned int muIdx=0; muIdx<muons->size(); ++muIdx) {
+       const pat::Muon& mu = (*muons)[muIdx];
+       //selection cuts
        if (mu.pt() < ptMin_) continue;
        if (fabs(mu.eta()) > absEtaMax_) continue;
+       //following ID is needed for trigger muons not here
+       // anyway it is off in the configuration
        if (softMuonsOnly_ && !mu.isSoftMuon(PV)) continue;
 
-       // same PV as the tag muon
+       // same PV as the tag muon, both tag and probe only dz selection
        bool SkipMuon=true;
        for (const pat::Muon & trgmu : *trgmuons_out) {
-         if( reco::deltaR(mu,trgmu) < drTrg_cleaning_ && drTrg_cleaning_ >0 )
-             continue;
-       	 if( fabs(mu.vz()-trgmu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ >0 )
-             continue;
-         SkipMuon=false;
+	 if( fabs(mu.vz()-trgmu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ >0 )
+	   continue;
+	 SkipMuon=false;
        } 
        // needs decission: what about events without trg muon? now we SKIP them
        if (SkipMuon)  continue;
+       
+
+       // build transient track
+       const reco::TransientTrack muonTT((*(mu.bestTrack())), &(*bFieldHandle)); //sara: check, why not using inner track for muons? 
+       if (!muonTT.isValid()) continue;
+
        muons_out->emplace_back(mu);
-    }
+       muons_out->back().addUserInt("isTriggering", muonIsTrigger[muIdx]);
 
+       trans_muons_out->emplace_back(muonTT);
+      }
 
-    iEvent.put(std::move(trgmuons_out), "trgMuons");
-    iEvent.put(std::move(muons_out), "SelectedMuons");
+    iEvent.put(std::move(trgmuons_out),    "trgMuons");
+    iEvent.put(std::move(muons_out),       "SelectedMuons");
+    iEvent.put(std::move(trans_muons_out), "SelectedTransientMuons");
 }
 
 
