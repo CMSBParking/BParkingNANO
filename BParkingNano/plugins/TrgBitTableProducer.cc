@@ -159,7 +159,7 @@ TrgBitTableProducer::produce( edm::Event &evt, edm::EventSetup const &stp)
     tab->addColumnValue<uint8_t> (hltpaths_[ipath], hltbits[ipath], "hlt path", nanoaod::FlatTable::UInt8Column);
   }
   for (unsigned int iseed = 0; iseed <Nseeds; ++iseed ){
-    tab->addColumnValue<uint8_t> (l1seeds_[iseed]+"t", l1bits[iseed], "l1 seed", nanoaod::FlatTable::UInt8Column);
+    tab->addColumnValue<uint8_t> (l1seeds_[iseed], l1bits[iseed], "l1 seed", nanoaod::FlatTable::UInt8Column);
   }
     evt.put(std::move(tab));
 

@@ -119,6 +119,8 @@ process = nanoAOD_customizeMuonTriggerBPark(process)
 process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
+process = nanoAOD_customizeTriggerBitsBPark(process)
+
 
 # Path and EndPath definitions
 process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + CountBToKmumu )
