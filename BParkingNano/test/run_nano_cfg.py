@@ -8,6 +8,11 @@ options.register('isMC', False,
     VarParsing.varType.bool,
     "Run this on real data"
 )
+options.register('globalTag', 'NOTSET',
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.string,
+    "Set global tag"
+)
 options.register('wantSummary', True,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.bool,
@@ -28,7 +33,10 @@ options.setDefault('maxEvents', 100)
 options.setDefault('tag', '10215')
 options.parseArguments()
 
-globaltag = '102X_dataRun2_Sep2018Rereco_v1' if not options.isMC else '102X_upgrade2018_realistic_v15'
+globaltag = '102X_dataRun2_v11' if not options.isMC else '102X_upgrade2018_realistic_v15'
+if options._beenSet['globalTag']:
+    globaltag = options.globalTag
+
 extension = {False : 'data', True : 'mc'}
 outputFileNANO = cms.untracked.string('_'.join(['testBParkNANO', extension[options.isMC], options.tag])+'.root')
 outputFileFEVT = cms.untracked.string('_'.join(['testBParkFullEvt', extension[options.isMC], options.tag])+'.root')

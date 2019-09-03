@@ -1,0 +1,75 @@
+common:
+  data:
+    lumimask : https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions18/13TeV/ReReco/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt
+    splitting: 20
+    globaltag: 102X_dataRun2_v11
+  mc:
+    splitting: 1
+    globaltag: 102X_upgrade2018_realistic_v15
+
+samples:
+  data_Run2018A_part%d:    
+    dataset: /ParkingBPH%d/Run2018A-05May2019-v1/MINIAOD
+    isMC: False
+    parts: 
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+  data_Run2018B_part%d:
+    dataset: /ParkingBPH%d/Run2018B-05May2019-v2/MINIAOD 
+    isMC: False
+    parts: 
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+  data_Run2018C_part%d: 
+    dataset: /ParkingBPH%d/Run2018C-05May2019-v1/MINIAOD 
+    isMC: False
+    parts: 
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+  data_Run2018D_part%d:
+    dataset: /ParkingBPH%d/Run2018D-05May2019promptD-v1/MINIAOD
+    isMC: False
+    globaltag: 102X_dataRun2_Prompt_v14
+    parts:
+      - 1
+      - 2
+      - 3
+      # The rest is still to come, hopefully in the same version
+  #
+  #  MC
+  #  
+  BuToKPsi2S_Toee:
+    dataset: /BuToKPsi2S_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
+    isMC: True
+  
+  BuToKPsi2S_ToMuMu:
+    dataset: /BuToKPsi2S_ToMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
+    isMC: True
+  
+  BuToKJpsi_ToMuMu:
+    dataset: /BuToKJpsi_ToMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
+    
+  BuToKJpsi_Toee:
+    dataset: /BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
+    
+  BuToKMuMu:
+    dataset: /BuToKMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
+
+  BuToKee:
+    dataset: /BuToKee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
