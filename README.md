@@ -29,7 +29,7 @@ git cms-merge-topic -u CMSBParking:GsfTransientTracks
 ```
 git cms-addpkg PhysicsTools/NanoAOD
 git clone git@github.com:CMSBParking/BParkingNANO.git  
-mv BParkingNANO PhysicsTools
+mv BParkingNANO/* PhysicsTools
 scram b
 ```
 
