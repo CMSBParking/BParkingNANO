@@ -38,7 +38,7 @@ scram b
 ```shell
 cd PhysicsTools/BParkingNANO/test/
 cmsenv 
-cmsRun test_BParkSequence_10215.py
+cmsRun run_nano_cfg.py
 ```
 
 ## Contributing
