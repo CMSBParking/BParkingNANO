@@ -58,5 +58,5 @@ def nanoAOD_customizeMC(process):
             pass
 
         path.insert(0, nanoSequenceMC)
-        path.insert(3, muonBParkMC)
+        path.insert(3, muonBParkMC+tracksBParkMC)
 
