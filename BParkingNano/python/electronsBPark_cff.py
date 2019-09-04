@@ -54,9 +54,9 @@ electronsForAnalysis = cms.EDProducer(
   pf_ptMin = cms.double(1.),
   ptMin = cms.double(0.5),
   etaMax = cms.double(2.5),
-    bdtMin = cms.double(0), #this cut can be used to deactivate low pT e if set to >12
+  bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
-    sortOutputCollections = cms.bool(True)
+  sortOutputCollections = cms.bool(True)
 )
 
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
