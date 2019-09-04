@@ -24,12 +24,12 @@ BToKee = cms.EDProducer(
     kaonSelection = cms.string(''),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03 '
-        '&& mass < 7. && mass > 3.'
+        '&& mass < 7. && mass > 4.'
         ),
     postVtxSelection = cms.string(
         'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0 '
-        '&& userFloat("fitted_mass") > 3. && userFloat("fitted_mass") < 7.'
+        '&& userFloat("fitted_mass") > 4. && userFloat("fitted_mass") < 7.'
     )
 )
 
@@ -55,12 +55,12 @@ BToKmumu = cms.EDProducer(
     # This in principle can be different between electrons and muons
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
-        '&& mass < 7. && mass > 3.'
+        '&& mass < 7. && mass > 4.'
         ),
     postVtxSelection = cms.string(
         'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0'
-        '&& userFloat("fitted_mass") > 3. && userFloat("fitted_mass") < 7.'
+        '&& userFloat("fitted_mass") > 4. && userFloat("fitted_mass") < 7.'
     )
 )
 
