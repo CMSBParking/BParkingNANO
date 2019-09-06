@@ -40,7 +40,7 @@ def nanoAOD_customizeTrackFilteredBPark(process):
     return process
 
 def nanoAOD_customizeElectronFilteredBPark(process):
-    process.nanoBKeeSequence = cms.Sequence( electronsBParkSequence + electronBParkTables)
+    process.nanoSequence = cms.Sequence( process.nanoSequence + electronsBParkSequence + electronBParkTables)
     return process
 
 def nanoAOD_customizeBToKLL(process):
