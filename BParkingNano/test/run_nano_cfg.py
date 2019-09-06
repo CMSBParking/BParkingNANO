@@ -42,8 +42,7 @@ outputFileNANO = cms.untracked.string('_'.join(['testBParkNANO', extension[optio
 outputFileFEVT = cms.untracked.string('_'.join(['testBParkFullEvt', extension[options.isMC], options.tag])+'.root')
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
-                         ['root://cms-xrd-global.cern.ch//store/mc/RunIIAutumn18MiniAOD/BuToKMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/MINIAODSIM/PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/40000/E5179C93-BFAA-6240-AAE7-A0A4DC410E4C.root']
-#                          ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
+                         ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)
 
 from Configuration.StandardSequences.Eras import eras
@@ -124,28 +123,6 @@ process = nanoAOD_customizeBToKLL(process)
 # Path and EndPath definitions
 process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + CountBToKmumu )
 process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence   + CountBToKee   )
-
-process.electronsForAnalysis.bdtMin = cms.double(-4)
-process.tracksBPark.dcaSig = cms.double(-9999999)
-process.BToKee.preVtxSelection = cms.string(
-        'pt > 3. && userFloat("min_dr") > 0.03'
-        '&& mass < 7. && mass > 4.'
-        )
-process.BToKee.postVtxSelection = cms.string(
-        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
-        '&& userFloat("fitted_cos_theta_2D") >= 0'
-        '&& userFloat("fitted_mass") > 4. && userFloat("fitted_mass") < 7.'
-        )
-process.BToKmumu.preVtxSelection = cms.string(
-        'pt > 3. && userFloat("min_dr") > 0.03'
-        '&& mass < 7. && mass > 4.'
-        )
-process.BToKmumu.postVtxSelection = cms.string(
-        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
-        '&& userFloat("fitted_cos_theta_2D") >= 0'
-        '&& userFloat("fitted_mass") > 4. && userFloat("fitted_mass") < 7.'
-        )
-
 
 
 # customisation of the process.
