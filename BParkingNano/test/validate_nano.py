@@ -109,8 +109,8 @@ def stat_validation(v1, v2, name = '', val_valid = False, nbins = 20):
     M = int(M) + 1
     nbins = min(M - m, nbins*2)
   plt.clf()
-  h1, _, _ = plt.hist(v1, range = (m,M), bins = nbins, label = 'selection 8', histtype = 'step') ###old
-  h2, _, _ = plt.hist(v2, range = (m,M), bins = nbins, label = 'selection 9', histtype = 'step') ###new
+  h1, _, _ = plt.hist(v1, range = (m,M), bins = nbins, label = 'old', histtype = 'step')
+  h2, _, _ = plt.hist(v2, range = (m,M), bins = nbins, label = 'new', histtype = 'step')
   ret_val = (h1 == h2).all()
   plt.legend(loc='best')
   skip = any(fnmatch.fnmatch(name, i) for i in noplot)
@@ -197,8 +197,8 @@ def size_plot(frame, nametag):
   plt.title(title)
   fig.savefig('validation/%s_size.png' % nametag)
 
-size_plot(new, 'selection_9')
-size_plot(old, 'selection_8')
+size_plot(new, 'new')
+size_plot(old, 'old')
 
 #
 # Branch checks
