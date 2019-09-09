@@ -96,7 +96,11 @@ muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     docString = cms.string("MC matching to status==1 muons"),
 )
 
-
+selectedMuonsMCMatchEmbedded = cms.EDProducer(
+    'MuonMatchEmbedder',
+    src = cms.InputTag('muonTrgSelector:SelectedMuons'),
+    matching = cms.InputTag('muonsBParkMCMatchForTable')
+)
 
 muonTriggerMatchedTable = muonBParkTable.clone(
     src = cms.InputTag("muonTrgSelector:trgMuons"),
@@ -110,9 +114,7 @@ muonTriggerMatchedTable = muonBParkTable.clone(
    )
 )
 
-
-
 muonBParkSequence = cms.Sequence(muonTrgSelector * countTrgMuons)
-muonBParkMC = cms.Sequence(muonsBParkMCMatchForTable + muonBParkMCTable)
+muonBParkMC = cms.Sequence(muonBParkSequence + muonsBParkMCMatchForTable + selectedMuonsMCMatchEmbedded + muonBParkMCTable)
 muonBParkTables = cms.Sequence(muonBParkTable)
 muonTriggerMatchedTables = cms.Sequence(muonTriggerMatchedTable)
