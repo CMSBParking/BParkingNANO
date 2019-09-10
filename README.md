@@ -27,9 +27,8 @@ git cms-merge-topic -u CMSBParking:GsfTransientTracks
 ## Add the BParkingNano package and build everything
 
 ```
+git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
 git cms-addpkg PhysicsTools/NanoAOD
-git clone git@github.com:CMSBParking/BParkingNANO.git  
-mv BParkingNANO/* PhysicsTools
 scram b
 ```
 
