@@ -28,6 +28,11 @@ options.register('reportEvery', 10,
     VarParsing.varType.int,
     "report every N events"
 )
+options.register('skip', 0,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.int,
+    "skip first N events"
+)
 
 options.setDefault('maxEvents', 100)
 options.setDefault('tag', '10215')
@@ -65,9 +70,11 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 # Input source
-process.source = cms.Source("PoolSource",
+process.source = cms.Source(
+    "PoolSource",
     fileNames = cms.untracked.vstring(options.inputFiles),
-    secondaryFileNames = cms.untracked.vstring()
+    secondaryFileNames = cms.untracked.vstring(),
+    skipEvents=cms.untracked.uint32(options.skip),
 )
 
 process.options = cms.untracked.PSet(
