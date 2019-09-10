@@ -157,7 +157,9 @@ process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
                                    'nanoAOD_Kee_step'
                                    )
 )
-    
+### from https://hypernews.cern.ch/HyperNews/CMS/get/physics-validation/3287/1/1/1/1/1.html
+process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))
+process.NANOAODoutput.fakeNameForCrab=cms.untracked.bool(True)    
 
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
