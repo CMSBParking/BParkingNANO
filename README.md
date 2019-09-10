@@ -35,7 +35,7 @@ scram b
 ## To run on a test file
 
 ```shell
-cd PhysicsTools/BParkingNANO/test/
+cd PhysicsTools/BParkingNano/test/
 cmsenv 
 cmsRun run_nano_cfg.py
 ```
