@@ -38,8 +38,8 @@ if options._beenSet['globalTag']:
     globaltag = options.globalTag
 
 extension = {False : 'data', True : 'mc'}
-outputFileNANO = cms.untracked.string('_'.join(['testBParkNANO', extension[options.isMC], options.tag])+'.root')
-outputFileFEVT = cms.untracked.string('_'.join(['testBParkFullEvt', extension[options.isMC], options.tag])+'.root')
+outputFileNANO = cms.untracked.string('_'.join(['BParkNANO', extension[options.isMC], options.tag])+'.root')
+outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[options.isMC], options.tag])+'.root')
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
                          ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
