@@ -110,7 +110,12 @@ process.NANOAODoutput = cms.OutputModule("NanoAODOutputModule",
         filterName = cms.untracked.string('')
     ),
     fileName = outputFileNANO,
-    outputCommands = process.NANOAODEventContent.outputCommands
+    outputCommands = cms.untracked.vstring(
+      'drop *',
+      "keep nanoaodFlatTable_*Table_*_*",     # event data
+      "keep nanoaodUniqueString_nanoMetadata_*_*",   # basic metadata
+    )
+
 )
 
 
