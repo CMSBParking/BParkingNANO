@@ -12,15 +12,18 @@ config.section_('General')
 config.General.transferOutputs = True
 config.General.transferLogs = True
 config.General.workArea = 'BParkingNANO_%s' % production_tag
+
 config.section_('Data')
 config.Data.publication = False
-config.Data.outLFNDirBase = '/store/cmst3/group/bpark/%s' % (config.General.workArea)
+config.Data.outLFNDirBase = '/store/group/cmst3/group/bpark/%s' % (config.General.workArea)
 config.Data.inputDBS = 'global'
+
 config.section_('JobType')
 config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = '../test/run_nano_cfg.py'
 config.JobType.maxJobRuntimeMin = 3000
 config.JobType.allowUndistributedCMSSW = True
+
 config.section_('User')
 config.section_('Site')
 config.Site.storageSite = 'T2_CH_CERN'
@@ -31,6 +34,15 @@ if __name__ == '__main__':
   from CRABClient.ClientExceptions import ClientException
   from httplib import HTTPException
   from multiprocessing import Process
+
+  def submit(config):
+      try:
+          crabCommand('submit', config = config)
+      except HTTPException as hte:
+          print "Failed submitting task: %s" % (hte.headers)
+      except ClientException as cle:
+          print "Failed submitting task: %s" % (cle)
+
 
   parser = ArgumentParser()
   parser.add_argument('-y', '--yaml', default = 'samples.yml', help = 'File with dataset descriptions')
@@ -52,11 +64,13 @@ if __name__ == '__main__':
         if not fnmatch(name, args.filter): continue
         print 'submitting', name
 
-        config.Data.inputDataset = info['dataset'] % part \
-                                   if 'parts' is not None else \
-                                      info['dataset']
-        config.General.requestName = name
         isMC = info['isMC']
+
+        config.Data.inputDataset = info['dataset'] % part \
+                                   if part is not None else \
+                                      info['dataset']
+
+        config.General.requestName = name
         common_branch = 'mc' if isMC else 'data'
         config.Data.splitting = 'FileBased' if isMC else 'LumiBased'
         if not isMC:
@@ -64,6 +78,8 @@ if __name__ == '__main__':
                 'lumimask', 
                 common[common_branch].get('lumimask', None)
             )
+        else:
+            config.Data.lumiMask = ''
 
         config.Data.unitsPerJob = info.get(
             'splitting',
@@ -79,6 +95,9 @@ if __name__ == '__main__':
             'tag=%s' % production_tag,
             'globalTag=%s' % globaltag,
         ]
-     
-        crabCommand('submit', config = config, dryrun = False)
+        
+        config.JobType.outputFiles = ['_'.join(['BParkNANO', 'mc' if isMC else 'data', production_tag])+'.root']
+        
+        print config
+        submit(config)
 

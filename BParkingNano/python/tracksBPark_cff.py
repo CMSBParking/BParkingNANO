@@ -6,13 +6,13 @@ tracksBPark = cms.EDProducer('TrackMerger',
                              trgMuon    = cms.InputTag("muonTrgSelector:trgMuons"),
                              tracks     = cms.InputTag("packedPFCandidates"),
                              lostTracks = cms.InputTag("lostTracks"),
-                             trkPtCut = cms.double(0.5),    
+                             trkPtCut = cms.double(0.7),
                              muons      = cms.InputTag("slimmedMuons"),
                              pfElectrons= cms.InputTag("slimmedElectrons"),
                              vertices   = cms.InputTag("offlineSlimmedPrimaryVertices"),
                              trkEtaCut = cms.double(2.5),
-                             dzTrg_cleaning = cms.double(-1.), ##next step change to 1
-                             drTrg_Cleaning = cms.double(-0.4),  ##next step move to 0.01
+                             dzTrg_cleaning = cms.double(1.),
+                             drTrg_Cleaning = cms.double(0.03),
                              dcaSig = cms.double(-100000),
                              trkNormChiMin = cms.int32(-1),
                              trkNormChiMax = cms.int32(-1)
@@ -56,7 +56,7 @@ tracksBParkMCMatchForTable = cms.EDProducer("MCMatcher",   # cut on deltaR, delt
     mcPdgId     = cms.vint32(321,211),                     # one or more PDG ID (321 = charged kaon, 211 = charged pion); absolute values (see below)
     checkCharge = cms.bool(False),              # True = require RECO and MC objects to have the same charge
     mcStatus    = cms.vint32(1),                # PYTHIA status code (1 = stable, 2 = shower, 3 = hard scattering)
-    maxDeltaR   = cms.double(0.3),              # Minimum deltaR for the match
+    maxDeltaR   = cms.double(0.03),             # Minimum deltaR for the match
     maxDPtRel   = cms.double(0.5),              # Minimum deltaPt/Pt for the match
     resolveAmbiguities    = cms.bool(True),     # Forbid two RECO objects to match to the same GEN object
     resolveByMatchQuality = cms.bool(True),     # False = just match input in order; True = pick lowest deltaR pair first

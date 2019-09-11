@@ -11,12 +11,12 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
                                  
                                  ##for the output trigger matched collection
-                                 maxdR_matching = cms.double(0.01), #too tight 0.05 already better + check
+                                 maxdR_matching = cms.double(0.1),
                                  
                                  ## for the output selected collection (tag + all compatible in dZ)
                                  dzForCleaning_wrtTrgMuon = cms.double(1.),
 
-                                 ptMin = cms.double(1.),
+                                 ptMin = cms.double(0.5),
                                  absEtaMax = cms.double(2.4),
                                  # keeps only muons with at soft Quality flag
                                  softMuonsOnly = cms.bool(False)
@@ -81,7 +81,7 @@ muonsBParkMCMatchForTable = cms.EDProducer("MCMatcher",            # cut on delt
     mcPdgId     = cms.vint32(13),                             # one or more PDG ID (13 = mu); absolute values (see below)
     checkCharge = cms.bool(False),                            # True = require RECO and MC objects to have the same charge
     mcStatus    = cms.vint32(1),                              # PYTHIA status code (1 = stable, 2 = shower, 3 = hard scattering)
-    maxDeltaR   = cms.double(0.3),                            # Minimum deltaR for the match
+    maxDeltaR   = cms.double(0.03),                           # Minimum deltaR for the match
     maxDPtRel   = cms.double(0.5),                            # Minimum deltaPt/Pt for the match
     resolveAmbiguities    = cms.bool(True),                   # Forbid two RECO objects to match to the same GEN object
     resolveByMatchQuality = cms.bool(True),                   # False = just match input in order; True = pick lowest deltaR pair first

@@ -24,7 +24,11 @@ if not os.path.isdir('validation'):
   os.makedirs('validation')
 
 # probably logging would be better
-logfile = open('validation/validation_log.raw_txt', 'w')
+logfile = open('validation/validation_log.html', 'w')
+logfile.write('''<html>
+<body>
+<pre>
+''')
 
 def to_html(txt):
   return txt.replace('<', '&lt;').replace('>', '&gt;')
@@ -237,3 +241,9 @@ for branch in sorted(intersection):
     log(' '.join([branch, '--> FAILS BY VALUE CHECK ONLY!']), 'orange')
   else:
     log(' '.join([branch, '--> FAILS ALL CHECKS!']), 'red')
+
+logfile.write('''
+</pre>
+</body>
+</html>
+''')

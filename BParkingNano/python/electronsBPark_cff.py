@@ -44,19 +44,19 @@ electronsForAnalysis = cms.EDProducer(
   mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
   vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
-  drForCleaning_wrtTrgMuon = cms.double(-1.),
-  dzForCleaning_wrtTrgMuon = cms.double(-1.),
+  drForCleaning_wrtTrgMuon = cms.double(0.03),
+  dzForCleaning_wrtTrgMuon = cms.double(1.),
   ## cleaning between pfEle and lowPtGsf
-  drForCleaning = cms.double(0.01),
-  dzForCleaning = cms.double(0.01),
+  drForCleaning = cms.double(0.03),
+  dzForCleaning = cms.double(0.7), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
   ## true = flag and clean; false = only flag
   flagAndclean = cms.bool(False),
-  pf_ptMin = cms.double(1.),  ## move to 2 next
-  ptMin = cms.double(1.),
+  pf_ptMin = cms.double(1.),
+  ptMin = cms.double(0.5),
   etaMax = cms.double(2.5),
-    bdtMin = cms.double(0), #this cut can be used to deactivate low pT e if set to >12
+  bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
-    sortOutputCollections = cms.bool(True)
+  sortOutputCollections = cms.bool(True)
 )
 
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -103,9 +103,9 @@ electronsBParkMCMatchForTable = cms.EDProducer("MCMatcher",  # cut on deltaR, de
     mcPdgId     = cms.vint32(11,22),                 # one or more PDG ID (11 = el, 22 = pho); absolute values (see below)
     checkCharge = cms.bool(False),              # True = require RECO and MC objects to have the same charge  
     mcStatus    = cms.vint32(1),                # PYTHIA status code (1 = stable, 2 = shower, 3 = hard scattering)
-    maxDeltaR   = cms.double(0.3),              # Minimum deltaR for the match
+    maxDeltaR   = cms.double(0.03),             # Minimum deltaR for the match
     maxDPtRel   = cms.double(0.5),              # Minimum deltaPt/Pt for the match
-    resolveAmbiguities    = cms.bool(True),     # Forbid two RECO objects to match to the same GEN object
+    resolveAmbiguities    = cms.bool(False),    # Forbid two RECO objects to match to the same GEN object
     resolveByMatchQuality = cms.bool(True),    # False = just match input in order; True = pick lowest deltaR pair first
     
 )

@@ -28,6 +28,11 @@ options.register('reportEvery', 10,
     VarParsing.varType.int,
     "report every N events"
 )
+options.register('skip', 0,
+    VarParsing.multiplicity.singleton,
+    VarParsing.varType.int,
+    "skip first N events"
+)
 
 options.setDefault('maxEvents', 100)
 options.setDefault('tag', '10215')
@@ -38,8 +43,8 @@ if options._beenSet['globalTag']:
     globaltag = options.globalTag
 
 extension = {False : 'data', True : 'mc'}
-outputFileNANO = cms.untracked.string('_'.join(['testBParkNANO', extension[options.isMC], options.tag])+'.root')
-outputFileFEVT = cms.untracked.string('_'.join(['testBParkFullEvt', extension[options.isMC], options.tag])+'.root')
+outputFileNANO = cms.untracked.string('_'.join(['BParkNANO', extension[options.isMC], options.tag])+'.root')
+outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[options.isMC], options.tag])+'.root')
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
                          ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
@@ -65,9 +70,11 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 # Input source
-process.source = cms.Source("PoolSource",
+process.source = cms.Source(
+    "PoolSource",
     fileNames = cms.untracked.vstring(options.inputFiles),
-    secondaryFileNames = cms.untracked.vstring()
+    secondaryFileNames = cms.untracked.vstring(),
+    skipEvents=cms.untracked.uint32(options.skip),
 )
 
 process.options = cms.untracked.PSet(
@@ -159,7 +166,9 @@ process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
                                    'nanoAOD_Kee_step'
                                    )
 )
-    
+### from https://hypernews.cern.ch/HyperNews/CMS/get/physics-validation/3287/1/1/1/1/1.html
+process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(False)))
+process.NANOAODoutput.fakeNameForCrab=cms.untracked.bool(True)    
 
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete

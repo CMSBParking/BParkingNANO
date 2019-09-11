@@ -27,17 +27,17 @@ git cms-merge-topic -u CMSBParking:GsfTransientTracks
 ## Add the BParkingNano package and build everything
 
 ```
-git cms-addpkg PhysicsTools/NanoAOD
 git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
+git cms-addpkg PhysicsTools/NanoAOD
 scram b
 ```
 
 ## To run on a test file
 
 ```shell
-cd PhysicsTools/BParkingNANO/test/
+cd PhysicsTools/BParkingNano/test/
 cmsenv 
-cmsRun test_BParkSequence_10215.py
+cmsRun run_nano_cfg.py
 ```
 
 ## Contributing
