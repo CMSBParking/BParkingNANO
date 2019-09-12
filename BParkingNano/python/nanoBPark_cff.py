@@ -5,6 +5,9 @@ from PhysicsTools.NanoAOD.globals_cff import *
 from PhysicsTools.NanoAOD.nano_cff import *
 from PhysicsTools.NanoAOD.vertices_cff import *
 from PhysicsTools.NanoAOD.NanoAODEDMEventContent_cff import *
+from PhysicsTools.BParkingNano.trgbits_cff import *
+
+
 
 ##for gen and trigger muon
 from PhysicsTools.BParkingNano.genparticlesBPark_cff import *
@@ -41,6 +44,10 @@ def nanoAOD_customizeTrackFilteredBPark(process):
 
 def nanoAOD_customizeElectronFilteredBPark(process):
     process.nanoBKeeSequence = cms.Sequence( electronsBParkSequence + electronBParkTables)
+    return process
+
+def nanoAOD_customizeTriggerBitsBPark(process):
+    process.nanoSequence = cms.Sequence( process.nanoSequence + trgTables)
     return process
 
 def nanoAOD_customizeBToKLL(process):

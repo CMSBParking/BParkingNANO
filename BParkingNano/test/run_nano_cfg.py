@@ -110,7 +110,12 @@ process.NANOAODoutput = cms.OutputModule("NanoAODOutputModule",
         filterName = cms.untracked.string('')
     ),
     fileName = outputFileNANO,
-    outputCommands = process.NANOAODEventContent.outputCommands
+    outputCommands = cms.untracked.vstring(
+      'drop *',
+      "keep nanoaodFlatTable_*Table_*_*",     # event data
+      "keep nanoaodUniqueString_nanoMetadata_*_*",   # basic metadata
+    )
+
 )
 
 
@@ -126,6 +131,8 @@ process = nanoAOD_customizeMuonTriggerBPark(process)
 process = nanoAOD_customizeElectronFilteredBPark(process)
 process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
+process = nanoAOD_customizeTriggerBitsBPark(process)
+
 
 # Path and EndPath definitions
 process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuSequence + CountBToKmumu )
