@@ -24,6 +24,7 @@ constexpr float LEP_SIGMA = 0.0000001;
 constexpr float K_SIGMA = 0.000016;
 constexpr float PI_SIGMA = 0.000016;
 constexpr float MUON_MASS = 0.10565837;
+constexpr float ELECTRON_MASS = 0.000511;
 
 inline std::pair<float, float> min_max_dr(const std::vector< edm::Ptr<reco::Candidate> > & cands) {
   float min_dr = std::numeric_limits<float>::max();
