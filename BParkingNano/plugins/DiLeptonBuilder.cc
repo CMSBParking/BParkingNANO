@@ -67,30 +67,22 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
   
   for(size_t l1_idx = 0; l1_idx < leptons->size(); ++l1_idx) {
     edm::Ptr<Lepton> l1_ptr(leptons, l1_idx);
-    bool l1_as_l1 = l1_selection_(*l1_ptr);
-    bool l1_as_l2 = l2_selection_(*l1_ptr);
-    if( !(l1_as_l1 || l1_as_l2) ) continue; 
+    if(!l1_selection_(*l1_ptr)) continue; 
     
     for(size_t l2_idx = l1_idx + 1; l2_idx < leptons->size(); ++l2_idx) {
       edm::Ptr<Lepton> l2_ptr(leptons, l2_idx);
-      bool l2_as_l1 = l1_selection_(*l2_ptr);
-      bool l2_as_l2 = l2_selection_(*l2_ptr);
-      if( !(l2_as_l1 || l2_as_l2) ) continue;
-
-      bool l1_l2 = l1_as_l1 && l2_as_l2;
-      bool l2_l1 = l2_as_l1 && l1_as_l2;
-      if( !(l1_l2 || l2_l1) ) continue; // make sure both leptons pass opposite selections
+      if(!l2_selection_(*l2_ptr)) continue;
 
       pat::CompositeCandidate lepton_pair;
       lepton_pair.setP4(l1_ptr->p4() + l2_ptr->p4());
       lepton_pair.setCharge(l1_ptr->charge() + l2_ptr->charge());
       lepton_pair.addUserFloat("lep_deltaR", reco::deltaR(*l1_ptr, *l2_ptr));
       // Put the lepton passing the corresponding selection
-      lepton_pair.addUserInt("l1_idx", l1_as_l1 ? l1_idx : l2_idx);
-      lepton_pair.addUserInt("l2_idx", l1_as_l1 ? l2_idx : l1_idx);
+      lepton_pair.addUserInt("l1_idx", l1_idx );
+      lepton_pair.addUserInt("l2_idx", l2_idx );
       // Use UserCands as they should not use memory but keep the Ptr itself
-      lepton_pair.addUserCand("l1", l1_as_l1 ? l1_ptr : l2_ptr);
-      lepton_pair.addUserCand("l2", l1_as_l1 ? l2_ptr : l1_ptr);
+      lepton_pair.addUserCand("l1", l1_ptr );
+      lepton_pair.addUserCand("l2", l2_ptr );
 
       if( !pre_vtx_selection_(lepton_pair) ) continue; // before making the SV, cut on the info we have
 
