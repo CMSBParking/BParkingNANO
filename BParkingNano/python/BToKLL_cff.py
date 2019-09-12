@@ -7,11 +7,13 @@ electronPairsForKee = cms.EDProducer(
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
     lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 3'),
     lep2Selection = cms.string(''),
+    min_dr = cms.double(0.03), ##for the moment than we will see
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
         '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'
     ),
     postVtxSelection = cms.string('userFloat("sv_chi2") < 998 && userFloat("sv_prob") > 1.e-5'),
+    isMuonTrack = cms.bool(False)
 )
 
 BToKee = cms.EDProducer(
@@ -39,15 +41,33 @@ muonPairsForKmumu = cms.EDProducer(
     transientTracksSrc = cms.InputTag('muonTrgSelector', 'SelectedTransientMuons'),
     lep1Selection = cms.string('pt > 1.5'),
     lep2Selection = cms.string(''),
+    min_dr = cms.double(0.01),
     preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
                                  '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'),
     postVtxSelection = electronPairsForKee.postVtxSelection,
+    isMuonTrack = cms.bool(False)
 )
+
+muonTrackPairsForKmumu = cms.EDProducer(
+    'DiMuonTrackBuilder',
+    src = cms.InputTag("muonsTracksBPark:SelectedMuonsTracks"),
+    transientTracksSrc = cms.InputTag('muonsTracksBPark', 'SelectedTransientMuonsTracks'),
+    lep1Selection = cms.string('pt > 1.5'),
+    lep2Selection = cms.string(''),
+    min_dr = cms.double(0.01),
+    preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
+                                 '&& mass() > 0 && charge() == 0'),
+    postVtxSelection = electronPairsForKee.postVtxSelection,
+    isMuonTrack = cms.bool(True)
+)
+
 
 BToKmumu = cms.EDProducer(
     'BToKLLBuilder',
-    dileptons = cms.InputTag('muonPairsForKmumu'),
-    leptonTransientTracks = muonPairsForKmumu.transientTracksSrc,
+    #dileptons = cms.InputTag('muonPairsForKmumu'),
+    #leptonTransientTracks = muonPairsForKmumu.transientTracksSrc,
+    dileptons = cms.InputTag('muonTrackPairsForKmumu'),
+    leptonTransientTracks = muonTrackPairsForKmumu.transientTracksSrc,
     kaons = BToKee.kaons,
     kaonsTransientTracks = BToKee.kaonsTransientTracks,
     beamSpot = cms.InputTag("offlineBeamSpot"),
@@ -77,7 +97,13 @@ BToKeeTable = cms.EDProducer(
         CandVars,
         l1Idx = uint('l1_idx'),
         l2Idx = uint('l2_idx'),
+        l1OrigIdx = uint('l1_original_idx'),
+        l2OrigIdx = uint('l2_original_idx'),
         kIdx = uint('k_idx'),
+        l1_isPF = uint('l1_isPF'),
+        l1_isTrack = uint('l1_isTrack'),
+        l2_isPF = uint('l2_isPF'),
+        l2_isTrack = uint('l2_isTrack'),
         minDR = ufloat('min_dr'),
         maxDR = ufloat('max_dr'),
         # fit and vtx info
@@ -119,7 +145,8 @@ CountBToKmumu = CountBToKee.clone(
 
 
 BToKMuMuSequence = cms.Sequence(
-    (muonPairsForKmumu * BToKmumu)
+   # (muonPairsForKmumu * BToKmumu)
+    (muonTrackPairsForKmumu * BToKmumu)
 )
 BToKEESequence = cms.Sequence(
     (electronPairsForKee * BToKee)

@@ -75,6 +75,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
 
+
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   
@@ -95,6 +96,13 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       edm::Ptr<reco::Candidate> l2_ptr = ll_prt->userCand("l2");
       int l1_idx = ll_prt->userInt("l1_idx");
       int l2_idx = ll_prt->userInt("l2_idx");
+
+      //in case di-leptons from muonTrack collection 
+      //check that the track is not reused as kaon
+      int l1_original_idx = ll_prt->userInt("l1_original_idx");
+      int l2_original_idx = ll_prt->userInt("l2_original_idx");
+      if((ll_prt->userInt("is_l1Track") && (unsigned int)l1_original_idx == k_idx) ||
+	 (ll_prt->userInt("is_l2Track") && (unsigned int)l2_original_idx == k_idx)) continue;
     
       pat::CompositeCandidate cand;
       cand.setP4(ll_prt->p4() + k_p4);
@@ -109,6 +117,14 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserInt("l1_idx", l1_idx);
       cand.addUserInt("l2_idx", l2_idx);
       cand.addUserInt("k_idx", k_idx);
+
+      cand.addUserInt("l1_original_idx", l1_original_idx);
+      cand.addUserInt("l2_original_idx", l2_original_idx);
+
+      cand.addUserInt("l1_isPF", ll_prt->userInt("is_l1PF"));
+      cand.addUserInt("l1_isTrack", ll_prt->userInt("is_l1Track"));
+      cand.addUserInt("l2_isPF", ll_prt->userInt("is_l2PF"));
+      cand.addUserInt("l2_isTrack", ll_prt->userInt("is_l2Track"));
     
       auto dr_info = min_max_dr({l1_ptr, l2_ptr, k_ptr});
       cand.addUserFloat("min_dr", dr_info.first);
@@ -119,7 +135,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
     
       KinVtxFitter fitter(
         {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
-        {l1_ptr->mass(), l2_ptr->mass(), K_MASS},
+	{l1_ptr->mass(), l2_ptr->mass(), K_MASS},
         {LEP_SIGMA, LEP_SIGMA, K_SIGMA} //some small sigma for the lepton mass
         );
       if(!fitter.success()) continue; // hardcoded, but do we need otherwise?
