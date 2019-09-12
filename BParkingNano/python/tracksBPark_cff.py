@@ -62,6 +62,12 @@ tracksBParkMCMatchForTable = cms.EDProducer("MCMatcher",   # cut on deltaR, delt
     resolveByMatchQuality = cms.bool(True),     # False = just match input in order; True = pick lowest deltaR pair first
 )
 
+tracksBParkMCMatchEmbedded = cms.EDProducer(
+    'CompositeCandidateMatchEmbedder',
+    src = trackBParkTable.src,
+    matching = cms.InputTag("tracksBParkMCMatchForTable")
+)
+
 tracksBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     src     = tracksBParkMCMatchForTable.src,
     mcMap   = cms.InputTag("tracksBParkMCMatchForTable"),
@@ -72,9 +78,8 @@ tracksBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
 )
 
 
-
 tracksBParkSequence = cms.Sequence(tracksBPark)
 tracksBParkTables = cms.Sequence(trackBParkTable)
-tracksBParkMC = cms.Sequence(tracksBParkMCMatchForTable + tracksBParkMCTable)
+tracksBParkMC = cms.Sequence(tracksBParkSequence + tracksBParkMCMatchForTable + tracksBParkMCMatchEmbedded + tracksBParkMCTable)
 
 

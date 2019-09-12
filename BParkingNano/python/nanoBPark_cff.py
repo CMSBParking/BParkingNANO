@@ -55,15 +55,16 @@ def nanoAOD_customizeBToKLL(process):
     process.nanoBKMuMuSequence = cms.Sequence( BToKMuMuSequence  + BToKmumuTable )
     return process
 
+from FWCore.ParameterSet.MassReplace import massSearchReplaceAnyInputTag
 def nanoAOD_customizeMC(process):
-    for ipath in process._Process__paths.items():
-        path = process.paths[ipath[0]]
-        try:
-            index  = path.index(process.nanoBKeeSequence)
-            path.insert(index+1, electronBParkMC)
-        except:
-            pass
+    for name, path in process.paths.iteritems():
+        # replace all the non-match embedded inputs with the matched ones
+        massSearchReplaceAnyInputTag(path, 'muonTrgSelector:SelectedMuons', 'selectedMuonsMCMatchEmbedded')
+        massSearchReplaceAnyInputTag(path, 'electronsForAnalysis:SelectedElectrons', 'selectedElectronsMCMatchEmbedded')
+        massSearchReplaceAnyInputTag(path, 'tracksBPark:SelectedTracks', 'tracksBParkMCMatchEmbedded')
 
+        # modify the path to include mc-specific info
         path.insert(0, nanoSequenceMC)
-        path.insert(3, muonBParkMC+tracksBParkMC)
-
+        path.replace(process.muonBParkSequence, process.muonBParkMC)
+        path.replace(process.electronsBParkSequence, process.electronBParkMC)
+        path.replace(process.tracksBParkSequence, process.tracksBParkMC)

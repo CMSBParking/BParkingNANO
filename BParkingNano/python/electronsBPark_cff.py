@@ -110,6 +110,12 @@ electronsBParkMCMatchForTable = cms.EDProducer("MCMatcher",  # cut on deltaR, de
     
 )
 
+selectedElectronsMCMatchEmbedded = cms.EDProducer(
+    'ElectronMatchEmbedder',
+    src = electronBParkTable.src,
+    matching = cms.InputTag('electronsBParkMCMatchForTable')
+)
+
 electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     src     = electronBParkTable.src,
     mcMap   = cms.InputTag("electronsBParkMCMatchForTable"),
@@ -124,9 +130,7 @@ electronsBParkSequence = cms.Sequence(
   lowPtGsfElectronLatestID
   +electronsForAnalysis
 )
-
-
-electronBParkMC = cms.Sequence(electronsBParkMCMatchForTable + electronBParkMCTable)
+electronBParkMC = cms.Sequence(electronsBParkSequence + electronsBParkMCMatchForTable + selectedElectronsMCMatchEmbedded + electronBParkMCTable)
 electronBParkTables = cms.Sequence(electronBParkTable)
 
 
