@@ -118,6 +118,15 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    // apply conversion veto unless we want conversions
    if (!ele.passConversionVeto()) continue;
 
+   // Fix the mass to the proper one
+   reco::Candidate::PolarLorentzVector p4( 
+     ele.pt(),
+     ele.eta(),
+     ele.phi(),
+     ELECTRON_MASS
+     );
+   ele.setP4(p4);     
+
    // skip electrons inside tag's jet or from different PV
    bool skipEle=true;
    for(const auto & trg : *trgMuon) {
@@ -156,8 +165,18 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
      reco::Candidate::PolarLorentzVector p4( ele.gsfTrack()->ptMode(),
                                              ele.gsfTrack()->etaMode(),
                                              ele.gsfTrack()->phiMode(),
-                                             ele.mass()    );
+                                             ELECTRON_MASS    );
      ele.setP4(p4);
+   } 
+   else {
+     // Fix the mass to the proper one
+     reco::Candidate::PolarLorentzVector p4( 
+       ele.pt(),
+       ele.eta(),
+       ele.phi(),
+       ELECTRON_MASS
+       );
+     ele.setP4(p4);     
    }
 
    //same cuts as in PF
