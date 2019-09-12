@@ -15,7 +15,8 @@ git cms-addpkg RecoEgamma/EgammaElectronProducers
 git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_LowPtElectronsID
 git cms-addpkg RecoEgamma/ElectronIdentification
 git clone --single-branch --branch 102X_LowPtElectrons_2019Jun28 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
-mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data # this is required if running on CRAB
+# the line bellow required if running on CRAB
+mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data 
 ```
 
 ## Add the modification needed to use post-fit quantities for electrons  
