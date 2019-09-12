@@ -30,7 +30,7 @@ nanoSequence = cms.Sequence(nanoMetadata +
                             triggerObjectBParkTables + l1bits)
 
 nanoSequenceMC = cms.Sequence(particleLevelBParkSequence + genParticleBParkSequence + 
-                              globalTablesMC + genWeightsTable + genParticleBParkTables + particleLevelBParkTables + lheInfoTable) 
+                              globalTablesMC + genWeightsTable + genParticleBParkTables + lheInfoTable) 
 
 
 
