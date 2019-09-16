@@ -115,7 +115,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
   std::unique_ptr<pat::CompositeCandidateCollection> tracks_out      (new pat::CompositeCandidateCollection);
   std::unique_ptr<TransientTrackCollection>          trans_tracks_out(new TransientTrackCollection);
 
-
+   std::vector< std::pair<pat::CompositeCandidate,reco::TransientTrack> > vectrk_ttrk; 
   //try topreserve same logic avoiding the copy of the full collection
   /*
   //correct logic but a bit convoluted -> changing to smthn simpler
@@ -154,11 +154,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
     // high purity requirment applied only in packedCands
     if( iTrk < nTracks && !trk.trackHighPurity()) continue;
-   
-    // build transient track
-    const reco::TransientTrack trackTT((*(trk.bestTrack())), &(*bFieldHandle));
-    if (!trackTT.isValid()) continue;
-   
+    const reco::TransientTrack trackTT(trk.pseudoTrack(), &(*bFieldHandle));
     //distance closest approach in x,y wrt beam spot
     std::pair<double,double> DCA = computeDCA(trackTT, beamSpot);
     float DCABS = DCA.first;
@@ -205,9 +201,6 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
     }
 
-
-
-
     pat::CompositeCandidate pcand;
     pcand.setP4(trk.p4());
     pcand.setCharge(trk.charge());
@@ -229,13 +222,24 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     if ( iTrk < nTracks )
       pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, iTrk ));
     else 
-      pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( lostTracks, iTrk-nTracks ));
-    
-    tracks_out       -> emplace_back(pcand);
-    trans_tracks_out -> emplace_back(trackTT);
-   
-  }
+      pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( lostTracks, iTrk-nTracks ));   
  
+  //in order to avoid revoking the sxpensive ttrack builder many times and still have everything sorted, we add them to vector of pairs
+   vectrk_ttrk.emplace_back( std::make_pair(pcand,trackTT ) );   
+  }
+
+  // sort to be uniform with leptons
+  std::sort( vectrk_ttrk.begin(), vectrk_ttrk.end(), 
+             [] ( auto & trk1, auto & trk2) -> 
+                  bool {return (trk1.first).pt() > (trk2.first).pt();} 
+           );
+
+  // finnaly save ttrks and trks to the correct _out vectors
+  for ( auto & trk: vectrk_ttrk){
+    tracks_out -> emplace_back( trk.first);
+    trans_tracks_out -> emplace_back(trk.second);
+  }
+
   evt.put(std::move(tracks_out),       "SelectedTracks");
   evt.put(std::move(trans_tracks_out), "SelectedTransientTracks");
 }
