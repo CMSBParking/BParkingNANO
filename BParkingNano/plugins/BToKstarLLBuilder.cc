@@ -26,8 +26,6 @@ class BToKstarLLBuilder : public edm::global::EDProducer<> {
   // perhaps we need better structure here (begin run etc)
 public:
   typedef std::vector<reco::TransientTrack> TransientTrackCollection;
-  typedef std::vector< std::pair<reco::TransientTrack,reco::TransientTrack> > KstarTransientTrackCollection;
-
 
   explicit BToKstarLLBuilder(const edm::ParameterSet &cfg):
     pre_vtx_selection_{cfg.getParameter<std::string>("preVtxSelection")},
@@ -70,7 +68,7 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
   edm::Handle<pat::CompositeCandidateCollection> kstars;
   evt.getByToken(kstars_, kstars);
   
-  edm::Handle<KstarTransientTrackCollection> kstars_ttracks;
+  edm::Handle<TransientTrackCollection> kstars_ttracks;
   evt.getByToken(kstars_ttracks_, kstars_ttracks);  
 
   edm::Handle<reco::BeamSpot> beamspot;
@@ -80,12 +78,12 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   
 
-  for( auto & kstar : *kstars) {
-//    edm::Ptr<reco::CompositeCandidate> kstar_ptr(kstar);
-    edm::Ptr<reco::Candidate> trk1_ptr = kstar.userCand("trk1");
-    edm::Ptr<reco::Candidate> trk2_ptr = kstar.userCand("trk2");
-    int trk1_idx = kstar.userInt("trk1_idx");
-    int trk2_idx = kstar.userInt("trk2_idx");
+  for(size_t kstar_idx = 0; kstar_idx < kstars->size(); ++kstar_idx) {
+    edm::Ptr<pat::CompositeCandidate> kstar_ptr(kstars, kstar_idx);
+    edm::Ptr<reco::Candidate> trk1_ptr = kstar_ptr->userCand("trk1");
+    edm::Ptr<reco::Candidate> trk2_ptr = kstar_ptr->userCand("trk2");
+    int trk1_idx = kstar_ptr->userInt("trk1_idx");
+    int trk2_idx = kstar_ptr->userInt("trk2_idx");
 
     for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
       edm::Ptr<pat::CompositeCandidate> ll_ptr(dileptons, ll_idx);
@@ -95,17 +93,16 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
       int l2_idx = ll_ptr->userInt("l2_idx");
 
       pat::CompositeCandidate cand;
-      cand.setP4(ll_ptr->p4() + kstar.p4());
+      cand.setP4(ll_ptr->p4() + kstar_ptr->p4());
       cand.setCharge( 0 ); //B0 has 0 charge
       // save daughters - unfitted
       cand.addUserCand("l1", l1_ptr);
       cand.addUserCand("l2", l2_ptr);
       cand.addUserCand("trk1", trk1_ptr);
       cand.addUserCand("trk2", trk2_ptr);
-//      cand.addUserCand("kstar", kstar);
+      cand.addUserCand("kstar", kstar_ptr);
       cand.addUserCand("dilepton", ll_ptr);
       // save indices
-      int kstar_idx= &kstar-&kstars->at(0);
       cand.addUserInt("l1_idx", l1_idx);
       cand.addUserInt("l2_idx", l2_idx);
       cand.addUserInt("trk1_idx", trk1_idx);
@@ -120,17 +117,17 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
       float TRK1_MASS=K_MASS,  
             TRK2_MASS=PI_MASS;
       bool trk1isK=true;;
-      if (kstar.userInt("trk1isK_trk2isPi")==0 && 
-          kstar.userInt("trk1isPi_trk2isK")==1 ){
+      if (kstar_ptr->userInt("trk1isK_trk2isPi")==0 && 
+          kstar_ptr->userInt("trk1isPi_trk2isK")==1 ){
          TRK1_MASS=PI_MASS; TRK2_MASS=K_MASS;
          trk1isK=false;
       }
       // check if pass pre vertex cut
       if( !pre_vtx_selection_(cand) ) {
         // in case of 2 valid mass hypothesis if the first fails B cuts -> check if the other pass - in case of 2 masses check the K*-bar mass
-        if (kstar.userInt("valid_mhypothesis") <2) continue;
-        auto pp4 = kstar.polarP4();
-        pp4.SetM(kstar.userFloat("bar_mass"));
+        if (kstar_ptr->userInt("valid_mhypothesis") <2) continue;
+        auto pp4 = kstar_ptr->polarP4();
+        pp4.SetM(kstar_ptr->userFloat("bar_mass"));
         cand.setP4(ll_ptr->polarP4() + pp4);
         if( !pre_vtx_selection_(cand) ) continue; //if 2nd mass fails -> skip
         TRK1_MASS=PI_MASS; TRK2_MASS=K_MASS; //change the mass to the 2nd hypothesis
@@ -138,7 +135,7 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
       }      
       
       KinVtxFitter fitter(
-        {kstars_ttracks->at(kstar_idx).first, kstars_ttracks->at(kstar_idx).second, 
+        {kstars_ttracks->at(trk1_idx), kstars_ttracks->at(trk2_idx), 
          leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx)},
         {TRK1_MASS, TRK2_MASS, l1_ptr->mass(), l2_ptr->mass()},
         { K_SIGMA, PI_SIGMA, LEP_SIGMA, LEP_SIGMA} 
@@ -180,21 +177,21 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
     
       if( !post_vtx_selection_(cand) ) continue;        
 
-      if ( kstar.userInt("valid_mhypothesis")==2 && trk1isK ){
+      if ( kstar_ptr->userInt("valid_mhypothesis")==2 && trk1isK ){
         auto trk1p4 = fitter.daughter_p4(0);
         auto trk2p4 = fitter.daughter_p4(1);
         trk1p4.SetM(PI_MASS);
         trk2p4.SetM(K_MASS);
-        cand.addUserFloat("b0fitted_ksbar_mass",(trk1p4+trk2p4).M());
-        cand.addUserFloat("fitted_bbar_mass",(trk1p4+trk2p4+fitter.daughter_p4(2) + fitter.daughter_p4(3)).M());
+        cand.addUserFloat("b0fitted_kstarbar_mass",(trk1p4+trk2p4).M());
+        cand.addUserFloat("bar_fitted_mass",(trk1p4+trk2p4+fitter.daughter_p4(2) + fitter.daughter_p4(3)).M());
         cand.addUserInt("trk1isK_trk2isPi",1);
         cand.addUserInt("trk1isPi_trk2isK",1);
         cand.addUserInt("valid_mhypothesis",2);
       } else {
-        cand.addUserFloat("b0fitted_ksbar_mass",-99);
-        cand.addUserFloat("fitted_bbar_mass",-99);
-        cand.addUserInt("trk1isK_trk2isPi",kstar.userInt("trk1isK_trk2isPi"));
-        cand.addUserInt("trk1isPi_trk2isK",kstar.userInt("trk1isPi_trk2isK"));
+        cand.addUserFloat("b0fitted_kstarbar_mass",-99);
+        cand.addUserFloat("bar_fitted_mass",-99);
+        cand.addUserInt("trk1isK_trk2isPi",kstar_ptr->userInt("trk1isK_trk2isPi"));
+        cand.addUserInt("trk1isPi_trk2isK",kstar_ptr->userInt("trk1isPi_trk2isK"));
         cand.addUserInt("valid_mhypothesis",1);
       }
       ret_val->push_back(cand);
