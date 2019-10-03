@@ -139,7 +139,8 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("fitted_pt"  , fit_p4.pt()); 
       cand.addUserFloat("fitted_eta" , fit_p4.eta());
       cand.addUserFloat("fitted_phi" , fit_p4.phi());
-      cand.addUserFloat("fitted_mass", fit_p4.mass());      
+      cand.addUserFloat("fitted_mass", fitter.fitted_candidate().mass());      
+      cand.addUserFloat("fitted_massErr", sqrt(fitter.fitted_candidate().kinematicParametersError().matrix()(6,6)));      
       cand.addUserFloat(
         "cos_theta_2D", 
         cos_theta_2D(fitter, *beamspot, cand.p4())
