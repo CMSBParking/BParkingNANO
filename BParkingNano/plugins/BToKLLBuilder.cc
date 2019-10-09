@@ -151,6 +151,12 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       auto lxy = l_xy(fitter, *beamspot);
       cand.addUserFloat("l_xy", lxy.value());
       cand.addUserFloat("l_xy_unc", lxy.error());
+      cand.addUserFloat("vtx_x", cand.vx());
+      cand.addUserFloat("vtx_y", cand.vy());
+      cand.addUserFloat("vtx_z", cand.vz());
+      cand.addUserFloat("vtx_ex", sqrt(fitter.fitted_vtx_uncertainty().cxx()));
+      cand.addUserFloat("vtx_ey", sqrt(fitter.fitted_vtx_uncertainty().cyy()));
+      cand.addUserFloat("vtx_ez", sqrt(fitter.fitted_vtx_uncertainty().czz()));
     
       if( !post_vtx_selection_(cand) ) continue;        
       ret_val->push_back(cand);
