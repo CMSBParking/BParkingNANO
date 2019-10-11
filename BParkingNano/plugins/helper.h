@@ -57,7 +57,7 @@ inline Measurement1D l_xy(const FITTER& fitter, const reco::BeamSpot &bs) {
   GlobalError err = fitter.fitted_vtx_uncertainty();
   auto bs_pos = bs.position(point.z());
   GlobalPoint delta(point.x() - bs_pos.x(), point.y() - bs_pos.y(), 0.);  
-  return {delta.perp(), sqrt(err.rerr(delta))};
+  return {delta.perp(), err.rerr(delta)};
 }
 
 

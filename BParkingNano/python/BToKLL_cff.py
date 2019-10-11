@@ -85,6 +85,12 @@ BToKeeTable = cms.EDProducer(
         svprob = ufloat('sv_prob'),
         l_xy = ufloat('l_xy'),
         l_xy_unc = ufloat('l_xy_unc'),
+        vtx_x = ufloat('vtx_x'),
+        vtx_y = ufloat('vtx_y'),
+        vtx_z = ufloat('vtx_z'),
+        vtx_ex = ufloat('vtx_ex'), ## only saving diagonal elements of the cov matrix
+        vtx_ey = ufloat('vtx_ey'),
+        vtx_ez = ufloat('vtx_ez'),
         # Mll
         mll_raw = Var('userCand("dilepton").mass()', float),
         mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float), # this might not work

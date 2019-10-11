@@ -15,8 +15,16 @@ finalGenParticlesBPark = finalGenParticles.clone(
 )
 
 genParticleBParkTable = genParticleTable.clone(
-  src = cms.InputTag("finalGenParticlesBPark")
+  src = cms.InputTag("finalGenParticlesBPark"),
+  variables = cms.PSet(
+      genParticleTable.variables,
+      vx = Var("vx()", float, doc="x coordinate of the production vertex position, in cm", precision=10),
+      vy = Var("vy()", float, doc="y coordinate of the production vertex position, in cm", precision=10),
+      vz = Var("vz()", float, doc="z coordinate of the production vertex position, in cm", precision=10),
+  )
 )
+
+
 
 genParticleBParkSequence = cms.Sequence(finalGenParticlesBPark)
 genParticleBParkTables = cms.Sequence(genParticleBParkTable)
