@@ -1,6 +1,6 @@
 #include "KinVtxFitter.h"
 #include "RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h"
-#include "RecoVertex/KinematicFit/interface/KinematicConstrainedVertexFitter.h"
+#include "RecoVertex/KinematicFit/interface/KinematicParticleVertexFitter.h"
 #include "RecoVertex/KinematicFit/interface/TwoTrackMassKinematicConstraint.h" // MIGHT be useful for Phi->KK?
 
 KinVtxFitter::KinVtxFitter(const std::vector<reco::TransientTrack> tracks, 
@@ -19,7 +19,7 @@ KinVtxFitter::KinVtxFitter(const std::vector<reco::TransientTrack> tracks,
       );
   }
 
-  KinematicConstrainedVertexFitter kcv_fitter;    
+  KinematicParticleVertexFitter kcv_fitter;    
   RefCountedKinematicTree vtx_tree = kcv_fitter.fit(particles);
 
   if (vtx_tree->isEmpty() || !vtx_tree->isValid() || !vtx_tree->isConsistent()) {

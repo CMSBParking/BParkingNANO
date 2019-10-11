@@ -25,6 +25,11 @@ git cms-addpkg TrackingTools/TransientTrack
 git cms-merge-topic -u CMSBParking:GsfTransientTracks
 ```
 
+## Add the modification needed to use the KinematicParticleVertexFitter  
+```
+git cms-merge-topic -u CMSBParking:fixKinParticleVtxFitter
+```
+
 ## Add the BParkingNano package and build everything
 
 ```
