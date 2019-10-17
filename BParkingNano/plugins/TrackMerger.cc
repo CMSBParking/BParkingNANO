@@ -133,9 +133,9 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     if(trk.pt() < trkPtCut_ ) continue;
     if(fabs(trk.eta()) > trkEtaCut_) continue;
 
-    if( (trk.pseudoTrack().normalizedChi2() < trkNormChiMin_ &&
+    if( (trk.bestTrack()->normalizedChi2() < trkNormChiMin_ &&
          trkNormChiMin_>=0 ) ||
-        (trk.pseudoTrack().normalizedChi2() > trkNormChiMax_ &&
+        (trk.bestTrack()->normalizedChi2() > trkNormChiMax_ &&
          trkNormChiMax_>0)  )    continue; 
 
     bool skipTrack=true;
@@ -154,7 +154,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
 
     // high purity requirment applied only in packedCands
     if( iTrk < nTracks && !trk.trackHighPurity()) continue;
-    const reco::TransientTrack trackTT(trk.pseudoTrack(), &(*bFieldHandle));
+    const reco::TransientTrack trackTT( (*trk.bestTrack()) , &(*bFieldHandle));
     //distance closest approach in x,y wrt beam spot
     std::pair<double,double> DCA = computeDCA(trackTT, beamSpot);
     float DCABS = DCA.first;
