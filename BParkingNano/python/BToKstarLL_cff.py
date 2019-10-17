@@ -31,12 +31,16 @@ KstarToKPi = cms.EDProducer(
        'KstarBuilder',
         pfcands= cms.InputTag('tracksBPark', 'SelectedTracks'),
         transientTracks= cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
-        trk1Selection = cms.string('pt > 1.5 && abs(eta)<2.4'),    
-        trk2Selection = cms.string('pt > 1.0 && abs(eta)<2.4'),
-        preVtxSelection = cms.string('abs(userCand("trk1").vz - userCand("trk2").vz)' 
-        '&& mass() < 1.042 && mass() > 0.742 && userFloat("trk_deltaR") > 0.03 && pt()>2.0'),
+        trk1Selection = cms.string('pt > 1.5 && abs(eta)<2.4'), #need optimization   
+        trk2Selection = cms.string('pt > 1.0 && abs(eta)<2.4'), #need optimization
+        preVtxSelection = cms.string('abs(userCand("trk1").vz - userCand("trk2").vz)<1.0' 
+        ' &&  pt()>2.0 && ( (mass() < 1.042 && mass() > 0.742)'
+        ' || (userFloat("barMass") < 1.042 && userFloat("barMass") > 0.742) ) '
+        ),
         postVtxSelection = cms.string('userFloat("sv_prob") > 1.e-5'
-        '&& userFloat("fitted_mass")<1.042 && userFloat("fitted_mass")>0.742')
+        ' && (  (userFloat("fitted_mass")<1.042 && userFloat("fitted_mass")>0.742)'
+        ' || (userFloat("fitted_barMass")<1.042 && userFloat("fitted_barMass")>0.742)  )'
+)
 )
 
 
@@ -48,15 +52,18 @@ BToKstarMuMu = cms.EDProducer(
     leptonTransientTracks = muonPairsForKstarMuMu.transientTracksSrc,
     kstars = cms.InputTag('KstarToKPi'),
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
+    
     beamSpot = cms.InputTag("offlineBeamSpot"),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
-        '&& mass < 7. && mass > 4.'
+        '&& ( (mass < 7. && mass > 4.) '
+        '|| (userFloat("barMass")<7. && userFloat("barMass")>4.) )'
         ),
     postVtxSelection = cms.string(
         'userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0'
-        '&& userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
+        '&& ( (userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.)'
+        '|| (userFloat("fitted_barMass") > 4.5 && userFloat("fitted_barMass") < 6.)  )'
     )
 )
 
@@ -66,15 +73,18 @@ BToKstarEE = cms.EDProducer(
     leptonTransientTracks = electronPairsForKstarEE.transientTracksSrc,
     kstars = cms.InputTag('KstarToKPi'),
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
+    
     beamSpot = cms.InputTag("offlineBeamSpot"),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
-        '&& mass < 7. && mass > 4.'
+        '&& ( (mass < 7. && mass > 4.) '
+        '|| (userFloat("barMass")<7. && userFloat("barMass")>4.) )'
         ),
     postVtxSelection = cms.string(
         'userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0'
-        '&& userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
+        '&& ( (userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.)'
+        '|| (userFloat("fitted_barMass") > 4.5 && userFloat("fitted_barMass") < 6.)  )'
     )
 )
 
@@ -91,12 +101,13 @@ KstarToKPiTable = cms.EDProducer(
     extension=cms.bool(False),
     variables=cms.PSet(
       CandVars,
-      svprob = ufloat('sv_prob'),   
+      barMass = ufloat('barMass'),
       fitted_mass = ufloat('fitted_mass'),
-      bar_mass = ufloat('bar_mass'),
-      trk1isK_trk2isPi = uint('trk1isK_trk2isPi'),
-      trk1isPi_trk2isK = uint('trk1isPi_trk2isK'),
-      bar_fitted_mass = ufloat('bar_fitted_mass'),
+      fitted_barMass = ufloat('fitted_barMass'),
+      fitted_pt = ufloat('fitted_pt'),
+      fitted_eta = ufloat('fitted_eta'),
+      fitted_phi = ufloat('fitted_phi'),
+      svprob = ufloat('sv_prob'),         
       trk_deltaR = ufloat('trk_deltaR'),
       trk1_idx = uint('trk1_idx'),
       trk2_idx = uint('trk2_idx')
@@ -122,8 +133,6 @@ BToKstarEETable = cms.EDProducer(
         kstar_idx = uint('kstar_idx'),
         min_dr = ufloat('min_dr'),
         max_dr = ufloat('max_dr'),
-        trk1isK_trk2isPi = uint('trk1isK_trk2isPi'),
-        trk1isPi_trk2isK = uint('trk1isPi_trk2isK'),
         # fit and vtx info
         chi2 = ufloat('sv_chi2'),
         svprob = ufloat('sv_prob'),
@@ -131,13 +140,13 @@ BToKstarEETable = cms.EDProducer(
         l_xy_unc = ufloat('l_xy_unc'),
         # Mll
         mll_raw = Var('userCand("dilepton").mass()', float),
-        mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float), # this might not work
-        mll_fullfit = ufloat('fitted_mll'),     
+        mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float),
+        mll_fullfit = ufloat('mll_fullfit'),     
         # kstar fitted in b0 vertex
-        b0fitted_kstar_mass = ufloat('b0fitted_kstar_mass'),
-        b0fitted_kstar_pt = ufloat('b0fitted_kstar_pt'),
-        b0fitted_kstar_eta = ufloat('b0fitted_kstar_eta'),
-        b0fitted_kstar_phi = ufloat('b0fitted_kstar_phi'),
+        mkstar_fullfit = ufloat('mkstar_fullfit'),
+        ptkstar_fullfit = ufloat('ptkstar_fullfit'),
+        etakstar_fullfit = ufloat('etakstar_fullfit'),
+        phikstar_fullfit = ufloat('phikstar_fullfit'),
         # Cos(theta)
         cos2D = ufloat('cos_theta_2D'),
         fit_cos2D = ufloat('fitted_cos_theta_2D'),
@@ -147,8 +156,9 @@ BToKstarEETable = cms.EDProducer(
         fit_eta = ufloat('fitted_eta'),
         fit_phi = ufloat('fitted_phi'),
         # additional mass hypothesis
-        b0fitted_kstarbar_mass = ufloat('b0fitted_kstarbar_mass'),
-        bar_fitted_mass = ufloat('bar_fitted_mass')
+        barMass = ufloat ('barMass'),
+        barMkstar_fullfit = ufloat('barMasskstar_fullfit'),
+        fitted_barMass = ufloat('fitted_barMass')
     )
 )
 
@@ -170,24 +180,24 @@ CountBToKstarMuMu = CountBToKstarEE.clone(
 
 
 ########################### Sequencies  ############################
+
+KstarToKPiSequence = cms.Sequence(  KstarToKPi  )
+
 BToKstarMuMuSequence = cms.Sequence(
-    (muonPairsForKstarMuMu *KstarToKPi *BToKstarMuMu )
+    (muonPairsForKstarMuMu *BToKstarMuMu )
 )
 
 
 BToKstarEESequence = cms.Sequence(
-    (electronPairsForKstarEE *KstarToKPi *BToKstarEE )
+    (electronPairsForKstarEE *BToKstarEE )
 )
 
 
 BToKstarLLSequence = cms.Sequence(
-    KstarToKPi*
     ( (muonPairsForKstarMuMu *BToKstarMuMu)
      +(electronPairsForKstarEE *BToKstarEE) )   
 )
 
 
-BToKstarLLTables = cms.Sequence(KstarToKPiTable + 
-                                BToKstarEETable + BToKstarMuMuTable)
-
+BToKstarLLTables = cms.Sequence( BToKstarEETable + BToKstarMuMuTable )
 
