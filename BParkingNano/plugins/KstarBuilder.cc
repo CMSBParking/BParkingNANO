@@ -1,3 +1,6 @@
+///////////////////////// Code to produce K* candidates ////////////////////
+
+
 #include "FWCore/Framework/interface/global/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -21,13 +24,15 @@
 #include "KinVtxFitter.h"
 
 
+
+
 class KstarBuilder : public edm::global::EDProducer<> {
 
-  // perhaps we need better structure here (begin run etc)
+  
 public:
+
   typedef std::vector<reco::TransientTrack> TransientTrackCollection;
   
-
   explicit KstarBuilder(const edm::ParameterSet &cfg):
     trk1_selection_{cfg.getParameter<std::string>("trk1Selection")},
     trk2_selection_{cfg.getParameter<std::string>("trk2Selection")},
@@ -35,7 +40,10 @@ public:
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     pfcands_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("pfcands") )},
     ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("transientTracks") )} {
+
+      //output
        produces<pat::CompositeCandidateCollection>();
+
     }
 
   ~KstarBuilder() override {}
@@ -49,17 +57,16 @@ private:
   const StringCutObjectSelector<pat::CompositeCandidate> trk2_selection_; // sub-leading cand
   const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_; // cut on the di-lepton before the SV fit
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_; // cut on the di-lepton after the SV fit
-  const edm::EDGetTokenT<pat::CompositeCandidateCollection> pfcands_;
-  const edm::EDGetTokenT<TransientTrackCollection> ttracks_;
+  const edm::EDGetTokenT<pat::CompositeCandidateCollection> pfcands_; //input PF cands this is sorted in pT in previous step
+  const edm::EDGetTokenT<TransientTrackCollection> ttracks_; //input TTracks of PF cands
 };
+
 
 void KstarBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
 
-  //input
-  
+  //inputs  
   edm::Handle<pat::CompositeCandidateCollection> pfcands;
-  evt.getByToken(pfcands_, pfcands);
-  
+  evt.getByToken(pfcands_, pfcands);  
   edm::Handle<TransientTrackCollection> ttracks;
   evt.getByToken(ttracks_, ttracks);
  
@@ -67,103 +74,74 @@ void KstarBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> kstar_out(new pat::CompositeCandidateCollection());
 
-
-  //two mass hypothesis for tracks; we cannot discriminate which trak is K and which is pi
-  std::vector<std::pair<float, float>> mhypothesis{ std::make_pair(K_MASS,PI_MASS), std::make_pair(PI_MASS,K_MASS)  };
   
-  for(size_t trk1_idx = 0; trk1_idx < pfcands->size(); ++trk1_idx) {
-    edm::Ptr<pat::CompositeCandidate> trk1_ptr(pfcands, trk1_idx);
+
+  // main loop
+  for(size_t trk1_idx = 0; trk1_idx < pfcands->size(); ++trk1_idx ){
+
+    edm::Ptr<pat::CompositeCandidate> trk1_ptr( pfcands, trk1_idx );
     if(!trk1_selection_(*trk1_ptr)) continue; 
-     
+    
     for(size_t trk2_idx = trk1_idx + 1; trk2_idx < pfcands->size(); ++trk2_idx) {
-      edm::Ptr<pat::CompositeCandidate> trk2_ptr(pfcands, trk2_idx);
-      if(!trk2_selection_(*trk2_ptr)) continue;
-      if (trk1_ptr->charge()== trk2_ptr->charge()) continue;      
-      std::vector <float> trk1_mass;
-      std::vector <float> trk2_mass;
-      
-      for ( auto & masses: mhypothesis){
-        // need to check M(K*) cut in selection, for both mass hypothesis       
-        pat::CompositeCandidate kstar_temp;
-        auto mtrk1=masses.first;
-        auto mtrk2=masses.second;
-        auto trk1_p4=trk1_ptr->polarP4();
-        auto trk2_p4=trk2_ptr->polarP4();
-        trk1_p4.SetM(mtrk1);
-        trk2_p4.SetM(mtrk2);
-        kstar_temp.addUserCand("trk1", trk1_ptr );
-        kstar_temp.addUserCand("trk2", trk2_ptr );
-        kstar_temp.setP4(trk1_p4 + trk2_p4);
-        kstar_temp.addUserFloat("trk_deltaR", reco::deltaR(*trk1_ptr, *trk2_ptr));
-        if( pre_vtx_selection_(kstar_temp) ){
-          trk1_mass.emplace_back(mtrk1);
-          trk2_mass.emplace_back(mtrk2);
-        }
-      }
-      if (trk1_mass.size()==0) continue;
-      // if at least one hypothesis pass the cuts
-      // we now that at least there is one entry
-       KinVtxFitter fitter(
-        {ttracks->at(trk1_idx), ttracks->at(trk2_idx)},
-        { trk1_mass[0],  trk2_mass[0]},
-        {K_SIGMA, K_SIGMA} //K and PI sigma are equal... no need to change values like for masses
+
+     edm::Ptr<pat::CompositeCandidate> trk2_ptr( pfcands, trk2_idx );
+     if (trk1_ptr->charge() == trk2_ptr->charge()) continue; 
+     if(!trk2_selection_(*trk2_ptr)) continue;
+          
+     // create a K* candidate; add first quantities that can be used for pre fit selection
+     pat::CompositeCandidate kstar_cand;
+     auto trk1_p4=trk1_ptr->polarP4();
+     auto trk2_p4=trk2_ptr->polarP4();
+     trk1_p4.SetM(K_MASS);
+     trk2_p4.SetM(PI_MASS);
+
+     //adding stuff for pre fit selection
+     kstar_cand.setP4(trk1_p4 + trk2_p4);
+     kstar_cand.addUserFloat("trk_deltaR", reco::deltaR(*trk1_ptr, *trk2_ptr));
+
+     // save indices
+     kstar_cand.addUserInt("trk1_idx", trk1_idx );
+     kstar_cand.addUserInt("trk2_idx", trk2_idx );
+
+     // save cands      
+     kstar_cand.addUserCand("trk1", trk1_ptr );
+     kstar_cand.addUserCand("trk2", trk2_ptr );
+
+     //second mass hypothesis
+     trk1_p4.SetM(PI_MASS);
+     trk2_p4.SetM(K_MASS);
+     kstar_cand.addUserFloat("barMass", (trk1_p4 + trk2_p4).M() );
+     
+     // selection before fit
+     if( !pre_vtx_selection_(kstar_cand) ) continue;
+           
+     KinVtxFitter fitter(
+       {ttracks->at(trk1_idx), ttracks->at(trk2_idx)},
+       { K_MASS, PI_MASS },
+       {K_SIGMA, K_SIGMA} //K and PI sigma equal...
         );
-      if ( !fitter.success() ) continue;
-      
-      pat::CompositeCandidate kstar_cand;
-      if ( trk1_mass[0]==K_MASS) {
-         kstar_cand.addUserInt("trk1isK_trk2isPi",1);
-      } else {
-         kstar_cand.addUserInt("trk1isK_trk2isPi",0);
-         kstar_cand.addUserInt("trk1isPi_trk2isK",1);
-      }
-      auto trk1_p4=trk1_ptr->polarP4();
-      auto trk2_p4=trk2_ptr->polarP4();
-      trk1_p4.SetM(trk1_mass[0]);
-      trk2_p4.SetM(trk2_mass[0]);
-      kstar_cand.setP4(trk1_p4 + trk2_p4);
-      kstar_cand.addUserFloat("trk_deltaR", reco::deltaR(*trk1_ptr, *trk2_ptr));
+      if ( !fitter.success() ) continue;           
 
-      // save indices
-      kstar_cand.addUserInt("trk1_idx", trk1_idx );
-      kstar_cand.addUserInt("trk2_idx", trk2_idx );
-
-      // save cands      
-      kstar_cand.addUserCand("trk1", trk1_ptr );
-      kstar_cand.addUserCand("trk2", trk2_ptr );
-
+      // save quantities after fit
       kstar_cand.addUserFloat("sv_chi2", fitter.chi2());
       kstar_cand.addUserFloat("sv_ndof", fitter.dof()); 
       kstar_cand.addUserFloat("sv_prob", fitter.prob());    
       kstar_cand.addUserFloat("fitted_mass", fitter.fitted_candidate().mass() );
+      kstar_cand.addUserFloat("fitted_pt", fitter.fitted_candidate().globalMomentum().perp() );
+      kstar_cand.addUserFloat("fitted_eta", fitter.fitted_candidate().globalMomentum().eta() );
+      kstar_cand.addUserFloat("fitted_phi", fitter.fitted_candidate().globalMomentum().phi() );
 
-      //deal with multiple good mass hypothesis
-      if ( trk1_mass.size()>1) {
-        //now we know that second combination passes the cuts
-        trk1_p4.SetM(trk1_mass[1]);
-        trk2_p4.SetM(trk2_mass[1]);
-        kstar_cand.addUserFloat("bar_mass",(trk1_p4+trk2_p4).M());
-        kstar_cand.addUserInt("valid_mhypothesis",trk1_mass.size());  
-        kstar_cand.addUserInt("trk1isPi_trk2isK",1);
-        auto fitted_trk1= fitter.daughter_p4(0);
-        auto fitted_trk2= fitter.daughter_p4(1);
-        fitted_trk1.SetM(trk1_mass[1]);
-        fitted_trk2.SetM(trk2_mass[1]);
-        kstar_cand.addUserFloat("bar_fitted_mass", (fitted_trk1+fitted_trk2).M() );
-      }else {
-        kstar_cand.addUserFloat("bar_mass",-99);
-        kstar_cand.addUserInt("valid_mhypothesis",1); 
-        kstar_cand.addUserFloat("bar_fitted_mass", -99 );
-        kstar_cand.addUserInt("trk1isPi_trk2isK",0);
-      }  
-        
-      
-      // if needed, add here more stuff
-
-      // cut on the SV info
+      // second mass hypothesis
+      auto fitted_trk1= fitter.daughter_p4(0);
+      auto fitted_trk2= fitter.daughter_p4(1);
+      fitted_trk1.SetM(PI_MASS);
+      fitted_trk2.SetM(K_MASS);
+      kstar_cand.addUserFloat("fitted_barMass", (fitted_trk1+fitted_trk2).M() );
+                    
+      // after fit selection
       if( !post_vtx_selection_(kstar_cand) ) continue;
       kstar_out->emplace_back(kstar_cand);
-    }
+      }
   }
   
   evt.put(std::move(kstar_out));
