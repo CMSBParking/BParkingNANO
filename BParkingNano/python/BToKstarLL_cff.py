@@ -89,7 +89,7 @@ BToKstarEE = cms.EDProducer(
 )
 
 
-########################### Tables ###############################
+################################### Tables #####################################
 
 KstarToKPiTable = cms.EDProducer(
    'SimpleCompositeCandidateFlatTableProducer',
