@@ -16,6 +16,7 @@
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 #include "helper.h"
@@ -175,7 +176,17 @@ void BToKstarLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
       cand.addUserFloat("fitted_eta" , fit_p4.eta());
       cand.addUserFloat("fitted_phi" , fit_p4.phi());
       cand.addUserFloat("fitted_mass", fit_p4.mass());      
-   
+      cand.addUserFloat("fitted_massErr", sqrt(fitter.fitted_candidate().kinematicParametersError().matrix()(6,6))); 
+
+      // refitted daughters (leptons/tracks)     
+      std::vector<std::string> dnames{ "trk1", "trk2", "lep1", "lep2" };
+      
+      for (size_t idaughter=0; idaughter<dnames.size(); idaughter++){
+	cand.addUserFloat(dnames[idaughter]+"pt_fullfit",fitter.daughter_p4(idaughter).pt() );
+        cand.addUserFloat(dnames[idaughter]+"eta_fullfit",fitter.daughter_p4(idaughter).eta() );
+       cand.addUserFloat(dnames[idaughter]+"phi_fullfit",fitter.daughter_p4(idaughter).phi() );
+      }
+      
       // other vars
       cand.addUserFloat(
         "cos_theta_2D", 
