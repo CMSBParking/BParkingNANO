@@ -155,10 +155,28 @@ BToKstarEETable = cms.EDProducer(
         fit_pt = ufloat('fitted_pt'),
         fit_eta = ufloat('fitted_eta'),
         fit_phi = ufloat('fitted_phi'),
+        fit_massErr = ufloat('fitted_massErr'),
         # additional mass hypothesis
         barMass = ufloat ('barMass'),
         barMkstar_fullfit = ufloat('barMasskstar_fullfit'),
-        fitted_barMass = ufloat('fitted_barMass')
+        fitted_barMass = ufloat('fitted_barMass'),
+        # post-fit tracks/leptons
+        #l1
+        lep1pt_fullfit  = ufloat('lep1pt_fullfit'),
+        lep1eta_fullfit = ufloat('lep1eta_fullfit'),
+        lep1phi_fullfit = ufloat('lep1phi_fullfit'),
+        #l2
+        lep2pt_fullfit  = ufloat('lep2pt_fullfit'),
+        lep2eta_fullfit = ufloat('lep2eta_fullfit'),
+        lep2phi_fullfit = ufloat('lep2phi_fullfit'),
+        #trk1
+        trk1pt_fullfit  = ufloat('trk1pt_fullfit'),
+        trk1eta_fullfit = ufloat('trk1eta_fullfit'),
+        trk1phi_fullfit = ufloat('trk1phi_fullfit'),
+        #trk2
+        trk2pt_fullfit  = ufloat('trk2pt_fullfit'),
+        trk2eta_fullfit = ufloat('trk2eta_fullfit'),
+        trk2phi_fullfit = ufloat('trk2phi_fullfit'),
     )
 )
 
