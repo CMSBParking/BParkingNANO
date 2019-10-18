@@ -1,4 +1,4 @@
-///////////////////////// Code to produce K* candidates ////////////////////
+///////////////////////// Code to produce K* candidates ////////////////////////
 
 
 #include "FWCore/Framework/interface/global/EDProducer.h"
