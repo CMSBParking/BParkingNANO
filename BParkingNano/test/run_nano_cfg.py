@@ -177,10 +177,10 @@ associatePatAlgosToolsTask(process)
 
 process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
         SelectEvents = cms.vstring(
-                                 #  'nanoAOD_KMuMu_step', 
-                                 #  'nanoAOD_Kee_step',
+                                   'nanoAOD_KMuMu_step', 
+                                   'nanoAOD_Kee_step',
                                    'nanoAOD_KstarMuMu_step',
-                                    'nanoAOD_KstarEE_step',
+                                   'nanoAOD_KstarEE_step',
                                    )
 )
 

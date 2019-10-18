@@ -57,6 +57,7 @@ def nanoAOD_customizeBToKLL(process):
     process.nanoBKMuMuSequence = cms.Sequence( BToKMuMuSequence + BToKmumuTable )
     return process
 
+#three possibilities for K*LL
 def nanoAOD_customizeBToKstarLL(process):
     process.nanoBKstarLLSequence   = cms.Sequence( KstarToKPiSequence + BToKstarLLSequence + KstarToKPiTable + BToKstarLLTables )
     return process
