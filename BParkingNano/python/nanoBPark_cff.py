@@ -22,6 +22,7 @@ from PhysicsTools.BParkingNano.tracksBPark_cff import *
 ## B collections
 from PhysicsTools.BParkingNano.BToKLL_cff import *
 from PhysicsTools.BParkingNano.BToKstarLL_cff import *
+from PhysicsTools.BParkingNano.BToPhiLL_cff import *
 
 
 nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectBParkTables + l1bits)
@@ -68,6 +69,19 @@ def nanoAOD_customizeBToKstarEE(process):
 
 def nanoAOD_customizeBToKstarMuMu(process):
     process.nanoBKstarMuMuSequence = cms.Sequence( BToKstarMuMuSequence + BToKstarMuMuTable + KstarToKPiTable )
+    return process
+
+#three possibilities for PhiLL
+def nanoAOD_customizeBToPhiLL(process):
+    process.nanoBPhiLLSequence   = cms.Sequence( PhiToKKSequence + BToPhiLLSequence + PhiToKPiTable + BToPhiLLTables )
+    return process
+
+def nanoAOD_customizeBToPhiEE(process):
+    process.nanoBPhiEESequence   = cms.Sequence( BToPhiEESequence + BToPhiEETable + PhiToKKTable )
+    return process
+
+def nanoAOD_customizeBToPhiMuMu(process):
+    process.nanoBPhiMuMuSequence = cms.Sequence( BToPhiMuMuSequence + BToPhiMuMuTable + PhiToKKTable )
     return process
 
 from FWCore.ParameterSet.MassReplace import massSearchReplaceAnyInputTag
