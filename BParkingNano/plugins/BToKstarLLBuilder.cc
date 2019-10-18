@@ -1,4 +1,4 @@
-////////////////////// Code to produce K*LL candidates ///////////////////////
+////////////////////// Code to produce K*LL candidates /////////////////////////
 
 #include "FWCore/Framework/interface/global/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
