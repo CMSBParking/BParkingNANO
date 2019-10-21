@@ -158,6 +158,16 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("vtx_ex", sqrt(fitter.fitted_vtx_uncertainty().cxx()));
       cand.addUserFloat("vtx_ey", sqrt(fitter.fitted_vtx_uncertainty().cyy()));
       cand.addUserFloat("vtx_ez", sqrt(fitter.fitted_vtx_uncertainty().czz()));
+
+      cand.addUserFloat("fitted_l1_pt" , fitter.daughter_p4(0).pt()); 
+      cand.addUserFloat("fitted_l1_eta", fitter.daughter_p4(0).eta());
+      cand.addUserFloat("fitted_l1_phi", fitter.daughter_p4(0).phi());
+      cand.addUserFloat("fitted_l2_pt" , fitter.daughter_p4(1).pt()); 
+      cand.addUserFloat("fitted_l2_eta", fitter.daughter_p4(1).eta());
+      cand.addUserFloat("fitted_l2_phi", fitter.daughter_p4(1).phi());
+      cand.addUserFloat("fitted_k_pt"  , fitter.daughter_p4(2).pt()); 
+      cand.addUserFloat("fitted_k_eta" , fitter.daughter_p4(2).eta());
+      cand.addUserFloat("fitted_k_phi" , fitter.daughter_p4(2).phi());
     
       if( !post_vtx_selection_(cand) ) continue;        
       ret_val->push_back(cand);

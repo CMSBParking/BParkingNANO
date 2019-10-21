@@ -105,6 +105,15 @@ BToKeeTable = cms.EDProducer(
         fit_pt = ufloat('fitted_pt'),
         fit_eta = ufloat('fitted_eta'),
         fit_phi = ufloat('fitted_phi'),
+        fit_l1_pt = ufloat('fitted_l1_pt'),
+        fit_l1_eta = ufloat('fitted_l1_eta'),
+        fit_l1_phi = ufloat('fitted_l1_phi'),
+        fit_l2_pt = ufloat('fitted_l2_pt'),
+        fit_l2_eta = ufloat('fitted_l2_eta'),
+        fit_l2_phi = ufloat('fitted_l2_phi'),
+        fit_k_pt = ufloat('fitted_k_pt'),
+        fit_k_eta = ufloat('fitted_k_eta'),
+        fit_k_phi = ufloat('fitted_k_phi'),
     )
 )
 
