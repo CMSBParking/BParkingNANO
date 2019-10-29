@@ -142,8 +142,8 @@ void DiTrackBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       if (do_2nd_mass_hypothesis){
         auto fitted_trk1= fitter.daughter_p4(0);
         auto fitted_trk2= fitter.daughter_p4(1);
-        fitted_trk1.SetM(PI_MASS);
-        fitted_trk2.SetM(K_MASS);
+        fitted_trk1.SetM(trk2_mass_);
+        fitted_trk2.SetM(trk1_mass_);
         ditrk_cand.addUserFloat("fitted_barMass", (fitted_trk1+fitted_trk2).M() );
       }
 
