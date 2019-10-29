@@ -1,6 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.BParkingNano.common_cff import *
 
+K_MASS = 0.493677
+PI_MASS = 0.139571
 
 ########## inputs preparation ################
 electronPairsForPhiEE = cms.EDProducer(
@@ -28,9 +30,11 @@ muonPairsForPhiMuMu = cms.EDProducer(
 )
 
 PhiToKK = cms.EDProducer(
-       'PhiBuilder',
+       'DiTrackBuilder',
         pfcands= cms.InputTag('tracksBPark', 'SelectedTracks'),
         transientTracks= cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
+        trk1Mass = cms.double(K_MASS),
+        trk2Mass = cms.double(K_MASS),
         trk1Selection = cms.string('pt > 1.5 && abs(eta)<2.4'), #need optimization   
         trk2Selection = cms.string('pt > 1.0 && abs(eta)<2.4'), #need optimization
         preVtxSelection = cms.string('abs(userCand("trk1").vz - userCand("trk2").vz)<1.0' 
