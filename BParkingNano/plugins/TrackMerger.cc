@@ -214,6 +214,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.addUserFloat("dz", trk.dz()); 
     pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
     pcand.addUserFloat("DCASig", DCASig);
+    pcand.addUserFloat("refvtxz", trk.vertexRef()->z());
     pcand.addUserInt("isMatchedToMuon", matchedToMuon);
     pcand.addUserInt("isMatchedToLooseMuon", matchedToLooseMuon);
     pcand.addUserInt("isMatchedToSoftMuon", matchedToSoftMuon);

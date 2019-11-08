@@ -5,6 +5,7 @@ electronPairsForKee = cms.EDProducer(
     'DiElectronBuilder',
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
+    offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
     lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 3'),
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
@@ -21,7 +22,8 @@ BToKee = cms.EDProducer(
     kaons = cms.InputTag('tracksBPark', 'SelectedTracks'),
     kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     beamSpot = cms.InputTag("offlineBeamSpot"),
-    kaonSelection = cms.string(''),
+    offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
+    kaonSelection = cms.string('pt > 1.'),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
@@ -91,6 +93,14 @@ BToKeeTable = cms.EDProducer(
         vtx_ex = ufloat('vtx_ex'), ## only saving diagonal elements of the cov matrix
         vtx_ey = ufloat('vtx_ey'),
         vtx_ez = ufloat('vtx_ez'),
+        vtx_3d_closest_dz = ufloat('vtx_3d_closest_dz'),
+        vtx_3d_lip = ufloat('vtx_3d_lip'),
+        vtx_3d_lips = ufloat('vtx_3d_lips'),
+        vtx_3d_pvip = ufloat('vtx_3d_pvip'),
+        vtx_3d_pvips = ufloat('vtx_3d_pvips'),
+        vtx_3d_fl3d = ufloat('vtx_3d_fl3d'),
+        vtx_3d_fls3d = ufloat('vtx_3d_fls3d'),
+        vtx_3d_alpha = ufloat('vtx_3d_alpha'),
         # Mll
         mll_raw = Var('userCand("dilepton").mass()', float),
         mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float), # this might not work
