@@ -37,6 +37,7 @@ public:
     ptBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("ptbiasedSeeding") )},
     unBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("unbiasedSeeding") )},
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
+    pf_mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("pfmvaId") )},
     vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
@@ -67,6 +68,7 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<float>> ptBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> unBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> mvaId_src_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> pf_mvaId_src_;
   const edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   const double drTrg_cleaning_;
   const double dzTrg_cleaning_;
@@ -96,6 +98,8 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.getByToken(unBiased_src_, unBiased);
   edm::Handle<edm::ValueMap<float> > mvaId;  
   evt.getByToken(mvaId_src_, mvaId);
+  edm::Handle<edm::ValueMap<float> > pfmvaId;  
+  evt.getByToken(pf_mvaId_src_, pfmvaId);
   // 
   edm::ESHandle<TransientTrackBuilder> theB ;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
@@ -111,7 +115,9 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   std::vector<float> pfVz;
 
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
+  size_t ipfele=-1;
   for(auto ele : *pf) {
+   ipfele++;
    //cuts
    if (ele.pt()<ptMin_ || ele.pt() < pf_ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
@@ -141,11 +147,14 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    if (skipEle) continue;
 
    // for PF e we set BDT outputs to much higher number than the max
+   edm::Ref<pat::ElectronCollection> ref(pf,ipfele);
+   float pf_mva_id = float((*pfmvaId)[ref]);
    ele.addUserInt("isPF", 1);
    ele.addUserInt("isLowPt", 0);
    ele.addUserFloat("ptBiased", 20.);
    ele.addUserFloat("unBiased", 20.);
-   ele.addUserFloat("mvaId", 20);
+   ele.addUserFloat("mvaId", 20.);
+   ele.addUserFloat("pfmvaId", pf_mva_id);
    ele.addUserFloat("chargeMode", ele.charge());
    ele.addUserInt("isPFoverlap", 0);
 
@@ -225,6 +234,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("ptBiased", ptbiased_seedBDT);
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
+   ele.addUserFloat("pfmvaId", 20.);
 
    ele_out       -> emplace_back(ele);
   }
