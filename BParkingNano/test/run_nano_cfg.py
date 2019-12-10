@@ -46,7 +46,8 @@ extension = {False : 'data', True : 'mc'}
 outputFileNANO = cms.untracked.string('_'.join(['BParkNANO', extension[options.isMC], options.tag])+'.root')
 outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[options.isMC], options.tag])+'.root')
 if not options.inputFiles:
-    options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
+#     options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
+    options.inputFiles = ['/store/data/Run2018C/ParkingBPH3/MINIAOD/05May2019-v1/30000/655E367A-A896-D34A-8A23-24844C642BAF.root'] if not options.isMC else \
                          ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)
 

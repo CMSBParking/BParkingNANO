@@ -12,38 +12,38 @@ samples:
     dataset: /ParkingBPH%d/Run2018A-05May2019-v1/MINIAOD
     isMC: False
     parts: 
-      - 1
+#      - 1
       - 2
       - 3
-      - 4
-      - 5
-      - 6
+#      - 4
+#      - 5
+#      - 6
   data_Run2018B_part%d:
     dataset: /ParkingBPH%d/Run2018B-05May2019-v2/MINIAOD 
     isMC: False
     parts: 
-      - 1
+#      - 1
       - 2
       - 3
-      - 4
-      - 5
-      - 6
+#      - 4
+#      - 5
+#      - 6
   data_Run2018C_part%d: 
     dataset: /ParkingBPH%d/Run2018C-05May2019-v1/MINIAOD 
     isMC: False
     parts: 
-      - 1
+#      - 1
       - 2
       - 3
-      - 4
-      - 5
-      - 6
+#      - 4
+#      - 5
+#      - 6
   data_Run2018D_part%d:
     dataset: /ParkingBPH%d/Run2018D-05May2019promptD-v1/MINIAOD
     isMC: False
     globaltag: 102X_dataRun2_Prompt_v14
     parts:
-      - 1
+#      - 1
       - 2
       - 3
       # The rest is still to come, hopefully in the same version
@@ -70,6 +70,33 @@ samples:
     dataset: /BuToKMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
     isMC: True
 
-  BuToKee:
-    dataset: /BuToKee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+  BuToKee_ext:
+##    dataset: /BuToKee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM
+    dataset: /BuToKee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15_ext1-v2/MINIAODSIM
+    isMC: True
+
+
+  BdToKstarJpsi_ToMuMu:
+    dataset: /BdToKstarJpsi_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
+    
+  BdToKstarJpsi_Toee:
+    dataset: /BdToKstarJpsi_ToKPiee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
+    
+  BdToKstarMuMu:
+    dataset: /BdToKstarMuMu_probefilter_SoftQCDnonD_TuneCP5_13Tev-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: True
+    
+  BdToKstarEE_ext:
+    dataset: /BdToKstaree_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15_ext1-v2/MINIAODSIM
+##    dataset: /BdToKstaree_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM
+    isMC: True
+
+  BdToKstarPsi2S_ToMuMu:
+    dataset: /BdToKstarPsi2S_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13Tev-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
+    isMC: True
+
+  BdToKstarPsi2S_Toee:
+    dataset: /BdToKstarPsi2S_ToKPiee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
     isMC: True
