@@ -219,6 +219,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.addUserInt("isMatchedToSoftMuon", matchedToSoftMuon);
     pcand.addUserInt("isMatchedToMediumMuon", matchedToMediumMuon);
     pcand.addUserInt("isMatchedToEle", matchedToEle);
+    pcand.addUserInt("nValidHits", trk.bestTrack()->found());
     //adding the candidate in the composite stuff for fit (need to test)
     if ( iTrk < nTracks )
       pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, iTrk ));
