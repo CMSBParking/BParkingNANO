@@ -13,7 +13,7 @@ git cms-init
 
 ```shell
 git cms-addpkg RecoEgamma/EgammaElectronProducers
-git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_LowPtElectronsID
+git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2019Aug07
 git cms-addpkg RecoEgamma/ElectronIdentification
 scram b
 
