@@ -3,14 +3,33 @@
 
 ## Getting started
 
-```shell
+```
 cmsrel CMSSW_10_2_15
 cd CMSSW_10_2_15/src
 cmsenv
-git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
+git cms-init
+
+```
+## Add the latest code and 2019Aug07 model for the electron ID 
+```
+git cms-addpkg RecoEgamma/EgammaElectronProducers
+git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2019Aug07
+git cms-addpkg RecoEgamma/ElectronIdentification
 scram b
+
+# Check $CMSSW_BASE/external exists before this step (e.g. just run scram b to create it)
+git clone --single-branch --branch 102X_LowPtElectrons_2019Aug07 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
+
+# The following step is required if running on CRAB
+mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data 
 ```
 
+## Add the BParkingNano package and build everything
+
+```
+git clone git@github.com:CMSBParking/BParkingNANO.git ./PhysicsTools
+scram b
+```
 
 ## To run on a test file
 
