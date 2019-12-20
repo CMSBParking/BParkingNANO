@@ -1,6 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
+
+
 muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  muonCollection = cms.InputTag("slimmedMuons"), #same collection as in NanoAOD                                                           
                                  bits = cms.InputTag("TriggerResults","","HLT"),
@@ -8,21 +10,29 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  objects = cms.InputTag("slimmedPatTrigger"),
                                  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
                                  
-                                 ##for the output matched collection                                                                                                     
-                                 maxdR_matching = cms.double(0.01),
+                                 ##for the output trigger matched collection
+                                 maxdR_matching = cms.double(0.1),
                                  
-                                 ## for the output filtered collection                                                                                                   
-                                 # do not cut on dR to keep Kmumu on trg side                                                                                            
+                                 ## for the output selected collection (tag + all compatible in dZ)
                                  dzForCleaning_wrtTrgMuon = cms.double(1.),
-                                 ptMin = cms.double(1.),
-                                 absEtaMax = cms.double(2.4)
+
+                                 ptMin = cms.double(0.5),
+                                 absEtaMax = cms.double(2.4),
+                                 # keeps only muons with at soft Quality flag
+                                 softMuonsOnly = cms.bool(False)
                              )
+
+countTrgMuons = cms.EDFilter("PATCandViewCountFilter",
+    minNumber = cms.uint32(1),
+    maxNumber = cms.uint32(999999),
+    src = cms.InputTag("muonTrgSelector", "trgMuons")
+)
 
 
 muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
-    src = cms.InputTag("muonTrgSelector:trgFiltered"),
+    src = cms.InputTag("muonTrgSelector:SelectedMuons"),
     cut = cms.string(""), #we should not filter on cross linked collections
-    name = cms.string("MuonBPark"),
+    name = cms.string("Muon"),
     doc  = cms.string("slimmedMuons for BPark after basic selection"),
     singleton = cms.bool(False), # the number of entries is variable
     extension = cms.bool(False), # this is the main table for the muons
@@ -60,6 +70,7 @@ muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         multiIsoId = Var("?passed('MultiIsoMedium')?2:passed('MultiIsoLoose')","uint8",doc="MultiIsoId from miniAOD selector (1=MultiIsoLoose, 2=MultiIsoMedium)"),
         triggerIdLoose = Var("passed('TriggerIdLoose')",bool,doc="TriggerIdLoose ID"),
         inTimeMuon = Var("passed('InTimeMuon')",bool,doc="inTimeMuon ID"),
+        isTriggering = Var("userInt('isTriggering')", int,doc="flag the reco muon is also triggering")
     ),
 )
 
@@ -70,13 +81,13 @@ muonsBParkMCMatchForTable = cms.EDProducer("MCMatcher",            # cut on delt
     mcPdgId     = cms.vint32(13),                             # one or more PDG ID (13 = mu); absolute values (see below)
     checkCharge = cms.bool(False),                            # True = require RECO and MC objects to have the same charge
     mcStatus    = cms.vint32(1),                              # PYTHIA status code (1 = stable, 2 = shower, 3 = hard scattering)
-    maxDeltaR   = cms.double(0.3),                            # Minimum deltaR for the match
+    maxDeltaR   = cms.double(0.03),                           # Minimum deltaR for the match
     maxDPtRel   = cms.double(0.5),                            # Minimum deltaPt/Pt for the match
     resolveAmbiguities    = cms.bool(True),                   # Forbid two RECO objects to match to the same GEN object
     resolveByMatchQuality = cms.bool(True),                   # False = just match input in order; True = pick lowest deltaR pair first
 )
 
-muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
+muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     src     = muonBParkTable.src,
     mcMap   = cms.InputTag("muonsBParkMCMatchForTable"),
     objName = muonBParkTable.name,
@@ -85,10 +96,14 @@ muonBParkMCTable = cms.EDProducer("CandMCMatchTableProducer",
     docString = cms.string("MC matching to status==1 muons"),
 )
 
-
+selectedMuonsMCMatchEmbedded = cms.EDProducer(
+    'MuonMatchEmbedder',
+    src = cms.InputTag('muonTrgSelector:SelectedMuons'),
+    matching = cms.InputTag('muonsBParkMCMatchForTable')
+)
 
 muonTriggerMatchedTable = muonBParkTable.clone(
-    src = cms.InputTag("muonTrgSelector:trgMatched"),
+    src = cms.InputTag("muonTrgSelector:trgMuons"),
     name = cms.string("TriggerMuon"),
     doc  = cms.string("reco muon matched to triggering muon"),
     variables = cms.PSet(CandVars,
@@ -99,9 +114,7 @@ muonTriggerMatchedTable = muonBParkTable.clone(
    )
 )
 
-
-muonBParkSequence = cms.Sequence(muonTrgSelector)
-muonBParkMC = cms.Sequence(muonsBParkMCMatchForTable + muonBParkMCTable)
+muonBParkSequence = cms.Sequence(muonTrgSelector * countTrgMuons)
+muonBParkMC = cms.Sequence(muonBParkSequence + muonsBParkMCMatchForTable + selectedMuonsMCMatchEmbedded + muonBParkMCTable)
 muonBParkTables = cms.Sequence(muonBParkTable)
 muonTriggerMatchedTables = cms.Sequence(muonTriggerMatchedTable)
-

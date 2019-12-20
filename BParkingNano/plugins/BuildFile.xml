@@ -21,7 +21,9 @@
 <use   name="RecoVertex/KinematicFit"/>
 <use   name="MagneticField/Records"/>
 <use   name="TrackingTools/Records"/>
+<use   name="TrackingTools/IPTools"/>
 <use   name="TrackingTools/GsfTracking"/>
+<!--flags CXXFLAGS="-g"/-->  
 <library   file="*.cc" name="PhysicsToolsBParkingNanoPlugins">
   <flags   EDM_PLUGIN="1"/>
 </library>
