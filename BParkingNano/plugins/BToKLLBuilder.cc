@@ -35,6 +35,9 @@ public:
     leptons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("leptonTransientTracks") )},
     kaons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("kaons") )},
     kaons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("kaonsTransientTracks") )},
+    isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
+    isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
+    isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
     beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
       produces<pat::CompositeCandidateCollection>();
     }
@@ -46,7 +49,7 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
   
 private:
-  const StringCutObjectSelector<pat::CompositeCandidate> k_selection_; // cut on sub-leading lepton
+  const StringCutObjectSelector<pat::CompositeCandidate> k_selection_; 
   const StringCutObjectSelector<pat::CompositeCandidate> pre_vtx_selection_; // cut on the di-lepton before the SV fit
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_; // cut on the di-lepton after the SV fit
 
@@ -54,6 +57,11 @@ private:
   const edm::EDGetTokenT<TransientTrackCollection> leptons_ttracks_;
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> kaons_;
   const edm::EDGetTokenT<TransientTrackCollection> kaons_ttracks_;
+
+  const edm::EDGetTokenT<pat::PackedCandidateCollection> isotracksToken_;
+  const edm::EDGetTokenT<pat::PackedCandidateCollection> isolostTracksToken_;
+  const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
+
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
 };
 
@@ -74,6 +82,14 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
 
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
+
+  //for isolation
+  edm::Handle<pat::PackedCandidateCollection> iso_tracks;
+  evt.getByToken(isotracksToken_, iso_tracks);
+  edm::Handle<pat::PackedCandidateCollection> iso_lostTracks;
+  evt.getByToken(isolostTracksToken_, iso_lostTracks);
+  unsigned int nTracks     = iso_tracks->size();
+  unsigned int totalTracks = nTracks + iso_lostTracks->size();
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
@@ -170,6 +186,60 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("fitted_k_phi" , fitter.daughter_p4(2).phi());
     
       if( !post_vtx_selection_(cand) ) continue;        
+
+      //compute isolation
+      float l1_iso03 = 0;
+      float l1_iso04 = 0;
+      float l2_iso03 = 0;
+      float l2_iso04 = 0;
+      float k_iso03  = 0;
+      float k_iso04  = 0;
+      float b_iso03  = 0;
+      float b_iso04  = 0;
+
+      for( unsigned int iTrk=0; iTrk<totalTracks; ++iTrk ) {
+      
+        const pat::PackedCandidate & trk = (iTrk < nTracks) ? (*iso_tracks)[iTrk] : (*iso_lostTracks)[iTrk-nTracks];
+        // define selections for iso tracks (pT, eta, ...)
+        if( !isotrk_selection_(trk) ) continue;
+        // check if the track is the kaon
+        if (k_ptr->userCand("cand") ==  edm::Ptr<reco::Candidate> ( iso_tracks, iTrk ) ) continue;
+        // check if the track is one of the two leptons
+        if (track_to_lepton_match(l1_ptr, iso_tracks.id(), iTrk) || 
+            track_to_lepton_match(l2_ptr, iso_tracks.id(), iTrk) ) continue;
+
+        // add to final particle iso if dR < cone
+        float dr_to_l1 = deltaR(cand.userFloat("fitted_l1_eta"), cand.userFloat("fitted_l1_phi"), trk.eta(), trk.phi());
+        float dr_to_l2 = deltaR(cand.userFloat("fitted_l2_eta"), cand.userFloat("fitted_l2_phi"), trk.eta(), trk.phi());
+        float dr_to_k  = deltaR(cand.userFloat("fitted_k_eta") , cand.userFloat("fitted_k_phi") , trk.eta(), trk.phi());
+        float dr_to_b  = deltaR(cand.userFloat("fitted_eta")   , cand.userFloat("fitted_phi") , trk.eta(), trk.phi());
+
+        if (dr_to_l1 < 0.4){
+          l1_iso04 += trk.pt();
+          if ( dr_to_l1 < 0.3) l1_iso03 += trk.pt();
+        }
+        if (dr_to_l2 < 0.4){
+          l2_iso04 += trk.pt();
+          if (dr_to_l2 < 0.3)  l2_iso03 += trk.pt();
+        }
+        if (dr_to_k < 0.4){
+          k_iso04 += trk.pt();
+          if (dr_to_k < 0.3) k_iso03 += trk.pt();
+        }
+        if (dr_to_b < 0.4){
+          b_iso04 += trk.pt();
+          if (dr_to_b < 0.3) b_iso03 += trk.pt();
+        }
+      }
+      cand.addUserFloat("l1_iso03", l1_iso03);
+      cand.addUserFloat("l1_iso04", l1_iso04);
+      cand.addUserFloat("l2_iso03", l2_iso03);
+      cand.addUserFloat("l2_iso04", l2_iso04);
+      cand.addUserFloat("k_iso03" , k_iso03 );
+      cand.addUserFloat("k_iso04" , k_iso04 );
+      cand.addUserFloat("b_iso03" , b_iso03 );
+      cand.addUserFloat("b_iso04" , b_iso04 );
+
       ret_val->push_back(cand);
     } // for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
   } // for(size_t k_idx = 0; k_idx < kaons->size(); ++k_idx)
