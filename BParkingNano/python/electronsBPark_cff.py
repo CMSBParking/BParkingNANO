@@ -30,8 +30,56 @@ pfElectronsForAnalysis = cms.EDFilter(
   )
 '''
 
+mvaConfigsForEleProducer = cms.VPSet( )
+# Import and add all desired MVAs
+from PhysicsTools.BParkingNano.mvaElectronID_BParkRetrain_cff \
+    import mvaEleID_BParkRetrain_producer_config
+mvaConfigsForEleProducer.append( mvaEleID_BParkRetrain_producer_config )
 
+# The producer to compute the MVA input variables which are not accessible with the cut parser
+electronMVAVariableHelper = cms.EDProducer('GsfElectronMVAVariableHelper',
+  # The module automatically detects AOD vs miniAOD, so we configure both
+  # AOD case
+  src = cms.InputTag('gedGsfElectrons'),
+  vertexCollection = cms.InputTag("offlinePrimaryVertices"),
+  beamSpot         = cms.InputTag("offlineBeamSpot"),
+  conversions      = cms.InputTag("allConversions"),
+  # miniAOD case
+  srcMiniAOD              = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),
+  vertexCollectionMiniAOD = cms.InputTag("offlineSlimmedPrimaryVertices"),
+  beamSpotMiniAOD         = cms.InputTag("offlineBeamSpot"),
+  conversionsMiniAOD      = cms.InputTag("reducedEgamma:reducedConversions"),
+)
 
+electronMVAValueMapProducer = cms.EDProducer(
+  'ElectronMVAValueMapProducer',
+  # The module automatically detects AOD vs miniAOD, so we configure both
+  #
+  # AOD case
+  #
+  src = cms.InputTag('gedGsfElectrons'),
+  #
+  # miniAOD case
+  #
+  srcMiniAOD = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),
+  #
+  # MVA configurations
+  #
+  mvaConfigurations = mvaConfigsForEleProducer
+)
+
+egmGsfElectronIDs = cms.EDProducer(
+    "VersionedGsfElectronIdProducer",
+    physicsObjectSrc = cms.InputTag('gedGsfElectrons'),
+    physicsObjectIDs = cms.VPSet( )
+)
+
+egmGsfElectronIDTask = cms.Task(
+    electronMVAVariableHelper,
+    electronMVAValueMapProducer,
+    egmGsfElectronIDs,
+)
+egmGsfElectronIDSequence = cms.Sequence(egmGsfElectronIDTask)
 
 #Everything can be done here, in one loop and save time :)
 electronsForAnalysis = cms.EDProducer(
@@ -42,6 +90,7 @@ electronsForAnalysis = cms.EDProducer(
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
   mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
+  pfmvaId = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues"),
   vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
   drForCleaning_wrtTrgMuon = cms.double(0.03),
@@ -90,6 +139,7 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT 20 for pfEle"), 
         unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
         mvaId = Var("userFloat('mvaId')",float,doc="MVA ID for low pT, 20 for pfEle"),
+        pfmvaId = Var("userFloat('pfmvaId')",float,doc="MVA ID for pfEle, 20 for low pT"),
         fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8),
         isPFoverlap = Var("userInt('isPFoverlap')",bool,doc="flag lowPt ele overlapping with pf in selected_pf_collection",precision=8),
         )
@@ -128,6 +178,7 @@ electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
 
 electronsBParkSequence = cms.Sequence(
   lowPtGsfElectronLatestID
+  +egmGsfElectronIDSequence
   +electronsForAnalysis
 )
 electronBParkMC = cms.Sequence(electronsBParkSequence + electronsBParkMCMatchForTable + selectedElectronsMCMatchEmbedded + electronBParkMCTable)
