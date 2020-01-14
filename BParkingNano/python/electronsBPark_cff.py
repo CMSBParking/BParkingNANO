@@ -16,7 +16,7 @@ mvaConfigsForEleProducer.append( mvaEleID_BParkRetrain_producer_config )
 
 # The producer to compute the MVA input variables which are not accessible with the cut parser
 electronMVAVariableHelper = cms.EDProducer('GsfElectronMVAVariableHelper',
-  # The module automatically detects AO
+  # The module automatically detects AOD vs miniAOD, so we configure both
   # AOD case
   src = cms.InputTag('gedGsfElectrons'),
   vertexCollection = cms.InputTag("offlinePrimaryVertices"),

@@ -99,8 +99,8 @@ BToKeeTable = cms.EDProducer(
         vtx_ez = ufloat('vtx_ez'),
         # Mll
         mll_raw = Var('userCand("dilepton").mass()', float),
-#        mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float), # this might not work
-#        mllErr_llfit = Var('userCand("dilepton").userFloat("fitted_massErr")', float), # this might not work
+        mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float), # this might not work
+        mllErr_llfit = Var('userCand("dilepton").userFloat("fitted_massErr")', float), # this might not work
         mll_fullfit = ufloat('fitted_mll'),
         # Cos(theta)
         cos2D = ufloat('cos_theta_2D'),
