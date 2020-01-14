@@ -91,6 +91,9 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   unsigned int nTracks     = iso_tracks->size();
   unsigned int totalTracks = nTracks + iso_lostTracks->size();
 
+  std::vector<int> used_lep1_id, used_lep2_id, used_trk_id;
+
+
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   
@@ -146,6 +149,9 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
           fitter.fitted_vtx().z()
           )  
         );
+      used_lep1_id.emplace_back(l1_idx);
+      used_lep2_id.emplace_back(l2_idx);
+      used_trk_id.emplace_back(k_idx);
       cand.addUserInt("sv_OK" , fitter.success());
       cand.addUserFloat("sv_chi2", fitter.chi2());
       cand.addUserFloat("sv_ndof", fitter.dof()); // float??
@@ -243,6 +249,12 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       ret_val->push_back(cand);
     } // for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
   } // for(size_t k_idx = 0; k_idx < kaons->size(); ++k_idx)
+
+  for (auto & cand: *ret_val){
+    cand.addUserInt("n_k_used", std::count(used_trk_id.begin(),used_trk_id.end(),cand.userInt("k_idx")));
+    cand.addUserInt("n_l1_used", std::count(used_lep1_id.begin(),used_lep1_id.end(),cand.userInt("l1_idx"))+std::count(used_lep2_id.begin(),used_lep2_id.end(),cand.userInt("l1_idx")));
+    cand.addUserInt("n_l2_used", std::count(used_lep1_id.begin(),used_lep1_id.end(),cand.userInt("l2_idx"))+std::count(used_lep2_id.begin(),used_lep2_id.end(),cand.userInt("l2_idx")));
+  }
 
   evt.put(std::move(ret_val));
 }
