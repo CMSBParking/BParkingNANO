@@ -6,29 +6,6 @@ lowPtGsfElectronLatestID = lowPtGsfElectronID.clone()
 lowPtGsfElectronLatestID.electrons = 'slimmedLowPtElectrons'
 lowPtGsfElectronLatestID.rho = 'fixedGridRhoFastjetAll'
 
-##essentially the commented out can be inside the same loop... no need to have a more loops in an "expensive" object
-'''lowptElectronsWithSeed = cms.EDProducer(
-  'PATLowPtElectronSeedingEmbedder',
-  src = cms.InputTag('slimmedLowPtElectrons'),
-  ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
-  unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
-    minBdtUnbiased = cms.double(0.5)
-)
-lowptElectronsForAnalysis = cms.EDFilter(
-  'PATElectronSelector',
-  src = cms.InputTag("lowptElectronsWithSeed"),
-  ## need to add cut on BDT and ID when available 
-  ## pT > 0.5 to accomodate l1 and l2
-  cut = cms.string('pt > 0.5 && eta > -2.4 && eta < 2.4'),
-  )
-pfElectronsForAnalysis = cms.EDFilter(
-  'PATElectronSelector',
-  src = cms.InputTag("slimmedElectrons"),
-  ## can add cut on ID.
-  ## pT > 2 since almost nothing below anyway
-  cut = cms.string("pt > 2 && eta > -2.4 && eta < 2.4"),
-  )
-'''
 
 mvaConfigsForEleProducer = cms.VPSet( )
 # Import and add all desired MVAs
@@ -36,14 +13,15 @@ from PhysicsTools.BParkingNano.mvaElectronID_BParkRetrain_cff \
     import mvaEleID_BParkRetrain_producer_config
 mvaConfigsForEleProducer.append( mvaEleID_BParkRetrain_producer_config )
 
+
 # The producer to compute the MVA input variables which are not accessible with the cut parser
 electronMVAVariableHelper = cms.EDProducer('GsfElectronMVAVariableHelper',
-  # The module automatically detects AOD vs miniAOD, so we configure both
+  # The module automatically detects AO
   # AOD case
   src = cms.InputTag('gedGsfElectrons'),
   vertexCollection = cms.InputTag("offlinePrimaryVertices"),
   beamSpot         = cms.InputTag("offlineBeamSpot"),
-  conversions      = cms.InputTag("allConversions"),
+conversions = cms.InputTag("allConversions"),
   # miniAOD case
   srcMiniAOD              = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),
   vertexCollectionMiniAOD = cms.InputTag("offlineSlimmedPrimaryVertices"),
@@ -53,18 +31,12 @@ electronMVAVariableHelper = cms.EDProducer('GsfElectronMVAVariableHelper',
 
 electronMVAValueMapProducer = cms.EDProducer(
   'ElectronMVAValueMapProducer',
-  # The module automatically detects AOD vs miniAOD, so we configure both
-  #
   # AOD case
-  #
-  src = cms.InputTag('gedGsfElectrons'),
-  #
+  src = cms.InputTag('gedGsfElectrons'),  
   # miniAOD case
-  #
   srcMiniAOD = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),
-  #
+    
   # MVA configurations
-  #
   mvaConfigurations = mvaConfigsForEleProducer
 )
 
@@ -80,6 +52,7 @@ egmGsfElectronIDTask = cms.Task(
     egmGsfElectronIDs,
 )
 egmGsfElectronIDSequence = cms.Sequence(egmGsfElectronIDTask)
+
 
 #Everything can be done here, in one loop and save time :)
 electronsForAnalysis = cms.EDProducer(
@@ -106,6 +79,7 @@ electronsForAnalysis = cms.EDProducer(
   bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
   sortOutputCollections = cms.bool(True)
+
 )
 
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
@@ -127,20 +101,22 @@ electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         vz = Var("vz()",float,doc="z coordinate of vertex position, in cm",precision=6),
         ip3d = Var("abs(dB('PV3D'))",float,doc="3D impact parameter wrt first PV, in cm",precision=10),
         sip3d = Var("abs(dB('PV3D')/edB('PV3D'))",float,doc="3D impact parameter significance wrt first PV, in cm",precision=10),
-        deltaEtaSC = Var("superCluster().eta()-eta()",float,doc="delta eta (SC,ele) with sign",precision=10),
-        r9 = Var("full5x5_r9()",float,doc="R9 of the supercluster, calculated with full 5x5 region",precision=10),
-        sieie = Var("full5x5_sigmaIetaIeta()",float,doc="sigma_IetaIeta of the supercluster, calculated with full 5x5 region",precision=10),
-        hoe = Var("hadronicOverEm()",float,doc="H over E",precision=8),
-        tightCharge = Var("isGsfCtfScPixChargeConsistent() + isGsfScPixChargeConsistent()",int,doc="Tight charge criteria (0:none, 1:isGsfScPixChargeConsistent, 2:isGsfCtfScPixChargeConsistent)"),
+#        deltaEtaSC = Var("superCluster().eta()-eta()",float,doc="delta eta (SC,ele) with sign",precision=10),
+#        r9 = Var("full5x5_r9()",float,doc="R9 of the supercluster, calculated with full 5x5 region",precision=10),
+#        sieie = Var("full5x5_sigmaIetaIeta()",float,doc="sigma_IetaIeta of the supercluster, calculated with full 5x5 region",precision=10),
+#        hoe = Var("hadronicOverEm()",float,doc="H over E",precision=8),
+#        tightCharge = Var("isGsfCtfScPixChargeConsistent() + isGsfScPixChargeConsistent()",int,doc="Tight charge criteria (0:none, 1:isGsfScPixChargeConsistent, 2:isGsfCtfScPixChargeConsistent)"),
         convVeto = Var("passConversionVeto()",bool,doc="pass conversion veto"),
-        lostHits = Var("gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS')","uint8",doc="number of missing inner hits"),
+#        lostHits = Var("gsfTrack.hitPattern.numberOfLostHits('MISSING_INNER_HITS')","uint8",doc="number of missing inner hits"),
+        pfRelIso = Var("(pfIsolationVariables().sumChargedHadronPt+max(0.0,pfIsolationVariables().sumNeutralHadronEt+pfIsolationVariables().sumPhotonEt-0.5*pfIsolationVariables().sumPUPt))/pt",float,doc="PF relative isolation dR=0.3, total (deltaBeta corrections)"),
+        trkRelIso = Var("trackIso/pt",float,doc="PF relative isolation dR=0.3, total (deltaBeta corrections)"),
         isPF = Var("userInt('isPF')",bool,doc="electron is PF candidate"),
         isLowPt = Var("userInt('isLowPt')",bool,doc="electron is LowPt candidate"),
         ptBiased = Var("userFloat('ptBiased')",float,doc="ptBiased from seed BDT 20 for pfEle"), 
         unBiased = Var("userFloat('unBiased')",float,doc="unBiased from seed BDT 20 for pfEle"), 
         mvaId = Var("userFloat('mvaId')",float,doc="MVA ID for low pT, 20 for pfEle"),
         pfmvaId = Var("userFloat('pfmvaId')",float,doc="MVA ID for pfEle, 20 for low pT"),
-        fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=8),
+        fBrem = Var("fbrem()",float,doc="brem fraction from the gsf fit",precision=12),
         isPFoverlap = Var("userInt('isPFoverlap')",bool,doc="flag lowPt ele overlapping with pf in selected_pf_collection",precision=8),
         )
 )
