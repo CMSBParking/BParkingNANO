@@ -49,7 +49,8 @@ public:
     etaMax_{cfg.getParameter<double>("etaMax")},
     bdtMin_{cfg.getParameter<double>("bdtMin")},
     use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
-    sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")} 
+    sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")},
+    saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")}
     {
        produces<pat::ElectronCollection>("SelectedElectrons");
        produces<TransientTrackCollection>("SelectedTransientElectrons");  
@@ -81,6 +82,7 @@ private:
   const double bdtMin_; //bdt min cut
   const bool use_gsf_mode_for_p4_;
   const bool sortOutputCollections_;
+  const bool saveLowPtE_;
 };
 
 void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const & iSetup) const {
@@ -165,6 +167,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
   unsigned int pfSelectedSize = pfEtaPhi.size();
 
+  if ( saveLowPtE_ ) {
   size_t iele=-1;
   /// add and clean low pT e
   for(auto ele : *lowpt) {
@@ -187,7 +190,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
        );
      ele.setP4(p4);     
    }
-
+  
    //same cuts as in PF
    if (ele.pt()<ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
@@ -238,7 +241,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
    ele_out       -> emplace_back(ele);
   }
-
+}
   if(sortOutputCollections_){
 
     //sorting increases sligtly the time but improves the code efficiency in the Bcandidate builder
