@@ -19,6 +19,11 @@
 #include <algorithm>
 #include "KinVtxFitter.h"
 
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+
 template<typename Lepton>
 class DiLeptonBuilder : public edm::global::EDProducer<> {
 
@@ -33,9 +38,11 @@ public:
     pre_vtx_selection_{cfg.getParameter<std::string>("preVtxSelection")},
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     src_{consumes<LeptonCollection>( cfg.getParameter<edm::InputTag>("src") )},
-    ttracks_src_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("transientTracksSrc") )} {
-       produces<pat::CompositeCandidateCollection>();
-    }
+    ttracks_src_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("transientTracksSrc") )},
+    vertex_src_{consumes<reco::VertexCollection>( cfg.getParameter<edm::InputTag>("offlinePrimaryVertexSrc") )}
+  {
+    produces<pat::CompositeCandidateCollection>();
+  }
 
   ~DiLeptonBuilder() override {}
   
@@ -50,10 +57,11 @@ private:
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_; // cut on the di-lepton after the SV fit
   const edm::EDGetTokenT<LeptonCollection> src_;
   const edm::EDGetTokenT<TransientTrackCollection> ttracks_src_;
+  const edm::EDGetTokenT<reco::VertexCollection> vertex_src_;
 };
 
 template<typename Lepton>
-void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &iSetup) const {
 
   //input
   edm::Handle<LeptonCollection> leptons;
@@ -61,6 +69,16 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
   
   edm::Handle<TransientTrackCollection> ttracks;
   evt.getByToken(ttracks_src_, ttracks);
+
+  edm::Handle<reco::VertexCollection> pvtxs;
+  evt.getByToken(vertex_src_, pvtxs);
+
+  edm::ESHandle<MagneticField> fieldHandle;
+  iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
+  const MagneticField *fMagneticField = fieldHandle.product();
+  
+  AnalyticalImpactPointExtrapolator extrapolator(fMagneticField);
+
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_value(new pat::CompositeCandidateCollection());
@@ -97,6 +115,30 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
       lepton_pair.addUserFloat("fitted_mass", fitter.success() ? fitter.fitted_candidate().mass() : -1);
       lepton_pair.addUserFloat("fitted_massErr", fitter.success() ? sqrt(fitter.fitted_candidate().kinematicParametersError().matrix()(6,6)) : -1);
       // if needed, add here more stuff
+
+      if(!fitter.success()) continue;
+
+      Float_t max_criteria = 999;
+      reco::Vertex closestVertex;
+
+      for( reco::VertexCollection::const_iterator vtx = pvtxs->begin(); vtx != pvtxs->end(); ++vtx){
+
+        particle_cand cand = calculateIPvariables(extrapolator, fitter.fitted_particle(), fitter.fitted_refvtx(), *vtx);
+        if(TMath::Abs(cand.lip) < max_criteria){
+	  max_criteria = TMath::Abs(cand.lip);
+	  closestVertex = *vtx;
+        }
+      }
+
+      if(max_criteria==999){
+	lepton_pair.addUserFloat("vtx_3d_x", max_criteria);
+	lepton_pair.addUserFloat("vtx_3d_y", max_criteria);
+	lepton_pair.addUserFloat("vtx_3d_z", max_criteria);
+      }else{
+	lepton_pair.addUserFloat("vtx_3d_x", closestVertex.position().x());
+	lepton_pair.addUserFloat("vtx_3d_y", closestVertex.position().y());
+	lepton_pair.addUserFloat("vtx_3d_z", closestVertex.position().z());
+      }
 
       // cut on the SV info
       if( !post_vtx_selection_(lepton_pair) ) continue;

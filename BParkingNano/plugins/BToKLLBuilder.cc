@@ -15,11 +15,17 @@
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 #include "helper.h"
 #include <limits>
 #include <algorithm>
 #include "KinVtxFitter.h"
+
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+
 
 class BToKLLBuilder : public edm::global::EDProducer<> {
 
@@ -38,9 +44,11 @@ public:
     isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
-    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
-      produces<pat::CompositeCandidateCollection>();
-    }
+    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )},
+    vertex_src_{consumes<reco::VertexCollection>( cfg.getParameter<edm::InputTag>("offlinePrimaryVertexSrc") )}
+  {
+    produces<pat::CompositeCandidateCollection>();
+  }
 
   ~BToKLLBuilder() override {}
   
@@ -63,9 +71,11 @@ private:
   const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
+  const edm::EDGetTokenT<reco::VertexCollection> vertex_src_;
 };
 
-void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+
+void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &iSetup) const {
 
   //input
   edm::Handle<pat::CompositeCandidateCollection> dileptons;
@@ -82,6 +92,15 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
 
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
+
+  edm::Handle<reco::VertexCollection> pvtxs;
+  evt.getByToken(vertex_src_, pvtxs);
+
+  edm::ESHandle<MagneticField> fieldHandle;
+  iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
+  const MagneticField *fMagneticField = fieldHandle.product();
+  
+  AnalyticalImpactPointExtrapolator extrapolator(fMagneticField);
 
   //for isolation
   edm::Handle<pat::PackedCandidateCollection> iso_tracks;
@@ -108,12 +127,18 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       K_MASS
       );
 
+
     for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
       edm::Ptr<pat::CompositeCandidate> ll_prt(dileptons, ll_idx);
       edm::Ptr<reco::Candidate> l1_ptr = ll_prt->userCand("l1");
       edm::Ptr<reco::Candidate> l2_ptr = ll_prt->userCand("l2");
       int l1_idx = ll_prt->userInt("l1_idx");
       int l2_idx = ll_prt->userInt("l2_idx");
+
+      float ll_vtx_3d_x = ll_prt->userFloat("vtx_3d_x");
+      float ll_vtx_3d_y = ll_prt->userFloat("vtx_3d_y");
+      float ll_vtx_3d_z = ll_prt->userFloat("vtx_3d_z");
+
     
       pat::CompositeCandidate cand;
       cand.setP4(ll_prt->p4() + k_p4);
@@ -190,6 +215,9 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("fitted_k_pt"  , fitter.daughter_p4(2).pt()); 
       cand.addUserFloat("fitted_k_eta" , fitter.daughter_p4(2).eta());
       cand.addUserFloat("fitted_k_phi" , fitter.daughter_p4(2).phi());
+      cand.addUserFloat("vtx_3d_x",    ll_vtx_3d_x);
+      cand.addUserFloat("vtx_3d_y",    ll_vtx_3d_y);
+      cand.addUserFloat("vtx_3d_z",    ll_vtx_3d_z);
     
       if( !post_vtx_selection_(cand) ) continue;        
 
@@ -245,6 +273,33 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("k_iso04" , k_iso04 );
       cand.addUserFloat("b_iso03" , b_iso03 );
       cand.addUserFloat("b_iso04" , b_iso04 );
+
+
+      reco::Vertex closestVertex;
+      bool isVtxFound = false;
+
+      for( reco::VertexCollection::const_iterator vtx = pvtxs->begin(); vtx != pvtxs->end(); ++vtx){	
+	if(vtx->position().z()!=ll_vtx_3d_z) continue;
+	closestVertex = *vtx;
+	isVtxFound = true;
+      }
+
+      if(!isVtxFound){
+	std::cout << "Vertex was not found !!!!!!!!!!!!!!!" << std::endl;
+	continue;
+      }
+
+      particle_cand Bcand = calculateIPvariables(extrapolator, fitter.fitted_particle(), fitter.fitted_refvtx(), closestVertex);
+
+      cand.addUserFloat("vtx_3d_lip",   Bcand.lip);
+      cand.addUserFloat("vtx_3d_lips",   Bcand.lips);
+      cand.addUserFloat("vtx_3d_pvip",   Bcand.pvip);
+      cand.addUserFloat("vtx_3d_pvips",   Bcand.pvips);
+      cand.addUserFloat("vtx_3d_fl3d",   Bcand.fl3d);
+      cand.addUserFloat("vtx_3d_fls3d",   Bcand.fls3d);
+      cand.addUserFloat("vtx_3d_alpha",   Bcand.alpha);
+
+
 
       ret_val->push_back(cand);
     } // for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {

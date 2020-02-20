@@ -11,6 +11,13 @@
 #include "DataFormats/GeometryVector/interface/PV3DBase.h"
 #include "Math/LorentzVector.h"
 
+#include "PhysicsTools/BParkingNano/plugins/ParticleStruct.h"
+#include "TrackingTools/GeomPropagators/interface/AnalyticalImpactPointExtrapolator.h"
+#include "RecoVertex/KinematicFitPrimitives/interface/RefCountedKinematicTree.h"
+#include "RecoVertex/VertexPrimitives/interface/ConvertToFromReco.h"
+#include "TrackingTools/IPTools/interface/IPTools.h"
+#include "TVector3.h"
+
 #include <vector>
 #include <algorithm>
 #include <limits>
@@ -107,6 +114,77 @@ inline bool track_to_lepton_match(edm::Ptr<reco::Candidate> l_ptr, auto iso_trac
     }        
   }
   return false;
+}
+
+inline particle_cand calculateIPvariables(
+					  AnalyticalImpactPointExtrapolator extrapolator,
+					  RefCountedKinematicParticle particle,
+					  RefCountedKinematicVertex SV,
+					  reco::Vertex PV
+					  )
+{
+
+  //  std::cout << PV.position().x() << " " << PV.position().y() << " " << PV.position().z() <<std::endl;
+  //  std::cout << particle->currentState().isValid() << std::endl;
+
+    TrajectoryStateOnSurface tsos = extrapolator.extrapolate(particle->currentState().freeTrajectoryState(),
+                                                             RecoVertex::convertPos(PV.position()));
+
+
+    VertexDistance3D a3d;  
+
+    std::pair<bool,Measurement1D> currentIp = IPTools::signedDecayLength3D(tsos, GlobalVector(0,0,1), PV);
+    std::pair<bool,Measurement1D> cur3DIP = IPTools::absoluteImpactParameter(tsos, PV, a3d);
+  
+    // flight length
+    Float_t fl3d = a3d.distance(PV, SV->vertexState()).value();
+    Float_t fl3de = a3d.distance(PV, SV->vertexState()).error();
+    Float_t fls3d = -1;
+
+    if(fl3de!=0) fls3d = fl3d/fl3de;
+
+    // longitudinal impact parameters
+    Float_t lip = currentIp.second.value();
+    Float_t lipe = currentIp.second.error();
+    Float_t lips = -1;
+
+    if(lipe!=0) lips = lip/lipe;
+
+    // impact parameter to the PV
+    Float_t pvip = cur3DIP.second.value();
+    Float_t pvipe = cur3DIP.second.error();
+    Float_t pvips = -1;
+  
+    if(pvipe!=0) pvips = pvip/pvipe;
+
+    // opening angle
+    TVector3 plab = TVector3(particle->currentState().globalMomentum().x(),
+                             particle->currentState().globalMomentum().y(),
+                             particle->currentState().globalMomentum().z());
+
+    const TVector3 tv3diff = TVector3(SV->vertexState().position().x() - PV.position().x(),
+                                      SV->vertexState().position().y() - PV.position().y(),
+                                      SV->vertexState().position().z() - PV.position().z()
+                                      );
+
+    Float_t alpha = -1;
+
+    if(plab.Mag() != 0. && tv3diff.Mag()!=0){
+        alpha = plab.Dot(tv3diff) / (plab.Mag() * tv3diff.Mag());
+    }
+
+    particle_cand cand = {
+        lip,
+        lips,
+        pvip, 
+        pvips,
+        fl3d,
+        fls3d,
+        alpha
+    };
+
+
+    return cand;
 }
 
  
