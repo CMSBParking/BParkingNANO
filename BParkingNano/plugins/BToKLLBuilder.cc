@@ -6,6 +6,8 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
 
 #include <vector>
 #include <memory>
@@ -99,6 +101,9 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   edm::ESHandle<MagneticField> fieldHandle;
   iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
   const MagneticField *fMagneticField = fieldHandle.product();
+
+  edm::ESHandle<TransientTrackBuilder> theB ;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
   
   AnalyticalImpactPointExtrapolator extrapolator(fMagneticField);
 
@@ -221,6 +226,11 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
     
       if( !post_vtx_selection_(cand) ) continue;        
 
+
+
+      Float_t iso_sv = 0;
+      Int_t ntracks_sv = 0;	  
+
       //compute isolation
       float l1_iso03 = 0;
       float l1_iso04 = 0;
@@ -264,7 +274,46 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
           b_iso04 += trk.pt();
           if (dr_to_b < 0.3) b_iso03 += trk.pt();
         }
+
+
+	if(trk.hasTrackDetails()){
+	  
+	  if(trk.trackHighPurity() &&
+	     trk.pseudoTrack().hitPattern().numberOfValidPixelHits() >= 0 && 
+	     trk.pseudoTrack().hitPattern().numberOfValidHits() >= 3 && 
+	     trk.pseudoTrack().normalizedChi2() <= 100 && 
+	     TMath::Abs(trk.pdgId())==211 &&
+	     TMath::Abs(trk.eta()) < 2.5 &&
+	     TMath::Abs(trk.charge())==1 && 
+	     trk.vertexRef()->z() == ll_vtx_3d_z){
+
+	    //	    Float_t precut_dz = 
+	    //	    if(TMath::Abs(precut_dz) > ) continue;
+	    
+	    reco::TransientTrack tt_track = (*theB).build(trk.pseudoTrack());
+
+	    TrajectoryStateOnSurface tsos_pf = extrapolator.extrapolate(tt_track.impactPointState(), fitter.fitted_vtx());
+	    
+	    
+	    VertexDistance3D a3d_pf;  
+	    
+	    std::pair<bool,Measurement1D> cur3DIP_pf = absoluteImpactParameter(tsos_pf, fitter.fitted_refvtx(), a3d_pf);
+	    
+	    Float_t pvip_pf = cur3DIP_pf.second.value();
+	    
+	    if(pvip_pf < 0.03){
+	      ntracks_sv +=1;
+	      iso_sv += trk.pt();
+	    }
+	  }
+	}
+
+
+
       }
+
+      //      std::cout << ntracks_sv << " " << iso_sv << std::endl;
+
       cand.addUserFloat("l1_iso03", l1_iso03);
       cand.addUserFloat("l1_iso04", l1_iso04);
       cand.addUserFloat("l2_iso03", l2_iso03);
@@ -273,6 +322,8 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("k_iso04" , k_iso04 );
       cand.addUserFloat("b_iso03" , b_iso03 );
       cand.addUserFloat("b_iso04" , b_iso04 );
+      cand.addUserFloat("iso_sv" , iso_sv );
+      cand.addUserFloat("iso_ntrack" , ntracks_sv );
 
 
       reco::Vertex closestVertex;

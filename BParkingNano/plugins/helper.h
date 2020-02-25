@@ -187,5 +187,21 @@ inline particle_cand calculateIPvariables(
     return cand;
 }
 
+inline std::pair<bool, Measurement1D> absoluteImpactParameter(
+							      const TrajectoryStateOnSurface& tsos,
+							      RefCountedKinematicVertex vertex,
+							      VertexDistance& distanceComputer){
+    if (!tsos.isValid()) {
+        return std::pair<bool, Measurement1D>(false, Measurement1D(0., 0.));
+    }
+    GlobalPoint refPoint = tsos.globalPosition();
+    GlobalError refPointErr = tsos.cartesianError().position();
+    GlobalPoint vertexPosition = vertex->vertexState().position();
+    GlobalError vertexPositionErr = RecoVertex::convertError(vertex->vertexState().error());
+    return std::pair<bool, Measurement1D>(
+                                          true,
+                                          distanceComputer.distance(VertexState(vertexPosition, vertexPositionErr), VertexState(refPoint, refPointErr)));
+}
+
  
 #endif

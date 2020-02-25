@@ -119,7 +119,7 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
       if(!fitter.success()) continue;
 
       Float_t max_criteria = 999;
-      reco::Vertex closestVertex;
+      reco::Vertex closestVertex = *(pvtxs->begin());
 
       for( reco::VertexCollection::const_iterator vtx = pvtxs->begin(); vtx != pvtxs->end(); ++vtx){
 
