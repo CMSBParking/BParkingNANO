@@ -45,7 +45,8 @@ def nanoAOD_customizeTrackFilteredBPark(process):
     return process
 
 def nanoAOD_customizeElectronFilteredBPark(process):
-    process.nanoBKeeSequence = cms.Sequence( electronsBParkSequence + electronBParkTables)
+    process.nanoBKeeSequence     = cms.Sequence( electronsBParkSequence + electronBParkTables)
+    process.nanoBKstarEESequence = cms.Sequence( electronsBParkSequence + electronBParkTables)
     return process
 
 def nanoAOD_customizeTriggerBitsBPark(process):
@@ -63,7 +64,7 @@ def nanoAOD_customizeBToKstarLL(process):
     return process
 
 def nanoAOD_customizeBToKstarEE(process):
-    process.nanoBKstarEESequence   = cms.Sequence( BToKstarEESequence + BToKstarEETable + KstarToKPiTable )
+    process.nanoBKstarEESequence   = cms.Sequence( process.nanoBKstarEESequence + BToKstarEESequence + BToKstarEETable + KstarToKPiTable )
     return process
 
 def nanoAOD_customizeBToKstarMuMu(process):
