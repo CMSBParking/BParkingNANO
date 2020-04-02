@@ -52,6 +52,9 @@ BToKstarMuMu = cms.EDProducer(
     leptonTransientTracks = muonPairsForKstarMuMu.transientTracksSrc,
     kstars = cms.InputTag('KstarToKPi'),
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
+    tracks = cms.InputTag("packedPFCandidates"),
+    lostTracks = cms.InputTag("lostTracks"),
+    isoTracksSelection = cms.string('pt > 0.7 && abs(eta)<2.5'),
     
     beamSpot = cms.InputTag("offlineBeamSpot"),
     preVtxSelection = cms.string(
@@ -73,6 +76,9 @@ BToKstarEE = cms.EDProducer(
     leptonTransientTracks = electronPairsForKstarEE.transientTracksSrc,
     kstars = cms.InputTag('KstarToKPi'),
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
+    tracks = cms.InputTag("packedPFCandidates"),
+    lostTracks = cms.InputTag("lostTracks"),
+    isoTracksSelection = BToKstarMuMu.isoTracksSelection,
     
     beamSpot = cms.InputTag("offlineBeamSpot"),
     preVtxSelection = cms.string(
@@ -141,42 +147,53 @@ BToKstarEETable = cms.EDProducer(
         # Mll
         mll_raw = Var('userCand("dilepton").mass()', float),
         mll_llfit = Var('userCand("dilepton").userFloat("fitted_mass")', float),
-        mll_fullfit = ufloat('mll_fullfit'),     
+        mll_fullfit = ufloat('fitted_mll'),     
         # kstar fitted in b0 vertex
-        mkstar_fullfit = ufloat('mkstar_fullfit'),
-        ptkstar_fullfit = ufloat('ptkstar_fullfit'),
-        etakstar_fullfit = ufloat('etakstar_fullfit'),
-        phikstar_fullfit = ufloat('phikstar_fullfit'),
+        fit_kstar_mass = ufloat('fitted_kstar_mass'),
+        fit_kstar_pt = ufloat('fitted_kstar_pt'),
+        fit_kstar_eta = ufloat('fitted_kstar_eta'),
+        fit_kstar_phi = ufloat('fitted_kstar_phi'),
         # Cos(theta)
         cos2D = ufloat('cos_theta_2D'),
         fit_cos2D = ufloat('fitted_cos_theta_2D'),
         # post-fit momentum
         fit_mass = ufloat('fitted_mass'),
+        fit_massErr = ufloat('fitted_massErr'),
         fit_pt = ufloat('fitted_pt'),
         fit_eta = ufloat('fitted_eta'),
         fit_phi = ufloat('fitted_phi'),
-        fit_massErr = ufloat('fitted_massErr'),
         # additional mass hypothesis
         barMass = ufloat ('barMass'),
-        barMkstar_fullfit = ufloat('barMasskstar_fullfit'),
-        fitted_barMass = ufloat('fitted_barMass'),
+        fit_barMass = ufloat('fitted_barMass'),
+        fit_barKstar_mass = ufloat('barMasskstar_fullfit'),
         # post-fit tracks/leptons
         #l1
-        lep1pt_fullfit  = ufloat('lep1pt_fullfit'),
-        lep1eta_fullfit = ufloat('lep1eta_fullfit'),
-        lep1phi_fullfit = ufloat('lep1phi_fullfit'),
+        fit_l1_pt  = ufloat('fitted_l1_pt'),
+        fit_l1_eta = ufloat('fitted_l1_eta'),
+        fit_l1_phi = ufloat('fitted_l1_phi'),
         #l2
-        lep2pt_fullfit  = ufloat('lep2pt_fullfit'),
-        lep2eta_fullfit = ufloat('lep2eta_fullfit'),
-        lep2phi_fullfit = ufloat('lep2phi_fullfit'),
+        fit_l2_pt  = ufloat('fitted_l2_pt'),
+        fit_l2_eta = ufloat('fitted_l2_eta'),
+        fit_l2_phi = ufloat('fitted_l2_phi'),
         #trk1
-        trk1pt_fullfit  = ufloat('trk1pt_fullfit'),
-        trk1eta_fullfit = ufloat('trk1eta_fullfit'),
-        trk1phi_fullfit = ufloat('trk1phi_fullfit'),
+        fit_trk1_pt  = ufloat('fitted_trk1_pt'),
+        fit_trk1_eta = ufloat('fitted_trk1_eta'),
+        fit_trk1_phi = ufloat('fitted_trk1_phi'),
         #trk2
-        trk2pt_fullfit  = ufloat('trk2pt_fullfit'),
-        trk2eta_fullfit = ufloat('trk2eta_fullfit'),
-        trk2phi_fullfit = ufloat('trk2phi_fullfit'),
+        fit_trk2_pt  = ufloat('fitted_trk2_pt'),
+        fit_trk2_eta = ufloat('fitted_trk2_eta'),
+        fit_trk2_phi = ufloat('fitted_trk2_phi'),
+        # isolation 
+        l1_iso03 = ufloat('l1_iso03'),
+        l1_iso04 = ufloat('l1_iso04'),
+        l2_iso03 = ufloat('l2_iso03'),
+        l2_iso04 = ufloat('l2_iso04'),
+        tk1_iso03 = ufloat('tk1_iso03'),
+        tk1_iso04 = ufloat('tk1_iso04'),
+        tk2_iso03 = ufloat('tk2_iso03'),
+        tk2_iso04 = ufloat('tk2_iso04'),
+        b_iso03  = ufloat('b_iso03'),
+        b_iso04  = ufloat('b_iso04'),
     )
 )
 
