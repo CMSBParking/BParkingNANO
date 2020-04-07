@@ -7,6 +7,7 @@ electronPairsForKstarEE = cms.EDProducer(
     'DiElectronBuilder',
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
+    offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
     lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 3'),
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
@@ -20,6 +21,7 @@ muonPairsForKstarMuMu = cms.EDProducer(
     'DiMuonBuilder',
     src = cms.InputTag('muonTrgSelector', 'SelectedMuons'),
     transientTracksSrc = cms.InputTag('muonTrgSelector', 'SelectedTransientMuons'),
+    offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
     lep1Selection = cms.string('pt > 1.5'),
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
