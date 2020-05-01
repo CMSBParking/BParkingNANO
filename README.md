@@ -10,19 +10,28 @@ git cms-init
 ```
 
 ## Add the latest code and model (2019Aug07) for the electron ID 
+#
+#```shell
+#git cms-addpkg RecoEgamma/EgammaElectronProducers
+#git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2019Aug07
+#git cms-addpkg RecoEgamma/ElectronIdentification
+#scram b
+#
+# Check $CMSSW_BASE/external exists before this step (e.g. run 'scram b' to create it)
+#git clone --single-branch --branch 102X_LowPtElectrons_2019Aug07 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
+#
+# The following step is required if running on CRAB
+#mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data 
+
+
+## Add the latest code and model (2019Aug07 in mvaId and Feb24-depth10 in mvaIdExtra) for the electron ID
 
 ```shell
 git cms-addpkg RecoEgamma/EgammaElectronProducers
-git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2019Aug07
 git cms-addpkg RecoEgamma/ElectronIdentification
-scram b
+git remote add crovelli git@github.com:crovelli/cmssw.git
+git cms-merge-topic crovelli:from-CMSSW_10_2_15_2020Feb24-depth10
 
-# Check $CMSSW_BASE/external exists before this step (e.g. run 'scram b' to create it)
-git clone --single-branch --branch 102X_LowPtElectrons_2019Aug07 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
-
-# The following step is required if running on CRAB
-mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data 
-```
 
 ## Add the modification needed to use post-fit quantities for electrons  
 

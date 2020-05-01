@@ -37,6 +37,7 @@ public:
     ptBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("ptbiasedSeeding") )},
     unBiased_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("unbiasedSeeding") )},
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
+    mvaIdExtra_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaIdExtra") )},
     pf_mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("pfmvaId") )},
     vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
@@ -69,6 +70,7 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<float>> ptBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> unBiased_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> mvaId_src_;
+  const edm::EDGetTokenT<edm::ValueMap<float>> mvaIdExtra_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> pf_mvaId_src_;
   const edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
   const double drTrg_cleaning_;
@@ -100,6 +102,8 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.getByToken(unBiased_src_, unBiased);
   edm::Handle<edm::ValueMap<float> > mvaId;  
   evt.getByToken(mvaId_src_, mvaId);
+  edm::Handle<edm::ValueMap<float> > mvaIdExtra;  
+  evt.getByToken(mvaIdExtra_src_, mvaIdExtra);
   edm::Handle<edm::ValueMap<float> > pfmvaId;  
   evt.getByToken(pf_mvaId_src_, pfmvaId);
   // 
@@ -156,6 +160,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("ptBiased", 20.);
    ele.addUserFloat("unBiased", 20.);
    ele.addUserFloat("mvaId", 20.);
+   ele.addUserFloat("mvaIdExtra", 20.);
    ele.addUserFloat("pfmvaId", pf_mva_id);
    ele.addUserFloat("chargeMode", ele.charge());
    ele.addUserInt("isPFoverlap", 0);
@@ -231,12 +236,14 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
+   float mva_idExtra = float((*mvaIdExtra)[ref]);
    ele.addUserInt("isPF", 0);
    ele.addUserInt("isLowPt", 1);
    ele.addUserFloat("chargeMode", ele.gsfTrack()->chargeMode());
    ele.addUserFloat("ptBiased", ptbiased_seedBDT);
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
+   ele.addUserFloat("mvaIdExtra", mva_idExtra);
    ele.addUserFloat("pfmvaId", 20.);
 
    ele_out       -> emplace_back(ele);
