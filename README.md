@@ -9,6 +9,7 @@ cmsenv
 git cms-init
 ```
 
+[]: # (Old version: Add the latest code and model (2019Aug07) for the electron ID)
 ## Add the latest code and model (2019Aug07) for the electron ID 
 #
 #```shell
