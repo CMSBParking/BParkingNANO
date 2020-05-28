@@ -9,7 +9,7 @@ cmsenv
 git cms-init
 ```
 
-## Add the latest code and model (2019Aug07 in mvaId and Feb24-depth10 in mvaIdExtra) for the electron ID
+## Add the latest code and model (2019Aug07 in mvaId and Feb24-depth15 in mvaIdExtra) for the electron ID
 
 ```shell
 git cms-addpkg RecoEgamma/EgammaElectronProducers
