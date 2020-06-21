@@ -145,6 +145,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
      skipEle=false;
      break; // one trg muon to pass is enough :)
    }
+   if (drTrg_cleaning_ <0 ) skipEle=false;
    // we skip evts without trg muon
    if (skipEle) continue;
 

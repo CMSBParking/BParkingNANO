@@ -54,20 +54,36 @@ egmGsfElectronIDTask = cms.Task(
 egmGsfElectronIDSequence = cms.Sequence(egmGsfElectronIDTask)
 
 
+SaveLowPtE=True #Flag to store the LowpT e
+OnlyPFeCompatible=False #flag to take care compatibility when only PF e is availiable (eg 2017 Run)
+
+
+if OnlyPFeCompatible:
+   lowpt_input='slimmedElectrons'
+   biasedseed_input='electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues'
+   unbiasedseed_input='electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues'
+   id_input='electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues'
+   SaveLowPtE=False
+else:
+   lowpt_input='slimmedLowPtElectrons'
+   biasedseed_input='lowPtGsfElectronSeedValueMaps:ptbiased'
+   unbiasedseed_input='lowPtGsfElectronSeedValueMaps:unbiased'
+   id_input='lowPtGsfElectronLatestID'
+
 #Everything can be done here, in one loop and save time :)
 electronsForAnalysis = cms.EDProducer(
   'ElectronMerger',
   trgMuon = cms.InputTag('muonTrgSelector:trgMuons'),
-  lowptSrc = cms.InputTag('slimmedLowPtElectrons'),
+  lowptSrc = cms.InputTag(lowpt_input),
   pfSrc    = cms.InputTag('slimmedElectrons'),
-  ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
-  unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
-  mvaId = cms.InputTag("lowPtGsfElectronLatestID"),
+  ptbiasedSeeding = cms.InputTag(biasedseed_input),
+  unbiasedSeeding = cms.InputTag(unbiasedseed_input),
+  mvaId = cms.InputTag(id_input),
   pfmvaId = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues"),
   vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
-  drForCleaning_wrtTrgMuon = cms.double(0.03),
-  dzForCleaning_wrtTrgMuon = cms.double(1.),
+  drForCleaning_wrtTrgMuon = cms.double(0.03), #was positive
+  dzForCleaning_wrtTrgMuon = cms.double(1.),  #was positive 1
   ## cleaning between pfEle and lowPtGsf
   drForCleaning = cms.double(0.03),
   dzForCleaning = cms.double(0.7), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
@@ -79,7 +95,7 @@ electronsForAnalysis = cms.EDProducer(
   bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
   useGsfModeForP4 = cms.bool(True),
   sortOutputCollections = cms.bool(True),
-  saveLowPtE = cms.bool(True)
+  saveLowPtE = cms.bool(SaveLowPtE) #skips low pT electrons
 
 )
 
@@ -152,12 +168,18 @@ electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     docString = cms.string("MC matching to status==1 electrons or photons"),
 )
 
+if SaveLowPtE:
+  electronsBParkSequence = cms.Sequence(
+     lowPtGsfElectronLatestID
+     +egmGsfElectronIDSequence
+     +electronsForAnalysis
+   )
+else:
+  electronsBParkSequence = cms.Sequence(
+     egmGsfElectronIDSequence
+     +electronsForAnalysis
+   )
 
-electronsBParkSequence = cms.Sequence(
-  lowPtGsfElectronLatestID
-  +egmGsfElectronIDSequence
-  +electronsForAnalysis
-)
 electronBParkMC = cms.Sequence(electronsBParkSequence + electronsBParkMCMatchForTable + selectedElectronsMCMatchEmbedded + electronBParkMCTable)
 electronBParkTables = cms.Sequence(electronBParkTable)
 

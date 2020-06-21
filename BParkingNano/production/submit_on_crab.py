@@ -1,4 +1,4 @@
-from CRABClient.UserUtilities import config, ClientException, getUsernameFromSiteDB
+from CRABClient.UserUtilities import config, ClientException#, getUsernameFromSiteDB
 #from input_crab_data import dataset_files
 import yaml
 import datetime
@@ -47,7 +47,13 @@ if __name__ == '__main__':
   parser = ArgumentParser()
   parser.add_argument('-y', '--yaml', default = 'samples.yml', help = 'File with dataset descriptions')
   parser.add_argument('-f', '--filter', default='*', help = 'filter samples, POSIX regular expressions allowed')
+  parser.add_argument('-d', '--decay', default='',type=str, help = 'decay selection. options: all, kll, kstarll or combination')
   args = parser.parse_args()
+  if args.decay=="":
+     raise Exception(" decay must be given. Select between :all, kll, kstarll")
+  if args.decay not in ["all","kll","kstarll"]:
+    raise Exception(" invalid decay name.  Select between :all, kll, kstarll")
+
 
   with open(args.yaml) as f:
     doc = yaml.load(f) # Parse YAML file
@@ -65,15 +71,16 @@ if __name__ == '__main__':
         print 'submitting', name
 
         isMC = info['isMC']
-
+        isMCunbiased = info['isMCunbiased']
+ 
         config.Data.inputDataset = info['dataset'] % part \
                                    if part is not None else \
                                       info['dataset']
 
         config.General.requestName = name
-        common_branch = 'mc' if isMC else 'data'
-        config.Data.splitting = 'FileBased' if isMC else 'LumiBased'
-        if not isMC:
+        common_branch = 'mc' if (isMC or isMCunbiased) else 'data'
+        config.Data.splitting = 'FileBased' if (isMC or isMCunbiased) else 'LumiBased'
+        if not isMC and not isMCunbiased:
             config.Data.lumiMask = info.get(
                 'lumimask', 
                 common[common_branch].get('lumimask', None)
@@ -94,9 +101,11 @@ if __name__ == '__main__':
             'isMC=%s' % isMC, 'reportEvery=1000',
             'tag=%s' % production_tag,
             'globalTag=%s' % globaltag,
+            'decay=%s'% args.decay,
+            'isMCunbiased=%s' % isMCunbiased
         ]
         
-        config.JobType.outputFiles = ['_'.join(['BParkNANO', 'mc' if isMC else 'data', production_tag])+'.root']
+        #config.JobType.outputFiles = ['_'.join(['BParkNANO', 'mc' if (isMC or isMCunbiased) else 'data', production_tag])+'.root']
         
         print config
         submit(config)
