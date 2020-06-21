@@ -1,4 +1,5 @@
-from CRABClient.UserUtilities import config, ClientException#, getUsernameFromSiteDB
+
+from CRABClient.UserUtilities import config, ClientException, getUsernameFromCRIC
 #from input_crab_data import dataset_files
 import yaml
 import datetime
