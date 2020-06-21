@@ -11,6 +11,7 @@ samples:
   data_Run2018A_part%d:    
     dataset: /ParkingBPH%d/Run2018A-05May2019-v1/MINIAOD
     isMC: False
+    isMCunbiased: False
     parts: 
       - 1
       - 2
@@ -21,6 +22,7 @@ samples:
   data_Run2018B_part%d:
     dataset: /ParkingBPH%d/Run2018B-05May2019-v2/MINIAOD 
     isMC: False
+    isMCunbiased: False
     parts: 
       - 1
       - 2
@@ -31,6 +33,7 @@ samples:
   data_Run2018C_part%d: 
     dataset: /ParkingBPH%d/Run2018C-05May2019-v1/MINIAOD 
     isMC: False
+    isMCunbiased: False
     parts: 
       - 1
       - 2
@@ -41,6 +44,7 @@ samples:
   data_Run2018D_part%d:
     dataset: /ParkingBPH%d/Run2018D-05May2019promptD-v1/MINIAOD
     isMC: False
+    isMCunbiased: False
     globaltag: 102X_dataRun2_Prompt_v14
     parts:
       - 1
@@ -48,40 +52,242 @@ samples:
       - 3
       - 4
       - 5
+  data_Run2017B:
+    dataset: /Charmonium/Run2017B-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  data_Run2017C:
+    dataset: /Charmonium/Run2017C-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  data_Run2017D:
+    dataset: /Charmonium/Run2017D-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  data_Run2017E:
+    dataset: /Charmonium/Run2017E-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  data_Run2017F:
+    dataset: /Charmonium/Run2017F-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  doubleMuon_Run2017B:
+    dataset: /DoubleMuonLowMass/Run2017B-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  doubleMuon_Run2017C:
+    dataset: /DoubleMuonLowMass/Run2017C-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  doubleMuon_Run2017D:
+    dataset: /DoubleMuonLowMass/Run2017D-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  doubleMuon_Run2017E:
+    dataset: /DoubleMuonLowMass/Run2017E-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  doubleMuon_Run2017F:
+    dataset: /DoubleMuonLowMass/Run2017F-31Mar2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_ReReco_EOY17_v6
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt
+  charmonium_Run2016B:
+    dataset: /Charmonium/Run2016B-17Jul2018_ver2-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  charmonium_Run2016C:
+    dataset: /Charmonium/Run2016C-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  charmonium_Run2016D:
+    dataset: /Charmonium/Run2016D-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  charmonium_Run2016E:
+    dataset: /Charmonium/Run2016E-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  charmonium_Run2016F:
+    dataset: /Charmonium/Run2016F-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  charmonium_Run2016G:
+    dataset: /Charmonium/Run2016G-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  charmonium_Run2016H:
+    dataset: /Charmonium/Run2016H-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016B:
+    dataset: /DoubleMuonLowMass/Run2016B-17Jul2018_ver2-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016C:
+    dataset: /DoubleMuonLowMass/Run2016C-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016D:
+    dataset: /DoubleMuonLowMass/Run2016D-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016E:
+    dataset: /DoubleMuonLowMass/Run2016E-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016F:
+    dataset: /DoubleMuonLowMass/Run2016F-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016G:
+    dataset: /DoubleMuonLowMass/Run2016G-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+  doublemuon_Run2016H:
+    dataset: /DoubleMuonLowMass/Run2016H-17Jul2018-v1/MINIAOD
+    isMC: False
+    isMCunbiased: False
+    splitting: 100
+    globaltag: 94X_dataRun2_v10
+    lumimask: https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
+
   #
   #  MC
   #  
   BuToKPsi2S_Toee:
     dataset: /BuToKPsi2S_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
-    isMC: True
-  
+    isMC: False
+    isMCunbiased: True
   BuToKPsi2S_ToMuMu:
     dataset: /BuToKPsi2S_ToMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
     isMC: True
   
-  BuToKJpsi_ToMuMu:
-    dataset: /BuToKJpsi_ToMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
-    isMC: True
-    
-  BuToKJpsi_Toee:
-    dataset: /BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
-    isMC: True
-    
-  BuToKMuMu_v0:
-    dataset: /BuToK_ToMuMu_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_102X_upgrade2018_realistic_v15-v2/MINIAODSIM
-    isMC: True
+
+
 
   BuToKMuMu:
     dataset: /BuToKMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
-    isMC: True
+    isMC: False
+    isMCunbiased: True
 
-  BuToKee_v0:
-    dataset: /BuToKee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM
-    isMC: True
+  BuToKJpsi_ToMuMu:
+    dataset: /BuToKJpsi_ToMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    isMC: False
+    isMCunbiased: True   
 
-  BuToKee:
+  BuToKEE:
     dataset: /BuToKee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15_ext1-v2/MINIAODSIM
-    isMC: True
+    isMC: False
+    isMCunbiased: True
+
+  BuToKJpsi_ToEE:
+    dataset: /BuToKJpsi_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15_ext1-v2/MINIAODSIM
+    isMC: False
+    isMCunbiased: True
+
+  BuToKEE_v2: 
+    dataset: /BuToKee_MufilterPt6_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM
+    isMC: False
+    isMCunbiased: True 
+
+#v0
+  BuToKEE_v0:
+    dataset: /BuToK_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/MINIAODSIM
+    isMC: False
+    isMCunbiased: True
+
+  BuToKJpsi_ToEE_v0:
+    dataset: /BuToKJpsi_Toee_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_102X_upgrade2018_realistic_v15-v3/MINIAODSIM
+    isMC: False
+    isMCunbiased: True
+
+  BuToKMuMu_v0:
+    dataset: /BuToK_ToMuMu_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_102X_upgrade2018_realistic_v15-v2/MINIAODSIM
+    isMC: False
+    isMCunbiased: True
+
+  BuToKJpsi_ToMuMu_v0:
+    dataset: /BuToKJpsi_ToMuMu_MuFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_102X_upgrade2018_realistic_v15-v2/MINIAODSIM
+    isMC: False
+    isMCunbiased: True
+
+  BuToKPsi2S_ToEE:
+    dataset: /BuToKPsi2S_Toee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM
+    isMC: False
+    isMCunbiased: True
+    
+
+
 
   BdToKstarJpsi_ToMuMu:
     dataset: /BdToKstarJpsi_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
@@ -109,4 +315,5 @@ samples:
 
   BdToKstarPsi2S_Toee:
     dataset: /BdToKstarPsi2S_ToKPiee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
-    isMC: True
+    isMC: False
+    isMCunbiased: True

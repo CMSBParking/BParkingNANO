@@ -150,6 +150,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
       skipTrack=false;
       break; // at least for one trg muon to pass this cuts
     }
+    if (drTrg_Cleaning_ <0) skipTrack=false;
     // if track is closer to at least a triggering muon keep it
     if (skipTrack) continue;
 

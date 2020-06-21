@@ -63,6 +63,8 @@ private:
     const double ptMin_;          // min pT in all muons for B candidates
     const double absEtaMax_;      //max eta ""
     const bool softMuonsOnly_;    //cuts muons without soft ID
+    const bool skipTriggerlessEvts_;
+    const bool parkHLT_;
 };
 
 
@@ -76,7 +78,9 @@ MuonTriggerSelector::MuonTriggerSelector(const edm::ParameterSet &iConfig):
   dzTrg_cleaning_(iConfig.getParameter<double>("dzForCleaning_wrtTrgMuon")),
   ptMin_(iConfig.getParameter<double>("ptMin")),
   absEtaMax_(iConfig.getParameter<double>("absEtaMax")),
-  softMuonsOnly_(iConfig.getParameter<bool>("softMuonsOnly"))
+  softMuonsOnly_(iConfig.getParameter<bool>("softMuonsOnly")),
+  skipTriggerlessEvts_(iConfig.getParameter<bool>("skipTriggerlessEvts")),
+  parkHLT_(iConfig.getParameter<bool>("useBParkPaths"))
 {
   // produce 2 collections: trgMuons (tags) and SelectedMuons (probes & tags if survive preselection cuts)
     produces<pat::MuonCollection>("trgMuons"); 
@@ -121,18 +125,25 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 	} 
 
       if(!isTriggerMuon) continue; 
+      
       for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
 	std::string filterName = obj.filterLabels()[h];
-	if(filterName.find("hltL3") != std::string::npos  && filterName.find("Park") != std::string::npos){
-	  isTriggerMuon = true;
-	  if(debug) std::cout << "\t   Filters:   " << filterName; 
-	  break;
+        if(filterName.find("L3") != std::string::npos){//add from here
+          if ( (parkHLT_ && filterName.find("Park") != std::string::npos)       
+               || ( !parkHLT_ && ( filterName.find("Mu") != std::string::npos
+                   ||filterName.find("mu") != std::string::npos )) ){//to here
+             isTriggerMuon = true;
+	     if(debug) std::cout << "\t   Filters:   " << filterName; 
+	     break;
+          }
+          else{ isTriggerMuon = false; }
 	}
 	else{ isTriggerMuon = false; }
       }
 
       if(!isTriggerMuon) continue;
       triggeringMuons.push_back(obj);
+
       if(debug){ std::cout << "\tTrigger object:  pt " << obj.pt() << ", eta " << obj.eta() << ", phi " << obj.phi() << std::endl;
 	// Print trigger object collection and type
 	std::cout << "\t   Collection: " << obj.collection() << std::endl;
@@ -192,7 +203,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     }
 
 
-
     // now produce output for analysis (code simplified loop of trg inside)
     // trigger muon + all compatible in dz with any tag
       for(unsigned int muIdx=0; muIdx<muons->size(); ++muIdx) {
@@ -212,11 +222,11 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 	 SkipMuon=false;
        } 
        // needs decission: what about events without trg muon? now we SKIP them
-       if (SkipMuon)  continue;
+       if (SkipMuon && skipTriggerlessEvts_)  continue;
        
 
        // build transient track
-       const reco::TransientTrack muonTT((*(mu.bestTrack())), &(*bFieldHandle)); //sara: check, why not using inner track for muons? 
+       const reco::TransientTrack muonTT((*(mu.bestTrack())), &(*bFieldHandle));
        if (!muonTT.isValid()) continue;
 
        muons_out->emplace_back(mu);
@@ -224,7 +234,6 @@ void MuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 
        trans_muons_out->emplace_back(muonTT);
       }
-
     iEvent.put(std::move(trgmuons_out),    "trgMuons");
     iEvent.put(std::move(muons_out),       "SelectedMuons");
     iEvent.put(std::move(trans_muons_out), "SelectedTransientMuons");

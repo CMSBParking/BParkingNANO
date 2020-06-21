@@ -6,6 +6,7 @@ electronPairsForKee = cms.EDProducer(
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
     lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 3'),
+ #   lep1Selection = cms.string('pt > 1.5'),
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
@@ -24,15 +25,17 @@ BToKee = cms.EDProducer(
     tracks = cms.InputTag("packedPFCandidates"),
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
-    isoTracksSelection = cms.string('pt > 0.7 && abs(eta)<2.5'),
+    isoTracksSelection = cms.string('pt > 0.7 && abs(eta)<2.5'), #pt 0.7
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
+ #        'mass < 7. && mass > 4.'
         ),
     postVtxSelection = cms.string(
         'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0 '
         '&& userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
+ #       'userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
     )
 )
 
@@ -151,6 +154,14 @@ CountBToKmumu = CountBToKee.clone(
     src = cms.InputTag("BToKmumu")
 )
 
+
+CountBToKeeUnBiased = CountBToKee.clone(    
+    minNumber = cms.uint32(0)
+)
+
+CountBToKmumuUnBiased = CountBToKmumu.clone(
+    minNumber = cms.uint32(0)
+)
 
 BToKMuMuSequence = cms.Sequence(
     (muonPairsForKmumu * BToKmumu)

@@ -11,23 +11,31 @@ muonTrgSelector = cms.EDProducer("MuonTriggerSelector",
                                  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
                                  
                                  ##for the output trigger matched collection
-                                 maxdR_matching = cms.double(0.1),
+                                 maxdR_matching = cms.double(0.1), #was positive
                                  
                                  ## for the output selected collection (tag + all compatible in dZ)
-                                 dzForCleaning_wrtTrgMuon = cms.double(1.),
+                                 dzForCleaning_wrtTrgMuon = cms.double(1.), #was positive
 
                                  ptMin = cms.double(0.5),
                                  absEtaMax = cms.double(2.4),
                                  # keeps only muons with at soft Quality flag
-                                 softMuonsOnly = cms.bool(False)
+                                 softMuonsOnly = cms.bool(False),
+                                 skipTriggerlessEvts=cms.bool(True),
+                                 useBParkPaths=cms.bool(True), #uses the standard paths of B parking if true. If false it stores generic dimuon paths
                              )
 
+muonTrgSelectorUnBiased = muonTrgSelector.clone(
+                skipTriggerlessEvts=cms.bool(True)
+)
+
 countTrgMuons = cms.EDFilter("PATCandViewCountFilter",
-    minNumber = cms.uint32(1),
+    minNumber = cms.uint32(1), #was 1
     maxNumber = cms.uint32(999999),
     src = cms.InputTag("muonTrgSelector", "trgMuons")
 )
-
+countTrgMuonsUnBiased=countTrgMuons.clone(
+   minNumber = cms.uint32(1)
+)
 
 muonBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     src = cms.InputTag("muonTrgSelector:SelectedMuons"),
@@ -115,6 +123,7 @@ muonTriggerMatchedTable = muonBParkTable.clone(
 )
 
 muonBParkSequence = cms.Sequence(muonTrgSelector * countTrgMuons)
+muonBParkUnBiased = cms.Sequence(muonTrgSelector * countTrgMuonsUnBiased)
 muonBParkMC = cms.Sequence(muonBParkSequence + muonsBParkMCMatchForTable + selectedMuonsMCMatchEmbedded + muonBParkMCTable)
 muonBParkTables = cms.Sequence(muonBParkTable)
 muonTriggerMatchedTables = cms.Sequence(muonTriggerMatchedTable)
