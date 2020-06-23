@@ -15,7 +15,7 @@ git cms-init
 git cms-addpkg RecoEgamma/EgammaElectronProducers
 git cms-addpkg RecoEgamma/ElectronIdentification
 git remote add crovelli git@github.com:crovelli/cmssw.git
-git cms-merge-topic crovelli:from-CMSSW_10_2_15_2020Feb24-depth15
+git cms-merge-topic crovelli:from-CMSSW_10_2_15_2020Feb24-depth15_bis
 ```
 
 ## Add the modification needed to use post-fit quantities for electrons  
