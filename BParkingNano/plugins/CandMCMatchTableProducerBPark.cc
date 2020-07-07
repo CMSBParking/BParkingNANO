@@ -34,14 +34,14 @@ class CandMCMatchTableProducerBPark : public edm::global::EDProducer<> {
 	    std::cout << "type = " << type << std::endl;
             switch(type_) { 
                 case MMuon: flavDoc_ = "1 = prompt muon (including gamma*->mu mu), 15 = muon from prompt tau, " // continues below
-		                       "511 = from B0, 521 = from B+/-, 0 = unknown or unmatched"; break;
+		                       "511 = from B0, 521 = from B+/-, 531 = from Bs, 0 = unknown or unmatched"; break;
 
 	        case MElectron: flavDoc_ = "1 = prompt electron (including gamma*->mu mu), 15 = electron from prompt tau, " // continues below 
 		                           "22 = prompt photon (likely conversion), " // continues below
-		                           "511 = from B0, 521 = from B+/-, 0 = unknown or unmatched"; break;
+		                           "511 = from B0, 521 = from B+/-, 531 = from Bs, 0 = unknown or unmatched"; break;
                 case MPhoton: flavDoc_ = "1 = prompt photon, 13 = prompt electron, 0 = unknown or unmatched"; break;
                 case MTau: flavDoc_    = "1 = prompt electron, 2 = prompt muon, 3 = tau->e decay, 4 = tau->mu decay, 5 = hadronic tau decay, 0 = unknown or unmatched"; break;
-	        case MTrack: flavDoc_  = "1 = prompt, 511 = from B0, 521 = from B+/-, 0 = unknown or unmatched"; break;
+	        case MTrack: flavDoc_  = "1 = prompt, 511 = from B0, 521 = from B+/-, 531 = from Bs, 0 = unknown or unmatched"; break;
 
                 case MOther: flavDoc_  = "1 = from hard scatter, 0 = unknown or unmatched"; break;
             }
