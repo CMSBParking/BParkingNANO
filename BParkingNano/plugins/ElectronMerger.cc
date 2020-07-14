@@ -19,6 +19,11 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 
+// regression stuff
+#include "CommonTools/CandAlgos/interface/ModifyObjectValueBase.h"
+
+
+
 #include <limits>
 #include <algorithm>
 #include "helper.h"
@@ -29,6 +34,7 @@ class ElectronMerger : public edm::global::EDProducer<> {
 
 
 public:
+  bool debug=false; 
 
   explicit ElectronMerger(const edm::ParameterSet &cfg):
     triggerMuons_{ consumes<pat::MuonCollection>( cfg.getParameter<edm::InputTag>("trgMuon") )},
@@ -49,9 +55,40 @@ public:
     etaMax_{cfg.getParameter<double>("etaMax")},
     bdtMin_{cfg.getParameter<double>("bdtMin")},
     use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
+    use_regression_for_p4_{cfg.getParameter<bool>("useRegressionModeForP4")},
     sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")},
     saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")}
     {
+
+      // regression stuff                                                                                                         
+      if( cfg.existsAs<edm::ParameterSet>("lowPtRegressionConfig") ) {
+	const edm::ParameterSet& iconf = cfg.getParameterSet("lowPtRegressionConfig");
+	const std::string& mname = iconf.getParameter<std::string>("modifierName");
+      ModifyObjectValueBase* plugin =
+        ModifyObjectValueFactory::get()->create(mname,iconf);
+      regression_.reset(plugin);
+      edm::ConsumesCollector sumes = consumesCollector();
+      regression_->setConsumes(sumes);
+      } else {
+	regression_.reset(nullptr);
+      }
+      // gsf regression                                                                                                           
+      if( cfg.existsAs<edm::ParameterSet>("gsfRegressionConfig") ) {
+	const edm::ParameterSet& iconf = cfg.getParameterSet("gsfRegressionConfig");
+	const std::string& mname = iconf.getParameter<std::string>("modifierName");
+      ModifyObjectValueBase* plugin =
+        ModifyObjectValueFactory::get()->create(mname,iconf);
+      regressionGsf_.reset(plugin);
+      edm::ConsumesCollector sumes = consumesCollector();
+      regressionGsf_->setConsumes(sumes);
+      } else {
+	regressionGsf_.reset(nullptr);
+      }
+      // end regression stuff                                                                                                     
+
+
+
+
        produces<pat::ElectronCollection>("SelectedElectrons");
        produces<TransientTrackCollection>("SelectedTransientElectrons");  
     }
@@ -81,8 +118,13 @@ private:
   const double etaMax_; //eta max cut
   const double bdtMin_; //bdt min cut
   const bool use_gsf_mode_for_p4_;
+  const bool use_regression_for_p4_;
   const bool sortOutputCollections_;
   const bool saveLowPtE_;
+  // regression stuff                                                                                                                                         
+  std::unique_ptr<ModifyObjectValueBase> regression_; // Low pt                                                                                               
+  std::unique_ptr<ModifyObjectValueBase> regressionGsf_; // Gsf                                                                                               
+
 };
 
 void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const & iSetup) const {
@@ -110,16 +152,34 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.getByToken(vertexSrc_, vertexHandle);
   const reco::Vertex & PV = vertexHandle->front();
 
+  // regression stuff
+  regression_->setEvent(evt);
+  regression_->setEventContent(iSetup);
+  regressionGsf_->setEvent(evt);
+  regressionGsf_->setEventContent(iSetup);
+
+
   // output
   std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
   std::unique_ptr<TransientTrackCollection> trans_ele_out(new TransientTrackCollection);
   std::vector<std::pair<float, float>> pfEtaPhi;
   std::vector<float> pfVz;
-
+  
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
   size_t ipfele=-1;
   for(auto ele : *pf) {
    ipfele++;
+   // regression stuff
+   float pre_ecal = ele.superCluster()->rawEnergy();
+   float pre_ecaltrk = ele.gsfTrack()->pMode();
+   regressionGsf_->modifyObject(ele);
+   float post_ecal = ele.correctedEcalEnergy();
+   float post_ecaltrk = ele.energy();
+   if(debug)std::cout <<"ele pre SC/TK --> post SC/TK"<< pre_ecal<<"/"<<pre_ecaltrk 
+		      << " -> " << post_ecal<<"/"<<post_ecaltrk << std::endl;                                                                                        
+   // end regression stuff                                                                                                                                   
+
+
    //cuts
    if (ele.pt()<ptMin_ || ele.pt() < pf_ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
@@ -127,13 +187,23 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    if (!ele.passConversionVeto()) continue;
 
    // Fix the mass to the proper one
-   reco::Candidate::PolarLorentzVector p4( 
-     ele.pt(),
-     ele.eta(),
-     ele.phi(),
-     ELECTRON_MASS
-     );
-   ele.setP4(p4);     
+
+   if (use_regression_for_p4_) {
+     // pt from regression, eta and phi from gsf track mode
+     reco::Candidate::PolarLorentzVector p4( ele.pt(),
+                                             ele.gsfTrack()->etaMode(),
+                                             ele.gsfTrack()->phiMode(),
+                                             ELECTRON_MASS    );
+     ele.setP4(p4);
+   }else{
+     reco::Candidate::PolarLorentzVector p4( 
+					    ele.pt(),
+					    ele.eta(),
+					    ele.phi(),
+					    ELECTRON_MASS
+					     );
+     ele.setP4(p4);     
+   }
 
    // skip electrons inside tag's jet or from different PV
    bool skipEle=true;
@@ -172,15 +242,36 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   /// add and clean low pT e
   for(auto ele : *lowpt) {
     iele++;
+
+   // regression stuff
+   // regression stuff
+   float pre_ecal = ele.superCluster()->rawEnergy();
+   float pre_ecaltrk = ele.gsfTrack()->pMode();
+   regression_->modifyObject(ele);
+   float post_ecal = ele.correctedEcalEnergy();
+   float post_ecaltrk = ele.energy();
+
+   if(debug)std::cout <<"LP ele pre SC/TK --> post SC/TK"<< pre_ecal<<"/"<<pre_ecaltrk 
+		      << " -> " << post_ecal<<"/"<<post_ecaltrk << std::endl;                                                                                        
+   // end regression stuff                                                                                                                                   
+
+
+
     //take modes
-   if(use_gsf_mode_for_p4_) {
+   if (use_regression_for_p4_) {
+     // pt from regression, eta and phi from gsf track mode
+     reco::Candidate::PolarLorentzVector p4( ele.pt(),
+                                             ele.gsfTrack()->etaMode(),
+                                             ele.gsfTrack()->phiMode(),
+                                             ELECTRON_MASS    );
+     ele.setP4(p4);
+   }else if(use_gsf_mode_for_p4_) {
      reco::Candidate::PolarLorentzVector p4( ele.gsfTrack()->ptMode(),
                                              ele.gsfTrack()->etaMode(),
                                              ele.gsfTrack()->phiMode(),
                                              ELECTRON_MASS    );
      ele.setP4(p4);
-   } 
-   else {
+   } else {
      // Fix the mass to the proper one
      reco::Candidate::PolarLorentzVector p4( 
        ele.pt(),
