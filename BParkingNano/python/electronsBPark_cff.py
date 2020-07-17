@@ -3,7 +3,7 @@ from PhysicsTools.NanoAOD.common_cff import *
 
 from RecoEgamma.EgammaElectronProducers.lowPtGsfElectronIDExtra_cff import lowPtGsfElectronIDExtra
 lowPtGsfElectronExtraID = lowPtGsfElectronIDExtra.clone()
-lowPtGsfElectronExtraID.electrons = 'slimmedLowPtElectrons'
+lowPtGsfElectronExtraID.electrons = 'regressionForEle:regressedLowPtElectrons'
 lowPtGsfElectronExtraID.rho = 'fixedGridRhoFastjetAll'
 
 mvaConfigsForEleProducer = cms.VPSet( )
@@ -22,7 +22,8 @@ electronMVAVariableHelper = cms.EDProducer('GsfElectronMVAVariableHelper',
   beamSpot         = cms.InputTag("offlineBeamSpot"),
 conversions = cms.InputTag("allConversions"),
   # miniAOD case
-  srcMiniAOD              = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),
+  #srcMiniAOD              = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),  
+  srcMiniAOD              = cms.InputTag('regressionForEle:regressedElectrons'),
   vertexCollectionMiniAOD = cms.InputTag("offlineSlimmedPrimaryVertices"),
   beamSpotMiniAOD         = cms.InputTag("offlineBeamSpot"),
   conversionsMiniAOD      = cms.InputTag("reducedEgamma:reducedConversions"),
@@ -33,7 +34,8 @@ electronMVAValueMapProducer = cms.EDProducer(
   # AOD case
   src = cms.InputTag('gedGsfElectrons'),  
   # miniAOD case
-  srcMiniAOD = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),
+  #srcMiniAOD = cms.InputTag('slimmedElectrons',processName=cms.InputTag.skipCurrentProcess()),  
+  srcMiniAOD = cms.InputTag('regressionForEle:regressedElectrons'),
     
   # MVA configurations
   mvaConfigurations = mvaConfigsForEleProducer
@@ -50,39 +52,17 @@ egmGsfElectronIDTask = cms.Task(
     electronMVAValueMapProducer,
     egmGsfElectronIDs,
 )
+
 egmGsfElectronIDSequence = cms.Sequence(egmGsfElectronIDTask)
 
 # regression stuff
 from RecoEgamma.EgammaTools.regressionModifierNew_cfi import regressionModifier106XUL
 from RecoEgamma.EgammaTools.regressionModifierNew_cfi import regressionModifier106XULLP
 
-#Everything can be done here, in one loop and save time :)
-electronsForAnalysis = cms.EDProducer(
-  'ElectronMerger',
-  trgMuon = cms.InputTag('muonTrgSelector:trgMuons'),
+regressionForEle = cms.EDProducer(
+  'ElectronRegresser',
   lowptSrc = cms.InputTag('slimmedLowPtElectrons'),
   pfSrc    = cms.InputTag('slimmedElectrons'),
-  ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
-  unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
-  mvaId = cms.InputTag("lowPtGsfElectronExtraID"),
-  pfmvaId = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues"),
-  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
-  ## cleaning wrt trigger muon [-1 == no cut]
-  drForCleaning_wrtTrgMuon = cms.double(0.03),
-  dzForCleaning_wrtTrgMuon = cms.double(1.),
-  ## cleaning between pfEle and lowPtGsf
-  drForCleaning = cms.double(0.03),
-  dzForCleaning = cms.double(0.7), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
-  ## true = flag and clean; false = only flag
-  flagAndclean = cms.bool(False),
-  pf_ptMin = cms.double(1.),
-  ptMin = cms.double(0.5),
-  etaMax = cms.double(2.5),
-  bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
-  useRegressionModeForP4 = cms.bool(True),
-    useGsfModeForP4 = cms.bool(False),
-  sortOutputCollections = cms.bool(True),
-  saveLowPtE = cms.bool(True),
     lowPtRegressionConfig = cms.PSet(
       modifierName = cms.string('EGRegressionModifierLPV1'),
       rhoTag = cms.string('fixedGridRhoFastjetAll'),
@@ -214,6 +194,35 @@ electronsForAnalysis = cms.EDProducer(
 
 )
 
+#Everything can be done here, in one loop and save time :)
+electronsForAnalysis = cms.EDProducer(
+  'ElectronMerger',
+  trgMuon = cms.InputTag('muonTrgSelector:trgMuons'),
+  lowptSrc = cms.InputTag('regressionForEle:regressedLowPtElectrons'),
+  pfSrc    = cms.InputTag('regressionForEle:regressedElectrons'),
+  ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
+  unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
+  mvaId = cms.InputTag("lowPtGsfElectronExtraID"),
+  pfmvaId = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues"),
+  vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
+  ## cleaning wrt trigger muon [-1 == no cut]
+  drForCleaning_wrtTrgMuon = cms.double(0.03),
+  dzForCleaning_wrtTrgMuon = cms.double(1.),
+  ## cleaning between pfEle and lowPtGsf
+  drForCleaning = cms.double(0.03),
+  dzForCleaning = cms.double(0.7), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
+  ## true = flag and clean; false = only flag
+  flagAndclean = cms.bool(False),
+  pf_ptMin = cms.double(1.),
+  ptMin = cms.double(0.5),
+  etaMax = cms.double(2.5),
+  bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
+  useRegressionModeForP4 = cms.bool(True),
+    useGsfModeForP4 = cms.bool(False),
+  sortOutputCollections = cms.bool(True),
+  saveLowPtE = cms.bool(True),
+)
+
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
  src = cms.InputTag("electronsForAnalysis:SelectedElectrons"),
  cut = cms.string(""),
@@ -283,9 +292,9 @@ electronBParkMCTable = cms.EDProducer("CandMCMatchTableProducerBPark",
     docString = cms.string("MC matching to status==1 electrons or photons"),
 )
 
-
 electronsBParkSequence = cms.Sequence(
-  lowPtGsfElectronExtraID
+  regressionForEle
+  +lowPtGsfElectronExtraID
   +egmGsfElectronIDSequence
   +electronsForAnalysis
 )
