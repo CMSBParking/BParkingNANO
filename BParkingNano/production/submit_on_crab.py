@@ -23,6 +23,7 @@ config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = '../test/run_nano_cfg.py'
 config.JobType.maxJobRuntimeMin = 3000
 config.JobType.allowUndistributedCMSSW = True
+#config.JobType.maxMemoryMB = 4000
 
 config.section_('User')
 config.section_('Site')

@@ -34,7 +34,7 @@ options.register('skip', 0,
     "skip first N events"
 )
 
-options.setDefault('maxEvents', 100)
+options.setDefault('maxEvents', 1000)
 options.setDefault('tag', '10215')
 options.parseArguments()
 
@@ -48,6 +48,7 @@ outputFileFEVT = cms.untracked.string('_'.join(['BParkFullEvt', extension[option
 if not options.inputFiles:
     options.inputFiles = ['/store/data/Run2018B/ParkingBPH4/MINIAOD/05May2019-v2/230000/6B5A24B1-0E6E-504B-8331-BD899EB60110.root'] if not options.isMC else \
                          ['/store/cmst3/group/bpark/BToKmumu_1000Events_MINIAOD.root']
+
 annotation = '%s nevts:%d' % (outputFileNANO, options.maxEvents)
 
 from Configuration.StandardSequences.Eras import eras
@@ -68,6 +69,8 @@ process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(options.maxEvents)
 )
+
+process.SimpleMemoryCheck = cms.Service("SimpleMemoryCheck",ignoreTotal = cms.untracked.int32(1) )
 
 # Input source
 process.source = cms.Source(
@@ -133,6 +136,8 @@ process = nanoAOD_customizeTrackFilteredBPark(process)
 process = nanoAOD_customizeBToKLL(process)
 process = nanoAOD_customizeBToKstarEE(process)
 process = nanoAOD_customizeBToKstarMuMu(process)
+process = nanoAOD_customizeBToPhiEE(process)
+process = nanoAOD_customizeBToPhiMuMu(process)
 process = nanoAOD_customizeTriggerBitsBPark(process)
 
 
@@ -143,6 +148,8 @@ process.nanoAOD_KMuMu_step = cms.Path(process.nanoSequence + process.nanoBKMuMuS
 process.nanoAOD_Kee_step   = cms.Path(process.nanoSequence + process.nanoBKeeSequence   + CountBToKee   )
 process.nanoAOD_KstarMuMu_step = cms.Path(process.nanoSequence + process.KstarToKPiSequence + process.nanoBKstarMuMuSequence + CountBToKstarMuMu )
 process.nanoAOD_KstarEE_step  = cms.Path(process.nanoSequence+ process.KstarToKPiSequence + process.nanoBKstarEESequence + CountBToKstarEE  )
+process.nanoAOD_PhiMuMu_step = cms.Path(process.nanoSequence + process.PhiToKKSequence + process.nanoBPhiMuMuSequence + CountBToPhiMuMu )
+process.nanoAOD_PhiEE_step  = cms.Path(process.nanoSequence+ process.PhiToKKSequence + process.nanoBPhiEESequence + CountBToPhiEE  )
 
 # customisation of the process.
 if options.isMC:
@@ -159,6 +166,8 @@ process.schedule = cms.Schedule(
                                 process.nanoAOD_Kee_step, 
                                 process.nanoAOD_KstarMuMu_step,
                                 process.nanoAOD_KstarEE_step,
+                                process.nanoAOD_PhiMuMu_step,
+                                process.nanoAOD_PhiEE_step,
                                 process.endjob_step, 
                                 process.NANOAODoutput_step
                                )
@@ -168,6 +177,8 @@ if options.wantFullRECO:
                                     process.nanoAOD_Kee_step, 
                                     process.nanoAOD_KstarMuMu_step,
                                     process.nanoAOD_KstarEE_step,
+                                    process.nanoAOD_PhiMuMu_step,
+                                    process.nanoAOD_PhiEE_step,
                                     process.endjob_step, 
                                     process.FEVTDEBUGHLToutput_step, 
                                     process.NANOAODoutput_step
@@ -181,6 +192,8 @@ process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
                                    'nanoAOD_Kee_step',
                                    'nanoAOD_KstarMuMu_step',
                                    'nanoAOD_KstarEE_step',
+                                   'nanoAOD_PhiMuMu_step',
+                                   'nanoAOD_PhiEE_step',
                                    )
 )
 
