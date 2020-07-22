@@ -9,13 +9,13 @@ cmsenv
 git cms-init
 ```
 
-## Add energy regression and June25-depth13-2000trees model for LPT electron ID
+## Add energy regression and July20-depth13-700trees model for LPT electron ID
 
 ```shell
 cp /afs/cern.ch/user/c/crovelli/public/4BParking/sparse-checkout .git/info/sparse-checkout
 git remote add crovelli git@github.com:crovelli/cmssw.git
 git fetch crovelli
-git checkout -b from-CMSSW_10_2_15__ID-2020Jun25-depth13-2k__WithReg crovelli/from-CMSSW_10_2_15__ID-2020Jun25-depth13-2k__WithReg
+git checkout -b from-CMSSW_10_2_15__ID-2020Jul20-depth13-700__WithFinalReg crovelli/from-CMSSW_10_2_15__ID-2020Jul20-depth13-700__WithFinalReg
 ```
 
 ## Add the modification needed to use post-fit quantities for electrons  
