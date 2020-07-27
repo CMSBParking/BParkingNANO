@@ -29,6 +29,7 @@ class ElectronMerger : public edm::global::EDProducer<> {
 
 
 public:
+  bool debug=false; 
 
   explicit ElectronMerger(const edm::ParameterSet &cfg):
     triggerMuons_{ consumes<pat::MuonCollection>( cfg.getParameter<edm::InputTag>("trgMuon") )},
@@ -49,6 +50,7 @@ public:
     etaMax_{cfg.getParameter<double>("etaMax")},
     bdtMin_{cfg.getParameter<double>("bdtMin")},
     use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
+    use_regression_for_p4_{cfg.getParameter<bool>("useRegressionModeForP4")},
     sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")},
     saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")}
     {
@@ -81,8 +83,10 @@ private:
   const double etaMax_; //eta max cut
   const double bdtMin_; //bdt min cut
   const bool use_gsf_mode_for_p4_;
+  const bool use_regression_for_p4_;
   const bool sortOutputCollections_;
   const bool saveLowPtE_;
+
 };
 
 void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const & iSetup) const {
@@ -115,11 +119,18 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   std::unique_ptr<TransientTrackCollection> trans_ele_out(new TransientTrackCollection);
   std::vector<std::pair<float, float>> pfEtaPhi;
   std::vector<float> pfVz;
-
+  
   // -> changing order of loops ert Arabella's fix this without need for more vectors  
   size_t ipfele=-1;
   for(auto ele : *pf) {
    ipfele++;
+
+   if (debug) std::cout << "ElectronMerger, Event " << (evt.id()).event() 
+			<< " => PF: ele.superCluster()->rawEnergy() = " << ele.superCluster()->rawEnergy()
+			<< ", ele.correctedEcalEnergy() = " << ele.correctedEcalEnergy()
+			<< ", ele gsf track chi2 = " << ele.gsfTrack()->normalizedChi2()
+			<< ", ele.p = " << ele.p() << std::endl;
+
    //cuts
    if (ele.pt()<ptMin_ || ele.pt() < pf_ptMin_) continue;
    if (fabs(ele.eta())>etaMax_) continue;
@@ -128,11 +139,11 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
    // Fix the mass to the proper one
    reco::Candidate::PolarLorentzVector p4( 
-     ele.pt(),
-     ele.eta(),
-     ele.phi(),
-     ELECTRON_MASS
-     );
+					  ele.pt(),
+					  ele.eta(),
+					  ele.phi(),
+					  ELECTRON_MASS
+					   );
    ele.setP4(p4);     
 
    // skip electrons inside tag's jet or from different PV
@@ -172,15 +183,28 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   /// add and clean low pT e
   for(auto ele : *lowpt) {
     iele++;
+
+    if (debug) std::cout << "ElectronMerger, Event " << (evt.id()).event() 
+			 << " => LPT: ele.superCluster()->rawEnergy() = " << ele.superCluster()->rawEnergy()
+			 << ", ele.correctedEcalEnergy() = " << ele.correctedEcalEnergy()
+			 << ", ele gsf track chi2 = " << ele.gsfTrack()->normalizedChi2()
+			 << ", ele.p = " << ele.p() << std::endl;
+   
     //take modes
-   if(use_gsf_mode_for_p4_) {
+   if (use_regression_for_p4_) {
+     // pt from regression, eta and phi from gsf track mode
+     reco::Candidate::PolarLorentzVector p4( ele.pt(),
+                                             ele.gsfTrack()->etaMode(),
+                                             ele.gsfTrack()->phiMode(),
+                                             ELECTRON_MASS    );
+     ele.setP4(p4);
+   }else if(use_gsf_mode_for_p4_) {
      reco::Candidate::PolarLorentzVector p4( ele.gsfTrack()->ptMode(),
                                              ele.gsfTrack()->etaMode(),
                                              ele.gsfTrack()->phiMode(),
                                              ELECTRON_MASS    );
      ele.setP4(p4);
-   } 
-   else {
+   } else {
      // Fix the mass to the proper one
      reco::Candidate::PolarLorentzVector p4( 
        ele.pt(),

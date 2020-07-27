@@ -9,13 +9,13 @@ cmsenv
 git cms-init
 ```
 
-## Add the latest code and model (2019Aug07 in mvaId and Feb24-depth15 in mvaIdExtra) for the electron ID
+## Add energy regression and July20-depth13-700trees model for LPT electron ID
 
 ```shell
-git cms-addpkg RecoEgamma/EgammaElectronProducers
-git cms-addpkg RecoEgamma/ElectronIdentification
+cp /afs/cern.ch/user/c/crovelli/public/4BParking/sparse-checkout .git/info/sparse-checkout
 git remote add crovelli git@github.com:crovelli/cmssw.git
-git cms-merge-topic crovelli:from-CMSSW_10_2_15_2020Feb24-depth15_bis
+git fetch crovelli
+git checkout -b from-CMSSW_10_2_15__ID-2020Jul20-depth13-700__WithFinalReg crovelli/from-CMSSW_10_2_15__ID-2020Jul20-depth13-700__WithFinalReg
 ```
 
 ## Add the modification needed to use post-fit quantities for electrons  
