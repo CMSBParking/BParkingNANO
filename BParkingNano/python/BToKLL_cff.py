@@ -5,11 +5,12 @@ electronPairsForKee = cms.EDProducer(
     'DiElectronBuilder',
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
-    lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 3'),
+    lep1Selection = cms.string('pt > 1.3'),
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
-        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'
+        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03 && userInt("nlowpt")<2'
+        
     ),
     postVtxSelection = cms.string('userFloat("sv_chi2") < 998 && userFloat("sv_prob") > 1.e-5'),
 )
@@ -24,15 +25,13 @@ BToKee = cms.EDProducer(
     tracks = cms.InputTag("packedPFCandidates"),
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
-    isoTracksSelection = cms.string('pt > 0.7 && abs(eta)<2.5'),
+    isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
     preVtxSelection = cms.string(
-        'pt > 3. && userFloat("min_dr") > 0.03 '
+        'pt > 1.75 && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
         ),
     postVtxSelection = cms.string(
-        'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
-        '&& userFloat("fitted_cos_theta_2D") >= 0 '
-        '&& userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
+         'userInt("sv_OK") == 1 && userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
     )
 )
 

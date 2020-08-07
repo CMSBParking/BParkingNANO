@@ -210,15 +210,15 @@ electronsForAnalysis = cms.EDProducer(
   dzForCleaning_wrtTrgMuon = cms.double(1.),
   ## cleaning between pfEle and lowPtGsf
   drForCleaning = cms.double(0.03),
-  dzForCleaning = cms.double(0.7), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
+  dzForCleaning = cms.double(0.5), ##keep tighter dZ to check overlap of pfEle with lowPt (?)
   ## true = flag and clean; false = only flag
   flagAndclean = cms.bool(False),
   pf_ptMin = cms.double(1.),
   ptMin = cms.double(0.5),
   etaMax = cms.double(2.5),
-  bdtMin = cms.double(-4), #this cut can be used to deactivate low pT e if set to >12
+  bdtMin = cms.double(-4.5), #this cut can be used to deactivate low pT e if set to >12
   useRegressionModeForP4 = cms.bool(True),
-    useGsfModeForP4 = cms.bool(False),
+  useGsfModeForP4 = cms.bool(False),
   sortOutputCollections = cms.bool(True),
   saveLowPtE = cms.bool(True),
 )

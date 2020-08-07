@@ -222,10 +222,11 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    if (!ele.passConversionVeto()) continue;
 
    //assigning BDT values
-   const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
-   float unbiased_seedBDT = float((*unBiased)[gsfTrk]);
-   float ptbiased_seedBDT = float((*ptBiased)[gsfTrk]);
-   if ( unbiased_seedBDT <bdtMin_) continue; //extra cut for low pT e on BDT
+   edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
+   float mva_id = float((*mvaId)[ref]);
+ //  if ( unbiased_seedBDT <bdtMin_) continue; //extra cut for low pT e on BDT
+   if ( mva_id <bdtMin_) continue; //extra cut for low pT e on BDT
+
 
    bool skipEle=true;
    for(const auto & trg : *trgMuon) {
@@ -253,8 +254,9 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    else if(clean_out) ele.addUserInt("isPFoverlap", 1);
    else ele.addUserInt("isPFoverlap", 0);
 
-   edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
-   float mva_id = float((*mvaId)[ref]);
+   const reco::GsfTrackRef gsfTrk = ele.gsfTrack();
+   float unbiased_seedBDT = float((*unBiased)[gsfTrk]);
+   float ptbiased_seedBDT = float((*ptBiased)[gsfTrk]);
    ele.addUserInt("isPF", 0);
    ele.addUserInt("isLowPt", 1);
    ele.addUserFloat("chargeMode", ele.gsfTrack()->chargeMode());
