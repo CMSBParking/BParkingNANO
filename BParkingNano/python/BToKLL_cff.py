@@ -1,6 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.BParkingNano.common_cff import *
 
+doConstrVtxFit = True
+
 electronPairsForKee = cms.EDProducer(
     'DiElectronBuilder',
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
@@ -32,7 +34,11 @@ BToKee = cms.EDProducer(
         ),
     postVtxSelection = cms.string(
          'userInt("sv_OK") == 1 && userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
-    )
+    ),
+    doConstrVtxFit = cms.bool(doConstrVtxFit),
+    jpsiLow = cms.double(2.45),
+    jpsiUp = cms.double(3.25),
+    psi2sUp = cms.double(3.85),
 )
 
 muonPairsForKmumu = cms.EDProducer(
@@ -66,7 +72,11 @@ BToKmumu = cms.EDProducer(
         'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0'
         '&& userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
-    )
+    ),
+    doConstrVtxFit = cms.bool(doConstrVtxFit),
+    jpsiLow = cms.double(2.45),
+    jpsiUp = cms.double(3.25),
+    psi2sUp = cms.double(3.85),
 )
 
 BToKeeTable = cms.EDProducer(
@@ -119,6 +129,35 @@ BToKeeTable = cms.EDProducer(
         fit_k_pt = ufloat('fitted_k_pt'),
         fit_k_eta = ufloat('fitted_k_eta'),
         fit_k_phi = ufloat('fitted_k_phi'),
+        # constrained vtx fit
+        constr_sv_OK = uint('constr_sv_OK'),
+        constr_svprob = ufloat('constr_sv_prob'),
+        constr_l_xy = ufloat('constr_l_xy'),
+        constr_l_xy_unc = ufloat('constr_l_xy_unc'),
+        constr_vtx_x = ufloat('constr_vtx_x'),
+        constr_vtx_y = ufloat('constr_vtx_y'),
+        constr_vtx_z = ufloat('constr_vtx_z'),
+        constr_vtx_ex = ufloat('constr_vtx_ex'), ## only saving diagonal elements of the cov matrix
+        constr_vtx_ey = ufloat('constr_vtx_ey'),
+        constr_vtx_ez = ufloat('constr_vtx_ez'),
+        constr_mll_fullfit = ufloat('constr_fitted_mll'),
+        constr_cos2D = ufloat('constr_cos_theta_2D'),
+        constr_fit_cos2D = ufloat('constr_fitted_cos_theta_2D'),
+        constr_fit_mass = ufloat('constr_fitted_mass'),
+        constr_fit_massErr = ufloat('constr_fitted_massErr'),
+        constr_fit_pt = ufloat('constr_fitted_pt'),
+        constr_fit_eta = ufloat('constr_fitted_eta'),
+        constr_fit_phi = ufloat('constr_fitted_phi'),
+        constr_fit_l1_pt = ufloat('constr_fitted_l1_pt'),
+        constr_fit_l1_eta = ufloat('constr_fitted_l1_eta'),
+        constr_fit_l1_phi = ufloat('constr_fitted_l1_phi'),
+        constr_fit_l2_pt = ufloat('constr_fitted_l2_pt'),
+        constr_fit_l2_eta = ufloat('constr_fitted_l2_eta'),
+        constr_fit_l2_phi = ufloat('constr_fitted_l2_phi'),
+        constr_fit_k_pt = ufloat('constr_fitted_k_pt'),
+        constr_fit_k_eta = ufloat('constr_fitted_k_eta'),
+        constr_fit_k_phi = ufloat('constr_fitted_k_phi'),
+        # isolation
         l1_iso03 = ufloat('l1_iso03'),
         l1_iso04 = ufloat('l1_iso04'),
         l2_iso03 = ufloat('l2_iso03'),

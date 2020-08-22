@@ -2,6 +2,7 @@
 #include "RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h"
 #include "RecoVertex/KinematicFit/interface/KinematicParticleVertexFitter.h"
 #include "RecoVertex/KinematicFit/interface/TwoTrackMassKinematicConstraint.h" // MIGHT be useful for Phi->KK?
+#include "RecoVertex/KinematicFit/interface/KinematicConstrainedVertexFitter.h"
 
 KinVtxFitter::KinVtxFitter(const std::vector<reco::TransientTrack> tracks, 
                            const std::vector<double> masses, 
@@ -43,3 +44,54 @@ KinVtxFitter::KinVtxFitter(const std::vector<reco::TransientTrack> tracks,
   fitted_track_ = fitted_particle_->refittedTransientTrack();
   success_ = true;
 }
+
+KinVtxFitter::KinVtxFitter(const std::vector<reco::TransientTrack> tracks, 
+                           const std::vector<double> masses, 
+                           std::vector<float> sigmas,
+                           double mass_constr
+                           ):
+  n_particles_{masses.size()} {
+
+  KinematicParticleFactoryFromTransientTrack factory;
+  std::vector<RefCountedKinematicParticle> particles;
+  for(size_t i = 0; i < tracks.size(); ++i) {
+    particles.emplace_back(
+      factory.particle(
+        tracks.at(i), masses.at(i), kin_chi2_, 
+        kin_ndof_, sigmas[i]
+        )
+      );
+  }
+
+  KinematicConstrainedVertexFitter kcv_fitter;
+  MultiTrackKinematicConstraint* jpsi_constr = new TwoTrackMassKinematicConstraint(mass_constr);
+  RefCountedKinematicTree vtx_tree = kcv_fitter.fit(particles, jpsi_constr); // Constraint applies to first two particles
+
+  if (vtx_tree->isEmpty() || !vtx_tree->isValid() || !vtx_tree->isConsistent()) {
+    success_ = false; 
+    delete jpsi_constr;
+    return;
+  }
+
+  vtx_tree->movePointerToTheTop(); 
+  fitted_particle_ = vtx_tree->currentParticle();
+  fitted_vtx_ = vtx_tree->currentDecayVertex();
+  if (!fitted_particle_->currentState().isValid() || !fitted_vtx_->vertexIsValid()){ 
+    success_ = false; 
+    delete jpsi_constr;
+    return;
+  }
+  fitted_state_ = fitted_particle_->currentState();
+  fitted_children_ = vtx_tree->finalStateParticles();
+  if(fitted_children_.size() != n_particles_) { 
+    success_ = false; 
+    delete jpsi_constr;
+    return;
+  }
+
+  fitted_track_ = fitted_particle_->refittedTransientTrack();
+  success_ = true;
+  delete jpsi_constr;
+  return;
+}
+

@@ -34,7 +34,7 @@ options.register('skip', 0,
     "skip first N events"
 )
 
-options.setDefault('maxEvents', 100)
+options.setDefault('maxEvents', 1000)
 options.setDefault('tag', '10215')
 options.parseArguments()
 
@@ -260,8 +260,8 @@ process.NANOAODoutput_step = cms.EndPath(process.NANOAODoutput)
 process.schedule = cms.Schedule(
                                 process.nanoAOD_KMuMu_step,
                                 process.nanoAOD_Kee_step, 
-                                process.nanoAOD_KstarMuMu_step,
-                                process.nanoAOD_KstarEE_step,
+                                #process.nanoAOD_KstarMuMu_step,
+                                #process.nanoAOD_KstarEE_step,
                                 process.endjob_step, 
                                 process.NANOAODoutput_step
                                )
@@ -269,8 +269,8 @@ if options.wantFullRECO:
     process.schedule = cms.Schedule(
                                     process.nanoAOD_KMuMu_step,
                                     process.nanoAOD_Kee_step, 
-                                    process.nanoAOD_KstarMuMu_step,
-                                    process.nanoAOD_KstarEE_step,
+                                    #process.nanoAOD_KstarMuMu_step,
+                                    #process.nanoAOD_KstarEE_step,
                                     process.endjob_step, 
                                     process.FEVTDEBUGHLToutput_step, 
                                     process.NANOAODoutput_step
@@ -282,8 +282,8 @@ process.NANOAODoutput.SelectEvents = cms.untracked.PSet(
         SelectEvents = cms.vstring(
                                    'nanoAOD_KMuMu_step', 
                                    'nanoAOD_Kee_step',
-                                   'nanoAOD_KstarMuMu_step',
-                                   'nanoAOD_KstarEE_step',
+                                   #'nanoAOD_KstarMuMu_step',
+                                   #'nanoAOD_KstarEE_step',
                                    )
 )
 
