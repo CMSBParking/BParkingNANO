@@ -22,9 +22,14 @@ public:
                std::vector<float> sigmas);
 
   KinVtxFitter(const std::vector<reco::TransientTrack> tracks, 
-                const std::vector<double> masses, 
-                std::vector<float> sigmas,
-                double mass_constr);
+               const std::vector<double> masses, 
+               std::vector<float> sigmas,
+               double mass_constr, double mass_constr_sigma);
+
+  KinVtxFitter(const std::vector<reco::TransientTrack> tracks, 
+               const std::vector<double> masses, 
+               std::vector<float> sigmas,
+               double mass_constr);
 
   ~KinVtxFitter() {};
 

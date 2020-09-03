@@ -282,6 +282,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
             cand.addUserFloat("constr_sv_ndof", constr_fitter->dof()); // float??
             cand.addUserFloat("constr_sv_prob", constr_fitter->prob());
             cand.addUserFloat("constr_fitted_mll" , (constr_fitter->daughter_p4(0) + constr_fitter->daughter_p4(1)).mass());
+
             auto fit_p4 = constr_fitter->fitted_p4();
             cand.addUserFloat("constr_fitted_pt"  , fit_p4.pt()); 
             cand.addUserFloat("constr_fitted_eta" , fit_p4.eta());
@@ -311,10 +312,11 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
             cand.addUserFloat("constr_fitted_l1_phi", constr_fitter->daughter_p4(0).phi());
             cand.addUserFloat("constr_fitted_l2_pt" , constr_fitter->daughter_p4(1).pt()); 
             cand.addUserFloat("constr_fitted_l2_eta", constr_fitter->daughter_p4(1).eta());
-            cand.addUserFloat("constr_fitted_l2_phi", constr_fitter->daughter_p4(1).phi());
+            cand.addUserFloat("constr_fitted_l2_phi", constr_fitter->daughter_p4(1).phi()); 
             cand.addUserFloat("constr_fitted_k_pt"  , constr_fitter->daughter_p4(2).pt()); 
             cand.addUserFloat("constr_fitted_k_eta" , constr_fitter->daughter_p4(2).eta());
             cand.addUserFloat("constr_fitted_k_phi" , constr_fitter->daughter_p4(2).phi());
+
           }
           delete constr_fitter;
         }
@@ -341,7 +343,6 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
         cand.addUserFloat("constr_vtx_ex", -99.);
         cand.addUserFloat("constr_vtx_ey", -99.);
         cand.addUserFloat("constr_vtx_ez", -99.);
-
         cand.addUserFloat("constr_fitted_l1_pt" , -99.); 
         cand.addUserFloat("constr_fitted_l1_eta", -99.);
         cand.addUserFloat("constr_fitted_l1_phi", -99.);
