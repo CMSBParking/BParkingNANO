@@ -20,11 +20,12 @@ git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2020Sept15
 git clone --single-branch --branch from-CMSSW_10_2_15_2020Sept15 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
 ```
 
-To run on CRAB, the following two lines __must__ be executed:
+To run on CRAB, the following three lines __must__ be executed:
 
 ```shell
 git cms-addpkg RecoEgamma/ElectronIdentification
-mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons/LowPtElectronsID_2020Sept15.root $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data/LowPtElectrons
+mkdir -p $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data/LowPtElectrons
+cp $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons/LowPtElectrons_ID_2020Sept15.root $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data/LowPtElectrons
 ```
 
 ## Add support for GBRForest to parse ROOT files
