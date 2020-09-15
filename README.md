@@ -1,4 +1,6 @@
-# nanoAOD producer customized for BParking analysis (focus on RK/K*/phi)
+# nanoAOD producer customized for BParking analysis 
+
+The focus is on RK/K*/phi analyses.
 
 ## Getting started
 
@@ -9,32 +11,44 @@ cmsenv
 git cms-init
 ```
 
-## Add energy regression and July20-depth13-700trees model for LPT electron ID
+## Add low-pT energy ID and regression
+
+The ID model is `2020Sept15` (depth=13, ntrees=1000).
 
 ```shell
-cp /afs/cern.ch/user/c/crovelli/public/4BParking/sparse-checkout .git/info/sparse-checkout
-git remote add crovelli git@github.com:crovelli/cmssw.git
-git fetch crovelli
-git checkout -b from-CMSSW_10_2_15__ID-2020Jul26-depth13-700__WithFinalReg crovelli/from-CMSSW_10_2_15__ID-2020Jul26-depth13-700__WithFinalReg
+git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2020Sept15
+git clone --single-branch --branch from-CMSSW_10_2_15_2020Sept15 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
+```
+
+To run on CRAB, the following two lines __must__ be executed:
+
+```shell
+git cms-addpkg RecoEgamma/ElectronIdentification
+mv $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/LowPtElectrons/LowPtElectronsID_2020Sept15.root $CMSSW_BASE/src/RecoEgamma/ElectronIdentification/data/LowPtElectrons
+```
+
+## Add support for GBRForest to parse ROOT files
+
+```shell
+git cms-merge-topic CMSBParking:convertXMLToGBRForestROOT
 ```
 
 ## Add the modification needed to use post-fit quantities for electrons  
 
 ```shell
-git cms-addpkg TrackingTools/TransientTrack
-git cms-merge-topic -u CMSBParking:GsfTransientTracks
+git cms-merge-topic -u CMSBParking:GsfTransientTracks # unsafe checkout (no checkdeps), but suggested here
 ```
 
 ## Add the modification needed to use the KinematicParticleVertexFitter  
 
 ```shell
-git cms-merge-topic -u CMSBParking:fixKinParticleVtxFitter
+git cms-merge-topic -u CMSBParking:fixKinParticleVtxFitter # unsafe checkout (no checkdeps), but suggested here
 ```
 
 ## Add the BParkingNano package and build everything
 
 ```shell
-git clone git@github.com:CMSBParking/BParkingNANO.git  ./PhysicsTools
+git clone git@github.com:CMSBParking/BParkingNANO.git ./PhysicsTools
 git cms-addpkg PhysicsTools/NanoAOD
 scram b
 ```
