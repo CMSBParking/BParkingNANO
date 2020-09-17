@@ -278,7 +278,9 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
   // build transient track collection
   for(auto &ele : *ele_out){
-    const reco::TransientTrack eleTT =(*theB).buildfromGSF( ele.gsfTrack() );
+    float regErrorRatio = std::abs(ele.corrections().combinedP4Error/ele.p()/ele.gsfTrack()->qoverpModeError()*ele.gsfTrack()->qoverpMode());
+    const reco::TransientTrack eleTT = use_regression_for_p4_ ?
+      (*theB).buildfromReg(ele.gsfTrack(), math::XYZVector(ele.corrections().combinedP4), regErrorRatio) : (*theB).buildfromGSF( ele.gsfTrack() );
     trans_ele_out -> emplace_back(eleTT);
 
     if(ele.userInt("isPF")) continue;
