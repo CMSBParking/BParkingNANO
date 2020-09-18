@@ -38,11 +38,7 @@ public:
     isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
-    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )},
-    do_constr_vtx_fit_{cfg.getParameter<bool>("doConstrVtxFit")},
-    jpsi_low_{cfg.getParameter<double>("jpsiLow")},
-    jpsi_up_{cfg.getParameter<double>("jpsiUp")},
-    psi2s_up_{cfg.getParameter<double>("psi2sUp")}
+    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )}
     {
       produces<pat::CompositeCandidateCollection>();
     }
@@ -68,10 +64,6 @@ private:
   const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
-  const bool do_constr_vtx_fit_;
-  const double jpsi_low_;
-  const double jpsi_up_;
-  const double psi2s_up_;
 };
 
 void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
@@ -101,8 +93,6 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   unsigned int totalTracks = nTracks + iso_lostTracks->size();
 
   std::vector<int> used_lep1_id, used_lep2_id, used_trk_id;
-
-  KinVtxFitter *constr_fitter = 0;
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
@@ -258,101 +248,6 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("b_iso03" , b_iso03 );
       cand.addUserFloat("b_iso04" , b_iso04 );
 
-      bool constr_sv_OK = false;
-      if (do_constr_vtx_fit_) {
-        double constr_mass = 0;
-        if ((cand.userFloat("fitted_mll") > jpsi_low_) && (cand.userFloat("fitted_mll") < jpsi_up_)) { 
-          constr_mass = JPSI_MASS;
-        } else if ((cand.userFloat("fitted_mll") > jpsi_up_) && (cand.userFloat("fitted_mll") < psi2s_up_)) {
-          constr_mass = PSI2S_MASS;
-        }
-        
-        if (constr_mass != 0) {
-          constr_fitter = new KinVtxFitter(
-              {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
-              {l1_ptr->mass(), l2_ptr->mass(), K_MASS},
-              {LEP_SIGMA, LEP_SIGMA, K_SIGMA}, //some small sigma for the lepton mass
-              constr_mass
-              );
-          constr_sv_OK = constr_fitter->success();
-        
-          if (constr_sv_OK) {
-            cand.addUserInt("constr_sv_OK" , constr_fitter->success());
-            cand.addUserFloat("constr_sv_chi2", constr_fitter->chi2());
-            cand.addUserFloat("constr_sv_ndof", constr_fitter->dof()); // float??
-            cand.addUserFloat("constr_sv_prob", constr_fitter->prob());
-            cand.addUserFloat("constr_fitted_mll" , (constr_fitter->daughter_p4(0) + constr_fitter->daughter_p4(1)).mass());
-
-            auto fit_p4 = constr_fitter->fitted_p4();
-            cand.addUserFloat("constr_fitted_pt"  , fit_p4.pt()); 
-            cand.addUserFloat("constr_fitted_eta" , fit_p4.eta());
-            cand.addUserFloat("constr_fitted_phi" , fit_p4.phi());
-            cand.addUserFloat("constr_fitted_mass", constr_fitter->fitted_candidate().mass());      
-            cand.addUserFloat("constr_fitted_massErr", sqrt(constr_fitter->fitted_candidate().kinematicParametersError().matrix()(6,6)));      
-            cand.addUserFloat(
-              "constr_cos_theta_2D", 
-              cos_theta_2D(*constr_fitter, *beamspot, cand.p4())
-              );
-            cand.addUserFloat(
-              "constr_fitted_cos_theta_2D", 
-              cos_theta_2D(*constr_fitter, *beamspot, fit_p4)
-              );
-            auto lxy = l_xy(*constr_fitter, *beamspot);
-            cand.addUserFloat("constr_l_xy", lxy.value());
-            cand.addUserFloat("constr_l_xy_unc", lxy.error());
-            cand.addUserFloat("constr_vtx_x", constr_fitter->fitted_vtx().x());
-            cand.addUserFloat("constr_vtx_y", constr_fitter->fitted_vtx().y());
-            cand.addUserFloat("constr_vtx_z", constr_fitter->fitted_vtx().z());
-            cand.addUserFloat("constr_vtx_ex", sqrt(constr_fitter->fitted_vtx_uncertainty().cxx()));
-            cand.addUserFloat("constr_vtx_ey", sqrt(constr_fitter->fitted_vtx_uncertainty().cyy()));
-            cand.addUserFloat("constr_vtx_ez", sqrt(constr_fitter->fitted_vtx_uncertainty().czz()));
-
-            cand.addUserFloat("constr_fitted_l1_pt" , constr_fitter->daughter_p4(0).pt()); 
-            cand.addUserFloat("constr_fitted_l1_eta", constr_fitter->daughter_p4(0).eta());
-            cand.addUserFloat("constr_fitted_l1_phi", constr_fitter->daughter_p4(0).phi());
-            cand.addUserFloat("constr_fitted_l2_pt" , constr_fitter->daughter_p4(1).pt()); 
-            cand.addUserFloat("constr_fitted_l2_eta", constr_fitter->daughter_p4(1).eta());
-            cand.addUserFloat("constr_fitted_l2_phi", constr_fitter->daughter_p4(1).phi()); 
-            cand.addUserFloat("constr_fitted_k_pt"  , constr_fitter->daughter_p4(2).pt()); 
-            cand.addUserFloat("constr_fitted_k_eta" , constr_fitter->daughter_p4(2).eta());
-            cand.addUserFloat("constr_fitted_k_phi" , constr_fitter->daughter_p4(2).phi());
-
-          }
-          delete constr_fitter;
-        }
-      }
-      
-      if (! constr_sv_OK) {
-        cand.addUserInt("constr_sv_OK" , 0);
-        cand.addUserFloat("constr_sv_chi2", -99.);
-        cand.addUserFloat("constr_sv_ndof", -99.); // float??
-        cand.addUserFloat("constr_sv_prob", -99.);
-        cand.addUserFloat("constr_fitted_mll" , -99.);
-        cand.addUserFloat("constr_fitted_pt"  , -99.); 
-        cand.addUserFloat("constr_fitted_eta" , -99.);
-        cand.addUserFloat("constr_fitted_phi" , -99.);
-        cand.addUserFloat("constr_fitted_mass", -99.);      
-        cand.addUserFloat("constr_fitted_massErr", -99.);      
-        cand.addUserFloat("constr_cos_theta_2D", -99.);
-        cand.addUserFloat("constr_fitted_cos_theta_2D", -99.);
-        cand.addUserFloat("constr_l_xy", -99.);
-        cand.addUserFloat("constr_l_xy_unc", -99.);
-        cand.addUserFloat("constr_vtx_x", -99.);
-        cand.addUserFloat("constr_vtx_y", -99.);
-        cand.addUserFloat("constr_vtx_z", -99.);
-        cand.addUserFloat("constr_vtx_ex", -99.);
-        cand.addUserFloat("constr_vtx_ey", -99.);
-        cand.addUserFloat("constr_vtx_ez", -99.);
-        cand.addUserFloat("constr_fitted_l1_pt" , -99.); 
-        cand.addUserFloat("constr_fitted_l1_eta", -99.);
-        cand.addUserFloat("constr_fitted_l1_phi", -99.);
-        cand.addUserFloat("constr_fitted_l2_pt" , -99.); 
-        cand.addUserFloat("constr_fitted_l2_eta", -99.);
-        cand.addUserFloat("constr_fitted_l2_phi", -99.);
-        cand.addUserFloat("constr_fitted_k_pt"  , -99.); 
-        cand.addUserFloat("constr_fitted_k_eta" , -99.);
-        cand.addUserFloat("constr_fitted_k_phi" , -99.);
-      }
 
       ret_val->push_back(cand);
     } // for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
