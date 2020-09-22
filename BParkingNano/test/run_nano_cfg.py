@@ -23,7 +23,7 @@ options.register('wantFullRECO', False,
     VarParsing.varType.bool,
     "Run this on real data"
 )
-options.register('reportEvery', 100,
+options.register('reportEvery', 10,
     VarParsing.multiplicity.singleton,
     VarParsing.varType.int,
     "report every N events"
@@ -34,7 +34,7 @@ options.register('skip', 0,
     "skip first N events"
 )
 
-options.setDefault('maxEvents', -1)
+options.setDefault('maxEvents', 100)
 options.setDefault('tag', '10215')
 options.parseArguments()
 
