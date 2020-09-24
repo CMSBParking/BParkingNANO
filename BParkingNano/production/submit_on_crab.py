@@ -22,7 +22,6 @@ config.section_('JobType')
 config.JobType.pluginName = 'Analysis'
 config.JobType.psetName = '../test/run_nano_cfg.py'
 config.JobType.maxJobRuntimeMin = 3000
-config.JobType.maxMemoryMB = 4000
 config.JobType.allowUndistributedCMSSW = True
 config.JobType.inputFiles = ["../test/lowPtEleReg_2018_02062020_nv.db"]
 
