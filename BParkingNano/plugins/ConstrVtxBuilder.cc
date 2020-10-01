@@ -133,10 +133,6 @@ void ConstrVtxBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup c
         cand.addUserFloat("fitted_mass", constr_fitter->fitted_candidate().mass());      
         cand.addUserFloat("fitted_massErr", sqrt(constr_fitter->fitted_candidate().kinematicParametersError().matrix()(6,6)));      
         cand.addUserFloat(
-          "cos_theta_2D", 
-          cos_theta_2D(*constr_fitter, *beamspot, cand.p4())
-          );
-        cand.addUserFloat(
           "fitted_cos_theta_2D", 
           cos_theta_2D(*constr_fitter, *beamspot, fit_p4)
           );
@@ -151,12 +147,12 @@ void ConstrVtxBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup c
         cand.addUserFloat("vtx_ez", sqrt(constr_fitter->fitted_vtx_uncertainty().czz()));
 
         
-        cand.addUserFloat("fitted_l1_pt" , constr_fitter->daughter_p4(0).pt()); 
-        cand.addUserFloat("fitted_l1_eta", constr_fitter->daughter_p4(0).eta());
-        cand.addUserFloat("fitted_l1_phi", constr_fitter->daughter_p4(0).phi());
-        cand.addUserFloat("fitted_l2_pt" , constr_fitter->daughter_p4(1).pt()); 
-        cand.addUserFloat("fitted_l2_eta", constr_fitter->daughter_p4(1).eta());
-        cand.addUserFloat("fitted_l2_phi", constr_fitter->daughter_p4(1).phi()); 
+        //cand.addUserFloat("fitted_l1_pt" , constr_fitter->daughter_p4(0).pt()); 
+        //cand.addUserFloat("fitted_l1_eta", constr_fitter->daughter_p4(0).eta());
+        //cand.addUserFloat("fitted_l1_phi", constr_fitter->daughter_p4(0).phi());
+        //cand.addUserFloat("fitted_l2_pt" , constr_fitter->daughter_p4(1).pt()); 
+        //cand.addUserFloat("fitted_l2_eta", constr_fitter->daughter_p4(1).eta());
+        //cand.addUserFloat("fitted_l2_phi", constr_fitter->daughter_p4(1).phi()); 
         cand.addUserFloat("fitted_k_pt"  , constr_fitter->daughter_p4(2).pt()); 
         cand.addUserFloat("fitted_k_eta" , constr_fitter->daughter_p4(2).eta());
         cand.addUserFloat("fitted_k_phi" , constr_fitter->daughter_p4(2).phi());
