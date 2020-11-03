@@ -43,7 +43,7 @@ public:
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
     pf_mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("pfmvaId") )},
     vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
-    conversions_{ consumes<edm::View<reco::Conversion> > ( cfg.getParameter<edm::InputTag>("lowptConversions") )},
+    conversions_{ consumes<edm::View<reco::Conversion> > ( cfg.getParameter<edm::InputTag>("conversions") )},
     beamSpot_{ consumes<reco::BeamSpot> ( cfg.getParameter<edm::InputTag>("beamSpot") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
@@ -284,7 +284,17 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserInt("isConversion", matched?1:0);
    ele.addUserInt("convLeadTrack", matched_lead.isNonnull()?1:0);
    ele.addUserInt("convTrailTrack", matched_trail.isNonnull()?1:0);
-					     
+
+   if (debug && matched) {
+     std::cout << "[ElectronMerger::produce]"
+	       << " event " << (evt.id()).event()
+	       << ", electron: " << iele
+	       << ", isConversion: " << (matched?1:0)
+	       << ", convLeadTrack: " << (matched_lead.isNonnull()?1:0)
+	       << ", convTrailTrack: " << (matched_trail.isNonnull()?1:0)
+	       << std::endl;
+   }
+
    //assigning BDT values
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
@@ -379,22 +389,22 @@ bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& 
 
   // quality
   bool valid = false;
-  float chi2prob = 0.;
+  float chi2prob = -1.;
   bool quality_high_purity = false;
   bool quality_high_efficiency = false;
   // tracks
   uint ntracks = 0;
-  float min_trk_pt = 0.;
-  int ilead = 0;
-  int itrail = 0;
+  float min_trk_pt = -1.;
+  int ilead = -1;
+  int itrail = -1;
   // displacement
-  float l_xy = 0.;
-  float vtx_radius = 0.;
+  float l_xy = -1.;
+  float vtx_radius = -1.;
   // invariant mass
-  float mass_from_conv = 0.;
-  float mass_from_Pin = 0.;
-  float mass_before_fit = 0.;
-  float mass_after_fit = 0.;
+  float mass_from_conv = -1.;
+  float mass_from_Pin = -1.;
+  float mass_before_fit = -1.;
+  float mass_after_fit = -1.;
   // hits before vertex
   uint lead_nhits_before_vtx = 0;
   uint trail_nhits_before_vtx = 0;
@@ -402,7 +412,7 @@ bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& 
   uint sum_nhits_before_vtx = 0;
   int delta_expected_nhits_inner = 0;
   // opening angle
-  float delta_cot_from_Pin = 0.;
+  float delta_cot_from_Pin = -1.;
 
   return matchToConversionTracks(beamSpot,conversions,ele, //
 				 valid,chi2prob,quality_high_purity,quality_high_efficiency, // quality
@@ -455,14 +465,22 @@ bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& 
   bool matched = false;
 
   // Valid handles?
-  if ( !(beamSpot.isValid()) ) { return false; }
-  if ( !(conversions.isValid()) ) { return false; }
+  if ( !(beamSpot.isValid()) ) {
+    edm::LogError("ElectronMerger::matchToConversionTracks")
+      << " !(beamSpot.isValid())" << std::endl;
+    return false;
+  }
+  if ( !(conversions.isValid()) ) {
+    edm::LogError("ElectronMerger::matchToConversionTracks")
+      << " !(conversions.isValid())" << std::endl;
+    return false;
+  }
   
   // Iterate through conversions and calculate quantities (requirement from Nancy)
   for ( const auto& conv : *conversions ) {
-    
+
     // Filter
-    if ( conv.tracks().size() < 2 ) { continue; }
+    if ( conv.tracks().size() != 2 ) { continue; }
 
     // Quality
     valid = conv.conversionVertex().isValid(); // (=true)
@@ -477,10 +495,12 @@ bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& 
       if ( min_trk_pt < 0. || trk->pt() < min_trk_pt ) { min_trk_pt = trk->pt(); }
     }
     ilead = -1; itrail = -1;
-    edm::RefToBase<reco::Track> trk1 = conv.tracks().front();
-    edm::RefToBase<reco::Track> trk2 = conv.tracks().back();
-    if      ( conv.tracks().size() == 2 && trk1->pt() > trk2->pt() ) { ilead = 0; itrail = 1; }
-    else if ( conv.tracks().size() == 2 && trk2->pt() > trk2->pt() ) { ilead = 1; itrail = 0; }
+    if ( conv.tracks().size() == 2 ) {
+      edm::RefToBase<reco::Track> trk1 = conv.tracks().front();
+      edm::RefToBase<reco::Track> trk2 = conv.tracks().back();
+      if      ( trk1->pt() > trk2->pt() ) { ilead = 0; itrail = 1; }
+      else if ( trk1->pt() < trk2->pt() ) { ilead = 1; itrail = 0; }
+    }
 
     // Transverse displacement (with respect to beamspot) and vertex radius
     math::XYZVectorF p_refitted =  conv.refittedPairMomentum();
@@ -493,54 +513,69 @@ bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& 
     mass_from_conv = conv.pairInvariantMass();
     
     // Invariant mass from Pin before fit to common vertex 
-    math::XYZVectorF lead_Pin = conv.tracksPin().at(ilead);
-    math::XYZVectorF trail_Pin = conv.tracksPin().at(itrail);
-    mass_from_Pin = mee( lead_Pin.x(), lead_Pin.y(), lead_Pin.z(),
-			 trail_Pin.x(), trail_Pin.y(), trail_Pin.z() );
-    
-    // Invariant mass before fit to common vertex
-    edm::RefToBase<reco::Track> lead_before_vtx_fit = conv.tracks().at(ilead);
-    edm::RefToBase<reco::Track> trail_before_vtx_fit = conv.tracks().at(itrail);
-    mass_before_fit = mee( lead_before_vtx_fit->px(), lead_before_vtx_fit->py(), lead_before_vtx_fit->pz(),
-			   trail_before_vtx_fit->px(), trail_before_vtx_fit->py(), trail_before_vtx_fit->pz() );
-    
-    // Invariant mass after the fit to common vertex
-    const reco::Track lead_after_vtx_fit  = conv.conversionVertex().refittedTracks().at(ilead);
-    const reco::Track trail_after_vtx_fit = conv.conversionVertex().refittedTracks().at(itrail);
-    mass_after_fit = mee( lead_after_vtx_fit.px(), lead_after_vtx_fit.py(), lead_after_vtx_fit.pz(),
-			  trail_after_vtx_fit.px(), trail_after_vtx_fit.py(), trail_after_vtx_fit.pz());
+    mass_from_Pin = -1.;
+    if ( conv.tracksPin().size() >= 2 ) {
+      math::XYZVectorF lead_Pin = conv.tracksPin().at(ilead);
+      math::XYZVectorF trail_Pin = conv.tracksPin().at(itrail);
+      mass_from_Pin = mee( lead_Pin.x(), lead_Pin.y(), lead_Pin.z(),
+			   trail_Pin.x(), trail_Pin.y(), trail_Pin.z() );
+      // Opening angle
+      delta_cot_from_Pin = 1. / tan(trail_Pin.theta()) - 1. / tan(lead_Pin.theta());
+    }
 
+    // Invariant mass before fit to common vertex
+    mass_before_fit = -1.;
+    if ( conv.tracks().size() >= 2 ) {
+      edm::RefToBase<reco::Track> lead_before_vtx_fit = conv.tracks().at(ilead);
+      edm::RefToBase<reco::Track> trail_before_vtx_fit = conv.tracks().at(itrail);
+      mass_before_fit = mee( lead_before_vtx_fit->px(), lead_before_vtx_fit->py(), lead_before_vtx_fit->pz(),
+			     trail_before_vtx_fit->px(), trail_before_vtx_fit->py(), trail_before_vtx_fit->pz() );
+    }
+
+    // Invariant mass after the fit to common vertex
+    mass_after_fit = -1.;
+    if ( conv.conversionVertex().refittedTracks().size() >=2 ) {
+      const reco::Track lead_after_vtx_fit = conv.conversionVertex().refittedTracks().at(ilead);
+      const reco::Track trail_after_vtx_fit = conv.conversionVertex().refittedTracks().at(itrail);
+      mass_after_fit = mee( lead_after_vtx_fit.px(), lead_after_vtx_fit.py(), lead_after_vtx_fit.pz(),
+			    trail_after_vtx_fit.px(), trail_after_vtx_fit.py(), trail_after_vtx_fit.pz());
+      // Difference in expeted hits
+      delta_expected_nhits_inner =
+	lead_after_vtx_fit.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS)
+	- trail_after_vtx_fit.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
+    }
+    
     // Hits prior to vertex
     lead_nhits_before_vtx  = conv.nHitsBeforeVtx().size() > 1 ? conv.nHitsBeforeVtx().at(ilead) : 0;
     trail_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ? conv.nHitsBeforeVtx().at(itrail) : 0;
-    float max = conv.nHitsBeforeVtx().at(0) > conv.nHitsBeforeVtx().at(1) ? 
-      conv.nHitsBeforeVtx().at(0) : 
-      conv.nHitsBeforeVtx().at(1);
-    max_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ? max : 0;
-    sum_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ? 
+    max_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ?
+      ( conv.nHitsBeforeVtx().at(0) > conv.nHitsBeforeVtx().at(1) ?
+	conv.nHitsBeforeVtx().at(0) :
+	conv.nHitsBeforeVtx().at(1) ) : 0;
+    sum_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ?
       conv.nHitsBeforeVtx().at(0) +
       conv.nHitsBeforeVtx().at(1) : 0;
-    delta_expected_nhits_inner = 
-      lead_after_vtx_fit.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS)
-      - trail_after_vtx_fit.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
-
-    // Opening angle
-    delta_cot_from_Pin = 1. / tan(trail_Pin.theta()) - 1. / tan(lead_Pin.theta());
-
+    
     // Attempt to match conversion track to electron
     matched_lead = edm::RefToBase<reco::Track>();
     matched_trail = edm::RefToBase<reco::Track>();
-    for ( uint itrk = 0; itrk < conv.tracks().size(); itrk++ ) {
+    for ( uint itrk = 0; itrk < conv.tracks().size(); ++itrk ) {
 
       edm::RefToBase<reco::Track> trk = conv.tracks()[itrk];
       if ( trk.isNull() ) { continue; }
       
       reco::GsfTrackRef gsf = ele.gsfTrack();
       if ( gsf.isNull() ) { continue; }
-      
+
       if ( gsf.id() == trk.id() && gsf.key() == trk.key() )  { 
-	if ( (int)itrk == ilead ) { matched_lead = trk; matched = true; }
-	if ( (int)itrk == itrail ) { matched_trail = trk; matched = true; }
+	if ( (int)itrk == ilead ) {
+	  matched_lead = trk;
+	  matched = true;
+	}
+	if ( (int)itrk == itrail ) {
+	  matched_trail = trk;
+	  matched = true;
+	}
       }
       
     } // track loop
