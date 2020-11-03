@@ -12,12 +12,15 @@
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 
+#include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "TrackingTools/IPTools/interface/IPTools.h"
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "DataFormats/EgammaCandidates/interface/Conversion.h"
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
 #include <limits>
 #include <algorithm>
@@ -40,6 +43,8 @@ public:
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
     pf_mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("pfmvaId") )},
     vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
+    conversions_{ consumes<edm::View<reco::Conversion> > ( cfg.getParameter<edm::InputTag>("lowptConversions") )},
+    beamSpot_{ consumes<reco::BeamSpot> ( cfg.getParameter<edm::InputTag>("beamSpot") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
     dr_cleaning_{cfg.getParameter<double>("drForCleaning")},
@@ -63,6 +68,50 @@ public:
   void produce(edm::StreamID, edm::Event&, const edm::EventSetup&) const override;
 
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
+
+  bool matchToConversionTracks(const edm::Handle<reco::BeamSpot>& beamSpot,
+			       const edm::Handle<edm::View<reco::Conversion> >& conversions,
+			       const pat::Electron& ele,
+			       edm::RefToBase<reco::Track>& matched_lead,					     
+			       edm::RefToBase<reco::Track>& matched_trail
+			       ) const;
+
+  bool matchToConversionTracks(const edm::Handle<reco::BeamSpot>& beamSpot,
+			       const edm::Handle<edm::View<reco::Conversion> >& conversions,
+			       const pat::Electron& ele,
+			       // quality
+			       bool& valid,
+			       float& chi2prob,
+			       bool& quality_high_purity,
+			       bool& quality_high_efficiency,
+			       // tracks
+			       uint& ntracks,
+			       float& min_trk_pt,
+			       int& ilead,
+			       int& itrail,
+			       // displacement
+			       float& l_xy,
+			       float& vtx_radius,
+			       // invariant mass
+			       float& mass_from_conv,
+			       float& mass_from_Pin,
+			       float& mass_before_fit,
+			       float& mass_after_fit,
+			       // hits before vertex
+			       uint& lead_nhits_before_vtx,
+			       uint& trail_nhits_before_vtx,
+			       uint& max_nhits_before_vtx,
+			       uint& sum_nhits_before_vtx,
+			       int& delta_expected_nhits_inner,
+			       // opening angle
+			       float& delta_cot_from_Pin,
+			       // matching
+			       edm::RefToBase<reco::Track>& matched_lead,
+			       edm::RefToBase<reco::Track>& matched_trail
+			       ) const;
+
+  float mee(float ipx1, float ipy1, float ipz1, 
+	    float ipx2, float ipy2, float ipz2) const;
   
 private:
   const edm::EDGetTokenT<pat::MuonCollection> triggerMuons_;
@@ -73,6 +122,8 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<float>> mvaId_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> pf_mvaId_src_;
   const edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
+  const edm::EDGetTokenT<edm::View<reco::Conversion> > conversions_;
+  const edm::EDGetTokenT<reco::BeamSpot> beamSpot_;
   const double drTrg_cleaning_;
   const double dzTrg_cleaning_;
   const double dr_cleaning_;
@@ -113,6 +164,11 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   edm::Handle<reco::VertexCollection> vertexHandle;
   evt.getByToken(vertexSrc_, vertexHandle);
   const reco::Vertex & PV = vertexHandle->front();
+  //
+  edm::Handle<edm::View<reco::Conversion> > conversions;
+  evt.getByToken(conversions_, conversions);
+  edm::Handle<reco::BeamSpot> beamSpot;
+  evt.getByToken(beamSpot_, beamSpot);
 
   // output
   std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
@@ -221,6 +277,14 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    // apply conversion veto?
    if (!ele.passConversionVeto()) continue;
 
+   // Match to tracks in "gsfTracksOpenConversions" collection
+   edm::RefToBase<reco::Track> matched_lead;
+   edm::RefToBase<reco::Track> matched_trail;
+   bool matched = matchToConversionTracks(beamSpot,conversions,ele,matched_lead,matched_trail);
+   ele.addUserInt("isConversion", matched?1:0);
+   ele.addUserInt("convLeadTrack", matched_lead.isNonnull()?1:0);
+   ele.addUserInt("convTrailTrack", matched_trail.isNonnull()?1:0);
+					     
    //assigning BDT values
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
@@ -306,6 +370,199 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.put(std::move(trans_ele_out),"SelectedTransientElectrons");
 }
 
+bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& beamSpot,
+					     const edm::Handle<edm::View<reco::Conversion> >& conversions,
+					     const pat::Electron& ele,
+					     edm::RefToBase<reco::Track>& matched_lead,
+					     edm::RefToBase<reco::Track>& matched_trail
+					     ) const {
+
+  // quality
+  bool valid = false;
+  float chi2prob = 0.;
+  bool quality_high_purity = false;
+  bool quality_high_efficiency = false;
+  // tracks
+  uint ntracks = 0;
+  float min_trk_pt = 0.;
+  int ilead = 0;
+  int itrail = 0;
+  // displacement
+  float l_xy = 0.;
+  float vtx_radius = 0.;
+  // invariant mass
+  float mass_from_conv = 0.;
+  float mass_from_Pin = 0.;
+  float mass_before_fit = 0.;
+  float mass_after_fit = 0.;
+  // hits before vertex
+  uint lead_nhits_before_vtx = 0;
+  uint trail_nhits_before_vtx = 0;
+  uint max_nhits_before_vtx = 0;
+  uint sum_nhits_before_vtx = 0;
+  int delta_expected_nhits_inner = 0;
+  // opening angle
+  float delta_cot_from_Pin = 0.;
+
+  return matchToConversionTracks(beamSpot,conversions,ele, //
+				 valid,chi2prob,quality_high_purity,quality_high_efficiency, // quality
+				 ntracks,min_trk_pt,ilead,itrail, // tracks
+				 l_xy,vtx_radius, // displacement
+				 mass_from_conv,mass_from_Pin,mass_before_fit,mass_after_fit, // invariant mass
+				 lead_nhits_before_vtx,trail_nhits_before_vtx, // ...
+				 max_nhits_before_vtx,sum_nhits_before_vtx, // ...
+				 delta_expected_nhits_inner, // hits before vertex
+				 delta_cot_from_Pin, // opening angle
+				 matched_lead,matched_trail // matching
+				 );
+
+}
+
+bool ElectronMerger::matchToConversionTracks(const edm::Handle<reco::BeamSpot>& beamSpot,
+					     const edm::Handle<edm::View<reco::Conversion> >& conversions,
+					     const pat::Electron& ele,
+					     // quality
+					     bool& valid,
+					     float& chi2prob,
+					     bool& quality_high_purity,
+					     bool& quality_high_efficiency,
+					     // tracks
+					     uint& ntracks,
+					     float& min_trk_pt,
+					     int& ilead,
+					     int& itrail,
+					     // displacement
+					     float& l_xy,
+					     float& vtx_radius,
+					     // invariant mass
+					     float& mass_from_conv,
+					     float& mass_from_Pin,
+					     float& mass_before_fit,
+					     float& mass_after_fit,
+					     // hits before vertex
+					     uint& lead_nhits_before_vtx,
+					     uint& trail_nhits_before_vtx,
+					     uint& max_nhits_before_vtx,
+					     uint& sum_nhits_before_vtx,
+					     int& delta_expected_nhits_inner,
+					     // opening angle
+					     float& delta_cot_from_Pin,
+					     // matching
+					     edm::RefToBase<reco::Track>& matched_lead,
+					     edm::RefToBase<reco::Track>& matched_trail
+					     ) const {
+  
+  bool matched = false;
+
+  // Valid handles?
+  if ( !(beamSpot.isValid()) ) { return false; }
+  if ( !(conversions.isValid()) ) { return false; }
+  
+  // Iterate through conversions and calculate quantities (requirement from Nancy)
+  for ( const auto& conv : *conversions ) {
+    
+    // Filter
+    if ( conv.tracks().size() < 2 ) { continue; }
+
+    // Quality
+    valid = conv.conversionVertex().isValid(); // (=true)
+    chi2prob = ChiSquaredProbability(conv.conversionVertex().chi2(),conv.conversionVertex().ndof()); // (<0.005)
+    quality_high_purity = conv.quality(reco::Conversion::highPurity); // (=true)
+    quality_high_efficiency = conv.quality(reco::Conversion::highEfficiency); // (none)
+
+    // Tracks
+    ntracks = conv.tracks().size(); // (=2)
+    min_trk_pt = -1.; // (>0.5)
+    for ( const auto& trk : conv.tracks() ) {
+      if ( min_trk_pt < 0. || trk->pt() < min_trk_pt ) { min_trk_pt = trk->pt(); }
+    }
+    ilead = -1; itrail = -1;
+    edm::RefToBase<reco::Track> trk1 = conv.tracks().front();
+    edm::RefToBase<reco::Track> trk2 = conv.tracks().back();
+    if      ( conv.tracks().size() == 2 && trk1->pt() > trk2->pt() ) { ilead = 0; itrail = 1; }
+    else if ( conv.tracks().size() == 2 && trk2->pt() > trk2->pt() ) { ilead = 1; itrail = 0; }
+
+    // Transverse displacement (with respect to beamspot) and vertex radius
+    math::XYZVectorF p_refitted =  conv.refittedPairMomentum();
+    float dx = conv.conversionVertex().x() - beamSpot->x0();
+    float dy = conv.conversionVertex().y() - beamSpot->y0();
+    l_xy = (p_refitted.x()*dx + p_refitted.y()*dy) / p_refitted.rho();
+    vtx_radius = sqrt(conv.conversionVertex().position().perp2()); // (1.5<r<4.)
+
+    // invariant mass from track pair from conversion
+    mass_from_conv = conv.pairInvariantMass();
+    
+    // Invariant mass from Pin before fit to common vertex 
+    math::XYZVectorF lead_Pin = conv.tracksPin().at(ilead);
+    math::XYZVectorF trail_Pin = conv.tracksPin().at(itrail);
+    mass_from_Pin = mee( lead_Pin.x(), lead_Pin.y(), lead_Pin.z(),
+			 trail_Pin.x(), trail_Pin.y(), trail_Pin.z() );
+    
+    // Invariant mass before fit to common vertex
+    edm::RefToBase<reco::Track> lead_before_vtx_fit = conv.tracks().at(ilead);
+    edm::RefToBase<reco::Track> trail_before_vtx_fit = conv.tracks().at(itrail);
+    mass_before_fit = mee( lead_before_vtx_fit->px(), lead_before_vtx_fit->py(), lead_before_vtx_fit->pz(),
+			   trail_before_vtx_fit->px(), trail_before_vtx_fit->py(), trail_before_vtx_fit->pz() );
+    
+    // Invariant mass after the fit to common vertex
+    const reco::Track lead_after_vtx_fit  = conv.conversionVertex().refittedTracks().at(ilead);
+    const reco::Track trail_after_vtx_fit = conv.conversionVertex().refittedTracks().at(itrail);
+    mass_after_fit = mee( lead_after_vtx_fit.px(), lead_after_vtx_fit.py(), lead_after_vtx_fit.pz(),
+			  trail_after_vtx_fit.px(), trail_after_vtx_fit.py(), trail_after_vtx_fit.pz());
+
+    // Hits prior to vertex
+    lead_nhits_before_vtx  = conv.nHitsBeforeVtx().size() > 1 ? conv.nHitsBeforeVtx().at(ilead) : 0;
+    trail_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ? conv.nHitsBeforeVtx().at(itrail) : 0;
+    float max = conv.nHitsBeforeVtx().at(0) > conv.nHitsBeforeVtx().at(1) ? 
+      conv.nHitsBeforeVtx().at(0) : 
+      conv.nHitsBeforeVtx().at(1);
+    max_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ? max : 0;
+    sum_nhits_before_vtx = conv.nHitsBeforeVtx().size() > 1 ? 
+      conv.nHitsBeforeVtx().at(0) +
+      conv.nHitsBeforeVtx().at(1) : 0;
+    delta_expected_nhits_inner = 
+      lead_after_vtx_fit.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS)
+      - trail_after_vtx_fit.hitPattern().numberOfLostHits(reco::HitPattern::MISSING_INNER_HITS);
+
+    // Opening angle
+    delta_cot_from_Pin = 1. / tan(trail_Pin.theta()) - 1. / tan(lead_Pin.theta());
+
+    // Attempt to match conversion track to electron
+    matched_lead = edm::RefToBase<reco::Track>();
+    matched_trail = edm::RefToBase<reco::Track>();
+    for ( uint itrk = 0; itrk < conv.tracks().size(); itrk++ ) {
+
+      edm::RefToBase<reco::Track> trk = conv.tracks()[itrk];
+      if ( trk.isNull() ) { continue; }
+      
+      reco::GsfTrackRef gsf = ele.gsfTrack();
+      if ( gsf.isNull() ) { continue; }
+      
+      if ( gsf.id() == trk.id() && gsf.key() == trk.key() )  { 
+	if ( (int)itrk == ilead ) { matched_lead = trk; matched = true; }
+	if ( (int)itrk == itrail ) { matched_trail = trk; matched = true; }
+      }
+      
+    } // track loop
+    
+  } // conversions loop
+
+  return matched;
+
+}
+
+float ElectronMerger::mee(float ipx1, float ipy1, float ipz1, 
+			  float ipx2, float ipy2, float ipz2) const {
+  const float  m = 0.000511;
+  const float px = ipx1+ipx2;
+  const float py = ipy1+ipy2;
+  const float pz = ipz1+ipz2;
+  const float p1 = ipx1*ipx1 + ipy1*ipy1 + ipz1*ipz1;
+  const float p2 = ipx2*ipx2 + ipy2*ipy2 + ipz2*ipz2;
+  const float  e = sqrt( p1 + m*m ) + sqrt( p2 + m*m );
+  const float mass = ( e*e - px*px - py*py - pz*pz );
+  return mass > 0. ? sqrt(mass) : -1.;
+}
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(ElectronMerger);
