@@ -221,6 +221,9 @@ electronsForAnalysis = cms.EDProducer(
   useGsfModeForP4 = cms.bool(False),
   sortOutputCollections = cms.bool(True),
   saveLowPtE = cms.bool(True),
+  # conversions
+  conversions = cms.InputTag('gsfTracksOpenConversions:gsfTracksOpenConversions'),
+  beamSpot = cms.InputTag("offlineBeamSpot"),
 )
 
 electronBParkTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
