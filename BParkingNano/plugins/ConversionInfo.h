@@ -11,19 +11,21 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 
 class ConversionInfo {
-
-public:
-
+  
+ public:
+  
   ConversionInfo() {;}
   ~ConversionInfo() {;}
-
+  
   void reset() { ConversionInfo dummy; *this = dummy; }
-
+  
+  bool wpOpen();  // Matched to any conversion (without selections)
   bool wpLoose(); // Nancy's baseline selections for conversions
   bool wpTight(); // Nancy's selection for analysis of conversions
-
-  void addExtraUserVars();
-
+  
+  void addUserVars(pat::Electron& ele); // adds minimal set of flags to electron userData
+  void addUserVarsExtra(pat::Electron& ele); // adds all variables to electron userData
+  
   static bool match(const edm::Handle<reco::BeamSpot>& beamSpot,
 		    const edm::Handle<edm::View<reco::Conversion> >& conversions,
 		    const pat::Electron& ele);
@@ -70,7 +72,8 @@ public:
   // opening angle
   float delta_cot_from_Pin = -1.;
 
-  // matched tracks
+  // match?
+  bool matched = false;
   edm::RefToBase<reco::Track> matched_lead;
   edm::RefToBase<reco::Track> matched_trail;
   

@@ -1,21 +1,93 @@
 #include "ConversionInfo.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+// Matched to any conversion (without selections)
+// 
+bool ConversionInfo::wpOpen() {
+  if ( matched ) { return true; }
+  else { return false; }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Nancy's baseline selections for conversions
+// Based on: https://github.com/CMSBParking/BParkingNANO/blob/b2664ed/BParkingNano/plugins/ConversionSelector.cc#L253-L300
 bool ConversionInfo::wpLoose() {
-  return true;
+  if ( wpOpen() &&
+       ntracks == 2 &&
+       valid == true &&
+       quality_high_purity == true &&
+       min_trk_pt > 0.5 &&
+       chi2prob > 0.0005 ) { return true; }
+  else { return false; }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Nancy's selection for analysis of conversions
+// Based on: slide 20 of https://indico.cern.ch/event/814402/contributions/3401312/
 bool ConversionInfo::wpTight() {
+  if ( wpLoose() &&
+       sum_nhits_before_vtx <= 1 &&
+       l_xy > 0. &&
+       // min_trk_pt > 1. &&
+       // vtx_radius < 4. &&
+       mass_from_conv > 0. && // sanity check
+       mass_from_conv < 0.05 ) { return true; }
+  else { return false; }
   return true;
 }
-    
+
 ////////////////////////////////////////////////////////////////////////////////
-//
-void ConversionInfo::addExtraUserVars() {
+// adds minimal set of flags to electron userData
+void ConversionInfo::addUserVars(pat::Electron& ele) {
+  ele.addUserInt("convOpen", this->matched?1:0);
+  ele.addUserInt("convLoose", this->wpLoose()?1:0);
+  ele.addUserInt("convTight", this->wpTight()?1:0);
+  ele.addUserInt("convLead", this->matched_lead.isNonnull()?1:0);
+  ele.addUserInt("convTrail", this->matched_trail.isNonnull()?1:0);
+  //ele.addUserInt("convExtra", 0);
+  if ( ele.hasUserInt("convExtra") == false ) { ele.addUserInt("convExtra", 0); }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// adds all variables to electron userData
+void ConversionInfo::addUserVarsExtra(pat::Electron& ele) {
+  
+  // Flag that indicates if extra variables are added to electron userData
+  ele.addUserInt("convExtra", 1, true); // overwrite
+  
+  // quality
+  ele.addUserInt("convValid", this->valid?1:0);
+  ele.addUserFloat("convChi2Prob", this->chi2prob);
+  ele.addUserInt("convQualityHighPurity", this->quality_high_purity?1:0);
+  ele.addUserInt("convQualityHighEff", this->quality_high_efficiency?1:0);
+  
+  // tracks
+  ele.addUserInt("convTracksN", this->ntracks);
+  ele.addUserFloat("convMinTrkPt", this->min_trk_pt);
+  ele.addUserInt("convLeadIdx", this->ilead);
+  ele.addUserInt("convTrailIdx", this->itrail);
+
+  // displacement
+  ele.addUserFloat("convLxy", this->l_xy);
+  ele.addUserFloat("convVtxRadius", this->vtx_radius);
+
+  // invariant mass
+  ele.addUserFloat("convMass", this->mass_from_conv);
+  ele.addUserFloat("convMassFromPin", this->mass_from_Pin);
+  ele.addUserFloat("convMassBeforeFit", this->mass_before_fit);
+  ele.addUserFloat("convMassAfterFit", this->mass_after_fit);
+
+  // hits before vertex
+  ele.addUserInt("convLeadNHitsBeforeVtx", this->lead_nhits_before_vtx);
+  ele.addUserInt("convTrailNHitsBeforeVtx", this->trail_nhits_before_vtx);
+  ele.addUserInt("convMaxNHitsBeforeVtx", this->max_nhits_before_vtx);
+  ele.addUserInt("convSumNHitsBeforeVtx", this->sum_nhits_before_vtx);
+  ele.addUserInt("convDeltaExpectedNHitsInner", this->delta_expected_nhits_inner);
+
+  // opening angle
+  ele.addUserFloat("convDeltaCotFromPin", this->delta_cot_from_Pin);
+
+} 
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -32,8 +104,6 @@ bool ConversionInfo::match(const edm::Handle<reco::BeamSpot>& beamSpot,
 			   const edm::Handle<edm::View<reco::Conversion> >& conversions,
 			   const pat::Electron& ele,
 			   ConversionInfo& info) {
-  
-  bool matched = false;
   
   // Valid handles?
   if ( !(beamSpot.isValid()) ) {
@@ -135,12 +205,12 @@ bool ConversionInfo::match(const edm::Handle<reco::BeamSpot>& beamSpot,
 
       if ( gsf.id() == trk.id() && gsf.key() == trk.key() )  { 
 	if ( (int)itrk == info.ilead ) {
+	  info.matched = true;
 	  info.matched_lead = trk;
-	  matched = true;
 	}
 	if ( (int)itrk == info.itrail ) {
+	  info.matched = true;
 	  info.matched_trail = trk;
-	  matched = true;
 	}
       }
       
@@ -148,7 +218,7 @@ bool ConversionInfo::match(const edm::Handle<reco::BeamSpot>& beamSpot,
     
   } // conversions loop
 
-  return matched;
+  return info.matched;
 
 }
 
