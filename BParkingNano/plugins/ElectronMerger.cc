@@ -290,7 +290,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ConversionInfo::match(beamSpot,conversions,ele,info);
    info.addUserVars(ele);
    if ( addUserVarsExtra_ ) { info.addUserVarsExtra(ele); }
-   if (/*debug && */info.matched) { 
+   if (debug && info.wpOpen()) { 
      std::cout << "[ElectronMerger::produce]"
 	       << " iele: " << iele
 	       << ", convOpen: " << (info.wpOpen()?1:0)
