@@ -57,7 +57,8 @@ public:
     use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
     use_regression_for_p4_{cfg.getParameter<bool>("useRegressionModeForP4")},
     sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")},
-    saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")}
+    saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")},
+    addUserVarsExtra_{cfg.getParameter<bool>("addUserVarsExtra")}
     {
        produces<pat::ElectronCollection>("SelectedElectrons");
        produces<TransientTrackCollection>("SelectedTransientElectrons");  
@@ -93,6 +94,7 @@ private:
   const bool use_regression_for_p4_;
   const bool sortOutputCollections_;
   const bool saveLowPtE_;
+  const bool addUserVarsExtra_;
 
 };
 
@@ -183,6 +185,12 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("chargeMode", ele.charge());
    ele.addUserInt("isPFoverlap", 0);
 
+   // Attempt to match electrons to conversions in "gsfTracksOpenConversions" collection (NO MATCHES EXPECTED)
+   ConversionInfo info;
+   ConversionInfo::match(beamSpot,conversions,ele,info);
+   info.addUserVars(ele);
+   if ( addUserVarsExtra_ ) { info.addUserVarsExtra(ele); }
+
    pfEtaPhi.push_back(std::pair<float, float>(ele.eta(), ele.phi()));
    pfVz.push_back(ele.vz());
    ele_out       -> emplace_back(ele);
@@ -233,24 +241,6 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    // apply conversion veto?
    if (!ele.passConversionVeto()) continue;
 
-   // Match to tracks in "gsfTracksOpenConversions" collection
-   ConversionInfo info;
-   bool matched = ConversionInfo::match(beamSpot,conversions,ele,info);
-   ele.addUserInt("isConversion", matched?1:0);
-   ele.addUserInt("convLeadTrack", info.matched_lead.isNonnull()?1:0);
-   ele.addUserInt("convTrailTrack", info.matched_trail.isNonnull()?1:0);
-   info.addExtraUserVars();
-
-   if (/*debug && */matched) {
-     std::cout << "[ElectronMerger::produce]"
-	       << " event " << (evt.id()).event()
-	       << ", electron: " << iele
-	       << ", isConversion: " << (matched?1:0)
-	       << ", convLeadTrack: " << (info.matched_lead.isNonnull()?1:0)
-	       << ", convTrailTrack: " << (info.matched_trail.isNonnull()?1:0)
-	       << std::endl;
-   }
-
    //assigning BDT values
    edm::Ref<pat::ElectronCollection> ref(lowpt,iele);
    float mva_id = float((*mvaId)[ref]);
@@ -294,6 +284,22 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
    ele.addUserFloat("pfmvaId", 20.);
+
+   // Attempt to match electrons to conversions in "gsfTracksOpenConversions" collection
+   ConversionInfo info;
+   ConversionInfo::match(beamSpot,conversions,ele,info);
+   info.addUserVars(ele);
+   if ( addUserVarsExtra_ ) { info.addUserVarsExtra(ele); }
+   if (/*debug && */info.matched) { 
+     std::cout << "[ElectronMerger::produce]"
+	       << " iele: " << iele
+	       << ", convOpen: " << (info.wpOpen()?1:0)
+	       << ", convLoose: " << (info.wpLoose()?1:0)
+	       << ", convTight: " << (info.wpTight()?1:0)
+	       << ", convLead: " << int(info.matched_lead.isNonnull()?info.matched_lead.key():-1)
+	       << ", convTrail: " << int(info.matched_trail.isNonnull()?info.matched_trail.key():-1)
+	       << std::endl;
+   }
 
    ele_out       -> emplace_back(ele);
   }
