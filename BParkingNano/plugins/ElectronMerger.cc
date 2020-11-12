@@ -18,6 +18,9 @@
 
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "DataFormats/EgammaCandidates/interface/Conversion.h"
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "ConversionInfo.h"
 
 #include <limits>
 #include <algorithm>
@@ -40,6 +43,8 @@ public:
     mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("mvaId") )},
     pf_mvaId_src_{ consumes<edm::ValueMap<float>>( cfg.getParameter<edm::InputTag>("pfmvaId") )},
     vertexSrc_{ consumes<reco::VertexCollection> ( cfg.getParameter<edm::InputTag>("vertexCollection") )},
+    conversions_{ consumes<edm::View<reco::Conversion> > ( cfg.getParameter<edm::InputTag>("conversions") )},
+    beamSpot_{ consumes<reco::BeamSpot> ( cfg.getParameter<edm::InputTag>("beamSpot") )},
     drTrg_cleaning_{cfg.getParameter<double>("drForCleaning_wrtTrgMuon")},
     dzTrg_cleaning_{cfg.getParameter<double>("dzForCleaning_wrtTrgMuon")},
     dr_cleaning_{cfg.getParameter<double>("drForCleaning")},
@@ -52,7 +57,8 @@ public:
     use_gsf_mode_for_p4_{cfg.getParameter<bool>("useGsfModeForP4")},
     use_regression_for_p4_{cfg.getParameter<bool>("useRegressionModeForP4")},
     sortOutputCollections_{cfg.getParameter<bool>("sortOutputCollections")},
-    saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")}
+    saveLowPtE_{cfg.getParameter<bool>("saveLowPtE")},
+    addUserVarsExtra_{cfg.getParameter<bool>("addUserVarsExtra")}
     {
        produces<pat::ElectronCollection>("SelectedElectrons");
        produces<TransientTrackCollection>("SelectedTransientElectrons");  
@@ -73,6 +79,8 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<float>> mvaId_src_;
   const edm::EDGetTokenT<edm::ValueMap<float>> pf_mvaId_src_;
   const edm::EDGetTokenT<reco::VertexCollection> vertexSrc_;
+  const edm::EDGetTokenT<edm::View<reco::Conversion> > conversions_;
+  const edm::EDGetTokenT<reco::BeamSpot> beamSpot_;
   const double drTrg_cleaning_;
   const double dzTrg_cleaning_;
   const double dr_cleaning_;
@@ -86,6 +94,7 @@ private:
   const bool use_regression_for_p4_;
   const bool sortOutputCollections_;
   const bool saveLowPtE_;
+  const bool addUserVarsExtra_;
 
 };
 
@@ -113,6 +122,11 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   edm::Handle<reco::VertexCollection> vertexHandle;
   evt.getByToken(vertexSrc_, vertexHandle);
   const reco::Vertex & PV = vertexHandle->front();
+  //
+  edm::Handle<edm::View<reco::Conversion> > conversions;
+  evt.getByToken(conversions_, conversions);
+  edm::Handle<reco::BeamSpot> beamSpot;
+  evt.getByToken(beamSpot_, beamSpot);
 
   // output
   std::unique_ptr<pat::ElectronCollection>  ele_out      (new pat::ElectronCollection );
@@ -170,6 +184,12 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("pfmvaId", pf_mva_id);
    ele.addUserFloat("chargeMode", ele.charge());
    ele.addUserInt("isPFoverlap", 0);
+
+   // Attempt to match electrons to conversions in "gsfTracksOpenConversions" collection (NO MATCHES EXPECTED)
+   ConversionInfo info;
+   ConversionInfo::match(beamSpot,conversions,ele,info);
+   info.addUserVars(ele);
+   if ( addUserVarsExtra_ ) { info.addUserVarsExtra(ele); }
 
    pfEtaPhi.push_back(std::pair<float, float>(ele.eta(), ele.phi()));
    pfVz.push_back(ele.vz());
@@ -265,6 +285,22 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("mvaId", mva_id);
    ele.addUserFloat("pfmvaId", 20.);
 
+   // Attempt to match electrons to conversions in "gsfTracksOpenConversions" collection
+   ConversionInfo info;
+   ConversionInfo::match(beamSpot,conversions,ele,info);
+   info.addUserVars(ele);
+   if ( addUserVarsExtra_ ) { info.addUserVarsExtra(ele); }
+   if (debug && info.wpOpen()) { 
+     std::cout << "[ElectronMerger::produce]"
+	       << " iele: " << iele
+	       << ", convOpen: " << (info.wpOpen()?1:0)
+	       << ", convLoose: " << (info.wpLoose()?1:0)
+	       << ", convTight: " << (info.wpTight()?1:0)
+	       << ", convLead: " << int(info.matched_lead.isNonnull()?info.matched_lead.key():-1)
+	       << ", convTrail: " << int(info.matched_trail.isNonnull()?info.matched_trail.key():-1)
+	       << std::endl;
+   }
+
    ele_out       -> emplace_back(ele);
   }
 }
@@ -305,7 +341,6 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   evt.put(std::move(ele_out),      "SelectedElectrons");
   evt.put(std::move(trans_ele_out),"SelectedTransientElectrons");
 }
-
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(ElectronMerger);
