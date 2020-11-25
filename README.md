@@ -13,7 +13,7 @@ git cms-init
 
 ## Add low-pT energy ID and regression
 
-The ID model is `2020Sept15` (depth=13, ntrees=1000).
+The ID model is `2020Sept15` (depth=15, ntrees=1000).
 
 ```shell
 git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2020Sept15
