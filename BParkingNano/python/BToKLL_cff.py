@@ -9,7 +9,7 @@ electronPairsForKee = cms.EDProducer(
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
-        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03 && userInt("nlowpt")<2'
+        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03' #&& userInt("nlowpt")<2'
         
     ),
     postVtxSelection = cms.string('userFloat("sv_chi2") < 998 && userFloat("sv_prob") > 1.e-5'),
@@ -17,7 +17,8 @@ electronPairsForKee = cms.EDProducer(
 
 BToKee = cms.EDProducer(
     'BToKLLBuilder',
-    dileptons = cms.InputTag('electronPairsForKee'),
+    dileptons = cms.InputTag('electronPairsForKee', 'SelectedDiLeptons'),
+    dileptonKinVtxs = cms.InputTag('electronPairsForKee', 'SelectedDiLeptonKinVtxs'),
     leptonTransientTracks = electronPairsForKee.transientTracksSrc,
     kaons = cms.InputTag('tracksBPark', 'SelectedTracks'),
     kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
@@ -26,6 +27,7 @@ BToKee = cms.EDProducer(
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
+    trkD0CACut = cms.double(0.06),
     preVtxSelection = cms.string(
         'pt > 1.75 && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
@@ -48,7 +50,8 @@ muonPairsForKmumu = cms.EDProducer(
 
 BToKmumu = cms.EDProducer(
     'BToKLLBuilder',
-    dileptons = cms.InputTag('muonPairsForKmumu'),
+    dileptons = cms.InputTag('muonPairsForKmumu', 'SelectedDiLeptons'),
+    dileptonKinVtxs = cms.InputTag('muonPairsForKmumu', 'SelectedDiLeptonKinVtxs'),
     leptonTransientTracks = muonPairsForKmumu.transientTracksSrc,
     kaons = BToKee.kaons,
     kaonsTransientTracks = BToKee.kaonsTransientTracks,
@@ -58,6 +61,7 @@ BToKmumu = cms.EDProducer(
     kaonSelection = cms.string(''),
     isoTracksSelection = BToKee.isoTracksSelection,
     # This in principle can be different between electrons and muons
+    trkD0CACut = cms.double(0.06),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
         '&& mass < 7. && mass > 4.'
@@ -119,6 +123,7 @@ BToKeeTable = cms.EDProducer(
         fit_k_pt = ufloat('fitted_k_pt'),
         fit_k_eta = ufloat('fitted_k_eta'),
         fit_k_phi = ufloat('fitted_k_phi'),
+        k_svip = ufloat('k_svip'),
         l1_iso03 = ufloat('l1_iso03'),
         l1_iso04 = ufloat('l1_iso04'),
         l2_iso03 = ufloat('l2_iso03'),

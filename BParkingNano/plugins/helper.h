@@ -11,6 +11,12 @@
 #include "DataFormats/GeometryVector/interface/PV3DBase.h"
 #include "Math/LorentzVector.h"
 
+#include "TrackingTools/GeomPropagators/interface/AnalyticalImpactPointExtrapolator.h"
+#include "RecoVertex/KinematicFitPrimitives/interface/RefCountedKinematicTree.h"
+#include "RecoVertex/VertexPrimitives/interface/ConvertToFromReco.h"
+#include "TrackingTools/IPTools/interface/IPTools.h"
+#include "TVector3.h"
+
 #include <vector>
 #include <algorithm>
 #include <limits>
@@ -109,5 +115,20 @@ inline bool track_to_lepton_match(edm::Ptr<reco::Candidate> l_ptr, auto iso_trac
   return false;
 }
 
- 
+inline std::pair<bool, Measurement1D> absoluteImpactParameter(
+                 const TrajectoryStateOnSurface& tsos,
+                 RefCountedKinematicVertex vertex,
+                 VertexDistance& distanceComputer){
+  if (!tsos.isValid()) {
+      return std::pair<bool, Measurement1D>(false, Measurement1D(0., 0.));
+  }
+  GlobalPoint refPoint = tsos.globalPosition();
+  GlobalError refPointErr = tsos.cartesianError().position();
+  GlobalPoint vertexPosition = vertex->vertexState().position();
+  GlobalError vertexPositionErr = RecoVertex::convertError(vertex->vertexState().error());
+  return std::pair<bool, Measurement1D>(
+                                        true,
+                                        distanceComputer.distance(VertexState(vertexPosition, vertexPositionErr), VertexState(refPoint, refPointErr)));
+}
+
 #endif

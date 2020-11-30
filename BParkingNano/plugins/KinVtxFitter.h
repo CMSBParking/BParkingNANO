@@ -50,6 +50,10 @@ public:
     return fitted_state_;
   }
 
+  const RefCountedKinematicVertex fitted_refvtx() const {
+    return fitted_vtx_;
+  }
+
   const math::PtEtaPhiMLorentzVector fitted_p4() const { 
     return math::PtEtaPhiMLorentzVector(
       fitted_state_.globalMomentum().perp(), 

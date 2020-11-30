@@ -6,6 +6,10 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include <vector>
 #include <memory>
@@ -32,13 +36,16 @@ public:
     pre_vtx_selection_{cfg.getParameter<std::string>("preVtxSelection")},
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     dileptons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("dileptons") )},
+    dileptons_kinVtxs_{consumes<std::vector<KinVtxFitter> >( cfg.getParameter<edm::InputTag>("dileptonKinVtxs") )},
     leptons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("leptonTransientTracks") )},
     kaons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("kaons") )},
     kaons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("kaonsTransientTracks") )},
     isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
-    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
+    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )},
+    trkD0CACut_(cfg.getParameter<double>("trkD0CACut"))
+    {
       produces<pat::CompositeCandidateCollection>();
     }
 
@@ -54,6 +61,7 @@ private:
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_; // cut on the di-lepton after the SV fit
 
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> dileptons_;
+  const edm::EDGetTokenT<std::vector<KinVtxFitter> > dileptons_kinVtxs_;
   const edm::EDGetTokenT<TransientTrackCollection> leptons_ttracks_;
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> kaons_;
   const edm::EDGetTokenT<TransientTrackCollection> kaons_ttracks_;
@@ -63,14 +71,20 @@ private:
   const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
+
+  const double trkD0CACut_;
+
 };
 
-void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &iSetup) const {
 
   //input
   edm::Handle<pat::CompositeCandidateCollection> dileptons;
   evt.getByToken(dileptons_, dileptons);
   
+  edm::Handle<std::vector<KinVtxFitter> > dileptons_kinVtxs;
+  evt.getByToken(dileptons_kinVtxs_, dileptons_kinVtxs);
+
   edm::Handle<TransientTrackCollection> leptons_ttracks;
   evt.getByToken(leptons_ttracks_, leptons_ttracks);
 
@@ -82,6 +96,13 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
 
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
+
+  edm::ESHandle<MagneticField> fieldHandle;
+  iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
+  const MagneticField *fMagneticField = fieldHandle.product();
+  AnalyticalImpactPointExtrapolator extrapolator(fMagneticField);  
+
+  VertexDistance3D a3d;
 
   //for isolation
   edm::Handle<pat::PackedCandidateCollection> iso_tracks;
@@ -135,7 +156,13 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       // TODO add meaningful variables
       
       if( !pre_vtx_selection_(cand) ) continue;
-    
+   
+      // kaon 3D impact parameter from dilepton SV
+      TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(k_idx).impactPointState(), dileptons_kinVtxs->at(ll_idx).fitted_vtx());
+      std::pair<bool,Measurement1D> cur3DIP = absoluteImpactParameter(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), a3d);
+      float svip = cur3DIP.second.value(); 
+      if (svip > trkD0CACut_) continue;
+
       KinVtxFitter fitter(
         {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
         {l1_ptr->mass(), l2_ptr->mass(), K_MASS},
@@ -191,6 +218,8 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("fitted_k_eta" , fitter.daughter_p4(2).eta());
       cand.addUserFloat("fitted_k_phi" , fitter.daughter_p4(2).phi());
     
+      cand.addUserFloat("k_svip" , svip);
+
       if( !post_vtx_selection_(cand) ) continue;        
 
       //compute isolation

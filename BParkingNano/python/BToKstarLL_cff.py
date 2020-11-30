@@ -48,7 +48,7 @@ KstarToKPi = cms.EDProducer(
 ########################### B-> K* ll ##########################
 BToKstarMuMu = cms.EDProducer(
     'BToKstarLLBuilder',
-    dileptons = cms.InputTag('muonPairsForKstarMuMu'),
+    dileptons = cms.InputTag('muonPairsForKstarMuMu', 'SelectedDiLeptons'),
     leptonTransientTracks = muonPairsForKstarMuMu.transientTracksSrc,
     kstars = cms.InputTag('KstarToKPi'),
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
@@ -72,7 +72,7 @@ BToKstarMuMu = cms.EDProducer(
 
 BToKstarEE = cms.EDProducer(
     'BToKstarLLBuilder',
-    dileptons = cms.InputTag('electronPairsForKstarEE'),
+    dileptons = cms.InputTag('electronPairsForKstarEE', 'SelectedDiLeptons'),
     leptonTransientTracks = electronPairsForKstarEE.transientTracksSrc,
     kstars = cms.InputTag('KstarToKPi'),
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
