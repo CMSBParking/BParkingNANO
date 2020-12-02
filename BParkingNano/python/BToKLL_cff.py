@@ -27,7 +27,7 @@ BToKee = cms.EDProducer(
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
-    trkD0CACut = cms.double(0.06),
+    trkDCACut = cms.double(0.06),
     preVtxSelection = cms.string(
         'pt > 1.75 && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
@@ -61,7 +61,7 @@ BToKmumu = cms.EDProducer(
     kaonSelection = cms.string(''),
     isoTracksSelection = BToKee.isoTracksSelection,
     # This in principle can be different between electrons and muons
-    trkD0CACut = cms.double(0.06),
+    trkDCACut = cms.double(0.06),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
         '&& mass < 7. && mass > 4.'
