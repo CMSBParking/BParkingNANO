@@ -38,8 +38,7 @@ public:
     isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
     isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
-    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )}
-    {
+    beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
       produces<pat::CompositeCandidateCollection>();
     }
 
@@ -94,6 +93,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
 
   std::vector<int> used_lep1_id, used_lep2_id, used_trk_id;
 
+
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_val(new pat::CompositeCandidateCollection());
   
@@ -142,8 +142,6 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
         {LEP_SIGMA, LEP_SIGMA, K_SIGMA} //some small sigma for the lepton mass
         );
       if(!fitter.success()) continue; // hardcoded, but do we need otherwise?
-
-
       cand.setVertex( 
         reco::Candidate::Point( 
           fitter.fitted_vtx().x(),
@@ -247,7 +245,6 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("k_iso04" , k_iso04 );
       cand.addUserFloat("b_iso03" , b_iso03 );
       cand.addUserFloat("b_iso04" , b_iso04 );
-
 
       ret_val->push_back(cand);
     } // for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
