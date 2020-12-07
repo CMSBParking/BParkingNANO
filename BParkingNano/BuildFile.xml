@@ -1,4 +1,5 @@
 <use   name="TrackingTools/TransientTrack"/>
+<use   name="DataFormats/GsfTrackReco"/>
 <use   name="rootrflx"/>
 <export>
   <lib name="1"/>
