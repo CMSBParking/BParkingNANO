@@ -6,6 +6,10 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
 
 #include <vector>
 #include <memory>
@@ -35,9 +39,8 @@ public:
     leptons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("leptonTransientTracks") )},
     kaons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("kaons") )},
     kaons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("kaonsTransientTracks") )},
-    isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
-    isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
+    isotrkDCACut_(cfg.getParameter<double>("isotrkDCACut")),
     beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
       produces<pat::CompositeCandidateCollection>();
     }
@@ -58,14 +61,13 @@ private:
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> kaons_;
   const edm::EDGetTokenT<TransientTrackCollection> kaons_ttracks_;
 
-  const edm::EDGetTokenT<pat::PackedCandidateCollection> isotracksToken_;
-  const edm::EDGetTokenT<pat::PackedCandidateCollection> isolostTracksToken_;
-  const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
+  const StringCutObjectSelector<pat::CompositeCandidate> isotrk_selection_; 
+  const double isotrkDCACut_;
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
 };
 
-void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &iSetup) const {
 
   //input
   edm::Handle<pat::CompositeCandidateCollection> dileptons;
@@ -83,13 +85,15 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
 
-  //for isolation
-  edm::Handle<pat::PackedCandidateCollection> iso_tracks;
-  evt.getByToken(isotracksToken_, iso_tracks);
-  edm::Handle<pat::PackedCandidateCollection> iso_lostTracks;
-  evt.getByToken(isolostTracksToken_, iso_lostTracks);
-  unsigned int nTracks     = iso_tracks->size();
-  unsigned int totalTracks = nTracks + iso_lostTracks->size();
+  edm::ESHandle<MagneticField> fieldHandle;
+  iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
+  const MagneticField *fMagneticField = fieldHandle.product();
+  AnalyticalImpactPointExtrapolator extrapolator(fMagneticField);
+
+  edm::ESHandle<TransientTrackBuilder> theB ;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
+
+  VertexDistance3D a3d;  
 
   std::vector<int> used_lep1_id, used_lep2_id, used_trk_id;
 
@@ -202,41 +206,48 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       float k_iso04  = 0;
       float b_iso03  = 0;
       float b_iso04  = 0;
+      int n_isotrk = 0;
 
-      for( unsigned int iTrk=0; iTrk<totalTracks; ++iTrk ) {
-      
-        const pat::PackedCandidate & trk = (iTrk < nTracks) ? (*iso_tracks)[iTrk] : (*iso_lostTracks)[iTrk-nTracks];
-        // define selections for iso tracks (pT, eta, ...)
-        if( !isotrk_selection_(trk) ) continue;
-        // check if the track is the kaon
-        if (k_ptr->userCand("cand") ==  edm::Ptr<reco::Candidate> ( iso_tracks, iTrk ) ) continue;
-        // check if the track is one of the two leptons
-        if (track_to_lepton_match(l1_ptr, iso_tracks.id(), iTrk) || 
-            track_to_lepton_match(l2_ptr, iso_tracks.id(), iTrk) ) continue;
+      for(size_t trk_idx = 0; trk_idx < kaons->size(); ++trk_idx) {
+        edm::Ptr<pat::CompositeCandidate> trk_ptr(kaons, trk_idx);
+        if (trk_idx == k_idx) continue;
+        if( !isotrk_selection_(*trk_ptr) ) continue;
 
         // add to final particle iso if dR < cone
-        float dr_to_l1 = deltaR(cand.userFloat("fitted_l1_eta"), cand.userFloat("fitted_l1_phi"), trk.eta(), trk.phi());
-        float dr_to_l2 = deltaR(cand.userFloat("fitted_l2_eta"), cand.userFloat("fitted_l2_phi"), trk.eta(), trk.phi());
-        float dr_to_k  = deltaR(cand.userFloat("fitted_k_eta") , cand.userFloat("fitted_k_phi") , trk.eta(), trk.phi());
-        float dr_to_b  = deltaR(cand.userFloat("fitted_eta")   , cand.userFloat("fitted_phi") , trk.eta(), trk.phi());
+        float dr_to_l1 = deltaR(cand.userFloat("fitted_l1_eta"), cand.userFloat("fitted_l1_phi"), trk_ptr->eta(), trk_ptr->phi());
+        float dr_to_l2 = deltaR(cand.userFloat("fitted_l2_eta"), cand.userFloat("fitted_l2_phi"), trk_ptr->eta(), trk_ptr->phi());
+        float dr_to_k  = deltaR(cand.userFloat("fitted_k_eta") , cand.userFloat("fitted_k_phi") , trk_ptr->eta(), trk_ptr->phi());
+        float dr_to_b  = deltaR(cand.userFloat("fitted_eta")   , cand.userFloat("fitted_phi") , trk_ptr->eta(), trk_ptr->phi());
 
-        if (dr_to_l1 < 0.4){
-          l1_iso04 += trk.pt();
-          if ( dr_to_l1 < 0.3) l1_iso03 += trk.pt();
-        }
-        if (dr_to_l2 < 0.4){
-          l2_iso04 += trk.pt();
-          if (dr_to_l2 < 0.3)  l2_iso03 += trk.pt();
-        }
-        if (dr_to_k < 0.4){
-          k_iso04 += trk.pt();
-          if (dr_to_k < 0.3) k_iso03 += trk.pt();
-        }
-        if (dr_to_b < 0.4){
-          b_iso04 += trk.pt();
-          if (dr_to_b < 0.3) b_iso03 += trk.pt();
+        TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(trk_idx).impactPointState(), fitter.fitted_vtx());
+        std::pair<bool,Measurement1D> cur3DIP = absoluteImpactParameter(tsos, fitter.fitted_refvtx(), a3d);
+        float svip = cur3DIP.second.value();
+        if (cur3DIP.first && svip < isotrkDCACut_) {
+          bool isotrk_matched = false;
+          if (dr_to_l1 < 0.4){
+            isotrk_matched = true;
+            l1_iso04 += trk_ptr->pt();
+            if ( dr_to_l1 < 0.3) l1_iso03 += trk_ptr->pt();
+          }
+          if (dr_to_l2 < 0.4){
+            isotrk_matched = true;
+            l2_iso04 += trk_ptr->pt();
+            if (dr_to_l2 < 0.3)  l2_iso03 += trk_ptr->pt();
+          }
+          if (dr_to_k < 0.4){
+            isotrk_matched = true;
+            k_iso04 += trk_ptr->pt();
+            if (dr_to_k < 0.3) k_iso03 += trk_ptr->pt();
+          }
+          if (dr_to_b < 0.4){
+            isotrk_matched = true;
+            b_iso04 += trk_ptr->pt();
+            if (dr_to_b < 0.3) b_iso03 += trk_ptr->pt();
+          }
+          if (isotrk_matched) n_isotrk++;
         }
       }
+
       cand.addUserFloat("l1_iso03", l1_iso03);
       cand.addUserFloat("l1_iso04", l1_iso04);
       cand.addUserFloat("l2_iso03", l2_iso03);
@@ -245,6 +256,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("k_iso04" , k_iso04 );
       cand.addUserFloat("b_iso03" , b_iso03 );
       cand.addUserFloat("b_iso04" , b_iso04 );
+      cand.addUserInt("n_isotrk" , n_isotrk );
 
       ret_val->push_back(cand);
     } // for(size_t ll_idx = 0; ll_idx < dileptons->size(); ++ll_idx) {
