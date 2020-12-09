@@ -54,8 +54,8 @@ def nanoAOD_customizeTriggerBitsBPark(process):
     return process
 
 def nanoAOD_customizeBToKLL(process):
-    process.nanoBKeeSequence   = cms.Sequence( process.nanoBKeeSequence + BToKEESequence    + BToKeeTable   )
-    process.nanoBKMuMuSequence = cms.Sequence( BToKMuMuSequence + BToKmumuTable )
+    process.nanoBKeeSequence   = cms.Sequence( process.nanoBKeeSequence + BToKEESequence + BToKeeTable + BToKeeConstrVtxTable )
+    process.nanoBKMuMuSequence = cms.Sequence( BToKMuMuSequence + BToKmumuTable + BToKmumuConstrVtxTable)
     return process
 
 #three possibilities for K*LL

@@ -32,7 +32,20 @@ BToKee = cms.EDProducer(
         ),
     postVtxSelection = cms.string(
          'userInt("sv_OK") == 1 && userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
-    )
+    ),
+)
+
+BToKeeConstrVtx = cms.EDProducer(
+    'ConstrVtxBuilder',
+    leptonTransientTracks = electronPairsForKee.transientTracksSrc,
+    kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
+    bmesons = cms.InputTag('BToKee'),
+    beamSpot = cms.InputTag("offlineBeamSpot"),
+    preVtxSelection = cms.string(''),
+    postVtxSelection = cms.string(''),
+    jpsiLow = cms.double(2.45),
+    jpsiUp = cms.double(3.25),
+    psi2sUp = cms.double(3.85),
 )
 
 muonPairsForKmumu = cms.EDProducer(
@@ -66,7 +79,20 @@ BToKmumu = cms.EDProducer(
         'userInt("sv_OK") == 1 && userFloat("sv_prob") > 0.001 '
         '&& userFloat("fitted_cos_theta_2D") >= 0'
         '&& userFloat("fitted_mass") > 4.5 && userFloat("fitted_mass") < 6.'
-    )
+    ),
+)
+
+BToKmumuConstrVtx = cms.EDProducer(
+    'ConstrVtxBuilder',
+    leptonTransientTracks = muonPairsForKmumu.transientTracksSrc,
+    kaonsTransientTracks = BToKee.kaonsTransientTracks,
+    bmesons = cms.InputTag('BToKmumu'),
+    beamSpot = cms.InputTag("offlineBeamSpot"),
+    preVtxSelection = cms.string(''),
+    postVtxSelection = cms.string(''),
+    jpsiLow = cms.double(2.45),
+    jpsiUp = cms.double(3.25),
+    psi2sUp = cms.double(3.85),
 )
 
 BToKeeTable = cms.EDProducer(
@@ -119,6 +145,7 @@ BToKeeTable = cms.EDProducer(
         fit_k_pt = ufloat('fitted_k_pt'),
         fit_k_eta = ufloat('fitted_k_eta'),
         fit_k_phi = ufloat('fitted_k_phi'),
+        # isolation
         l1_iso03 = ufloat('l1_iso03'),
         l1_iso04 = ufloat('l1_iso04'),
         l2_iso03 = ufloat('l2_iso03'),
@@ -133,10 +160,56 @@ BToKeeTable = cms.EDProducer(
     )
 )
 
+BToKeeConstrVtxTable = cms.EDProducer(
+    'SimpleCompositeCandidateFlatTableProducer',
+    src = cms.InputTag("BToKeeConstrVtx"),
+    cut = cms.string(""),
+    name = cms.string("BToKEEConstrVtx"),
+    doc = cms.string("BToKEE Constr Vtx Variable"),
+    singleton=cms.bool(False),
+    extension=cms.bool(False),
+    variables=cms.PSet(
+        bIdx = uint('b_idx'),
+        # constrained vtx fit
+        sv_OK = uint('sv_OK'),
+        svprob = ufloat('sv_prob'),
+        l_xy = ufloat('l_xy'),
+        l_xy_unc = ufloat('l_xy_unc'),
+        vtx_x = ufloat('vtx_x'),
+        vtx_y = ufloat('vtx_y'),
+        vtx_z = ufloat('vtx_z'),
+        vtx_ex = ufloat('vtx_ex'), ## only saving diagonal elements of the cov matrix
+        vtx_ey = ufloat('vtx_ey'),
+        vtx_ez = ufloat('vtx_ez'),
+        mll_fullfit = ufloat('fitted_mll'),
+        fit_cos2D = ufloat('fitted_cos_theta_2D'),
+        fit_mass = ufloat('fitted_mass'),
+        fit_massErr = ufloat('fitted_massErr'),
+        fit_pt = ufloat('fitted_pt'),
+        fit_eta = ufloat('fitted_eta'),
+        fit_phi = ufloat('fitted_phi'),
+        #fit_l1_pt = ufloat('fitted_l1_pt'),
+        #fit_l1_eta = ufloat('fitted_l1_eta'),
+        #fit_l1_phi = ufloat('fitted_l1_phi'),
+        #fit_l2_pt = ufloat('fitted_l2_pt'),
+        #fit_l2_eta = ufloat('fitted_l2_eta'),
+        #fit_l2_phi = ufloat('fitted_l2_phi'),
+        fit_k_pt = ufloat('fitted_k_pt'),
+        fit_k_eta = ufloat('fitted_k_eta'),
+        fit_k_phi = ufloat('fitted_k_phi'),
+    )
+)
+
 BToKmumuTable = BToKeeTable.clone(
     src = cms.InputTag("BToKmumu"),
     name = cms.string("BToKMuMu"),
     doc = cms.string("BToKMuMu Variable")
+)
+
+BToKmumuConstrVtxTable = BToKeeConstrVtxTable.clone(
+    src = cms.InputTag("BToKmumuConstrVtx"),
+    name = cms.string("BToKMuMuConstrVtx"),
+    doc = cms.string("BToKMuMu Constr Vtx Variable")
 )
 
 
@@ -152,15 +225,15 @@ CountBToKmumu = CountBToKee.clone(
 
 
 BToKMuMuSequence = cms.Sequence(
-    (muonPairsForKmumu * BToKmumu)
+    (muonPairsForKmumu * BToKmumu * BToKmumuConstrVtx)
 )
 BToKEESequence = cms.Sequence(
-    (electronPairsForKee * BToKee)
+    (electronPairsForKee * BToKee * BToKeeConstrVtx)
 )
 
 BToKLLSequence = cms.Sequence(
-    (electronPairsForKee * BToKee) +
-    (muonPairsForKmumu * BToKmumu)
+    (electronPairsForKee * BToKee * BToKeeConstrVtx) +
+    (muonPairsForKmumu * BToKmumu * BToKmumuConstrVtx)
 )
-BToKLLTables = cms.Sequence(BToKeeTable + BToKmumuTable)
+BToKLLTables = cms.Sequence(BToKeeTable + BToKmumuTable + BToKeeConstrVtxTable + BToKmumuConstrVtxTable)
 
