@@ -39,8 +39,11 @@ public:
     leptons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("leptonTransientTracks") )},
     kaons_{consumes<pat::CompositeCandidateCollection>( cfg.getParameter<edm::InputTag>("kaons") )},
     kaons_ttracks_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("kaonsTransientTracks") )},
+    isotracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("tracks"))),
+    //isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
     isotrkDCACut_(cfg.getParameter<double>("isotrkDCACut")),
+    drIso_cleaning_(cfg.getParameter<double>("drIso_cleaning")),
     beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )} {
       produces<pat::CompositeCandidateCollection>();
     }
@@ -61,8 +64,11 @@ private:
   const edm::EDGetTokenT<pat::CompositeCandidateCollection> kaons_;
   const edm::EDGetTokenT<TransientTrackCollection> kaons_ttracks_;
 
+  const edm::EDGetTokenT<pat::PackedCandidateCollection> isotracksToken_;
+  //const edm::EDGetTokenT<pat::PackedCandidateCollection> isolostTracksToken_;
   const StringCutObjectSelector<pat::CompositeCandidate> isotrk_selection_; 
   const double isotrkDCACut_;
+  const double drIso_cleaning_;
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
 };
@@ -94,6 +100,12 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder",theB);
 
   VertexDistance3D a3d;  
+
+  //for isolation
+  edm::Handle<pat::PackedCandidateCollection> iso_tracks;
+  evt.getByToken(isotracksToken_, iso_tracks);
+  //edm::Handle<pat::PackedCandidateCollection> iso_lostTracks;
+  //evt.getByToken(isolostTracksToken_, iso_lostTracks);
 
   std::vector<int> used_lep1_id, used_lep2_id, used_trk_id;
 
@@ -209,20 +221,36 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       int n_isotrk = 0;
 
       for(size_t trk_idx = 0; trk_idx < kaons->size(); ++trk_idx) {
-        edm::Ptr<pat::CompositeCandidate> trk_ptr(kaons, trk_idx);
+        // corss clean kaon
         if (trk_idx == k_idx) continue;
+        edm::Ptr<pat::CompositeCandidate> trk_ptr(kaons, trk_idx);
+
         if( !isotrk_selection_(*trk_ptr) ) continue;
 
-        // add to final particle iso if dR < cone
-        float dr_to_l1 = deltaR(cand.userFloat("fitted_l1_eta"), cand.userFloat("fitted_l1_phi"), trk_ptr->eta(), trk_ptr->phi());
-        float dr_to_l2 = deltaR(cand.userFloat("fitted_l2_eta"), cand.userFloat("fitted_l2_phi"), trk_ptr->eta(), trk_ptr->phi());
-        float dr_to_k  = deltaR(cand.userFloat("fitted_k_eta") , cand.userFloat("fitted_k_phi") , trk_ptr->eta(), trk_ptr->phi());
-        float dr_to_b  = deltaR(cand.userFloat("fitted_eta")   , cand.userFloat("fitted_phi") , trk_ptr->eta(), trk_ptr->phi());
+        // cross clean PF (electron and muon)
+        unsigned int iTrk = trk_ptr->userInt("keyPacked");
+        if (track_to_lepton_match(l1_ptr, iso_tracks.id(), iTrk) || 
+            track_to_lepton_match(l2_ptr, iso_tracks.id(), iTrk) ) {
+          continue;
+        }
 
-        TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(trk_idx).impactPointState(), fitter.fitted_vtx());
-        std::pair<bool,Measurement1D> cur3DIP = absoluteImpactParameter(tsos, fitter.fitted_refvtx(), a3d);
-        float svip = cur3DIP.second.value();
-        if (cur3DIP.first && svip < isotrkDCACut_) {
+        // cross clean leptons
+        // hard to trace the source particles of low-pT electron in B builder
+        // use simple dR cut instead
+        float dr_to_l1_prefit = deltaR(l1_ptr->eta(), l1_ptr->phi(), trk_ptr->eta(), trk_ptr->phi());
+        float dr_to_l2_prefit = deltaR(l2_ptr->eta(), l2_ptr->phi(), trk_ptr->eta(), trk_ptr->phi());
+        if ((dr_to_l1_prefit < drIso_cleaning_) || (dr_to_l2_prefit < drIso_cleaning_)) continue;
+
+        TrajectoryStateOnSurface tsos_iso = extrapolator.extrapolate(kaons_ttracks->at(trk_idx).impactPointState(), fitter.fitted_vtx());
+        std::pair<bool,Measurement1D> cur3DIP_iso = absoluteImpactParameter(tsos_iso, fitter.fitted_refvtx(), a3d);
+        float svip_iso = cur3DIP_iso.second.value();
+        if (cur3DIP_iso.first && svip_iso < isotrkDCACut_) {
+          // add to final particle iso if dR < cone
+          float dr_to_l1 = deltaR(cand.userFloat("fitted_l1_eta"), cand.userFloat("fitted_l1_phi"), trk_ptr->eta(), trk_ptr->phi());
+          float dr_to_l2 = deltaR(cand.userFloat("fitted_l2_eta"), cand.userFloat("fitted_l2_phi"), trk_ptr->eta(), trk_ptr->phi());
+          float dr_to_k  = deltaR(cand.userFloat("fitted_k_eta") , cand.userFloat("fitted_k_phi") , trk_ptr->eta(), trk_ptr->phi());
+          float dr_to_b  = deltaR(cand.userFloat("fitted_eta")   , cand.userFloat("fitted_phi") , trk_ptr->eta(), trk_ptr->phi());
+
           bool isotrk_matched = false;
           if (dr_to_l1 < 0.4){
             isotrk_matched = true;

@@ -9,7 +9,7 @@ electronPairsForKee = cms.EDProducer(
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
-        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03 && userInt("nlowpt")<2'
+        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03' #&& userInt("nlowpt")<2'
         
     ),
     postVtxSelection = cms.string('userFloat("sv_chi2") < 998 && userFloat("sv_prob") > 1.e-5'),
@@ -22,9 +22,11 @@ BToKee = cms.EDProducer(
     kaons = cms.InputTag('tracksBPark', 'SelectedTracks'),
     kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     beamSpot = cms.InputTag("offlineBeamSpot"),
+    tracks = cms.InputTag("packedPFCandidates"),
     kaonSelection = cms.string(''),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
     isotrkDCACut = cms.double(0.1),
+    drIso_cleaning = cms.double(0.03),
     preVtxSelection = cms.string(
         'pt > 1.75 && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
@@ -52,9 +54,11 @@ BToKmumu = cms.EDProducer(
     kaons = BToKee.kaons,
     kaonsTransientTracks = BToKee.kaonsTransientTracks,
     beamSpot = cms.InputTag("offlineBeamSpot"),
+    tracks = cms.InputTag("packedPFCandidates"),
     kaonSelection = cms.string(''),
     isoTracksSelection = BToKee.isoTracksSelection,
     isotrkDCACut = BToKee.isotrkDCACut,
+    drIso_cleaning = BToKee.drIso_cleaning,
     # This in principle can be different between electrons and muons
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
