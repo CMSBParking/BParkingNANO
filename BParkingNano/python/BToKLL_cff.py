@@ -27,7 +27,7 @@ BToKee = cms.EDProducer(
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
-    trkDCACut = cms.double(0.06),
+    trkDCACut = cms.double(-1),
     preVtxSelection = cms.string(
         'pt > 1.75 && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'

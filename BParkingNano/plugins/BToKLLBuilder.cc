@@ -161,7 +161,7 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(k_idx).impactPointState(), dileptons_kinVtxs->at(ll_idx).fitted_vtx());
       std::pair<bool,Measurement1D> cur3DIP = absoluteImpactParameter(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), a3d);
       float svip = cur3DIP.second.value(); 
-      if (svip > trkDCACut_) continue;
+      if (trkDCACut_ > 0.0 && svip > trkDCACut_) continue;
 
       KinVtxFitter fitter(
         {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
