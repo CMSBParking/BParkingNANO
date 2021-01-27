@@ -251,6 +251,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.addUserInt("isMatchedToEle", matchedToEle);
     pcand.addUserInt("isMatchedToLowPtEle", matchedToLowPtEle);
     pcand.addUserInt("nValidHits", trk.bestTrack()->found());
+    pcand.addUserInt("keyPacked", iTrk);
     //adding the candidate in the composite stuff for fit (need to test)
     if ( iTrk < nTracks )
       pcand.addUserCand( "cand", edm::Ptr<pat::PackedCandidate> ( tracks, iTrk ));

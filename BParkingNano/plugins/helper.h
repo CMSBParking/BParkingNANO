@@ -11,6 +11,12 @@
 #include "DataFormats/GeometryVector/interface/PV3DBase.h"
 #include "Math/LorentzVector.h"
 
+#include "TrackingTools/GeomPropagators/interface/AnalyticalImpactPointExtrapolator.h"
+#include "RecoVertex/KinematicFitPrimitives/interface/RefCountedKinematicTree.h"
+#include "RecoVertex/VertexPrimitives/interface/ConvertToFromReco.h"
+#include "TrackingTools/IPTools/interface/IPTools.h"
+#include "TVector3.h"
+
 #include <vector>
 #include <algorithm>
 #include <limits>
@@ -109,5 +115,86 @@ inline bool track_to_lepton_match(edm::Ptr<reco::Candidate> l_ptr, auto iso_trac
   return false;
 }
 
- 
+
+inline std::pair<bool, Measurement1D> absoluteImpactParameter(const TrajectoryStateOnSurface& tsos,
+                                                              RefCountedKinematicVertex vertex,
+                                                              VertexDistance& distanceComputer){
+  if (!tsos.isValid()) {
+      return std::pair<bool, Measurement1D>(false, Measurement1D(0., 0.));
+  }
+  GlobalPoint refPoint = tsos.globalPosition();
+  GlobalError refPointErr = tsos.cartesianError().position();
+  GlobalPoint vertexPosition = vertex->vertexState().position();
+  GlobalError vertexPositionErr = RecoVertex::convertError(vertex->vertexState().error());
+  return std::pair<bool, Measurement1D>(true,
+                                        distanceComputer.distance(VertexState(vertexPosition, vertexPositionErr), VertexState(refPoint, refPointErr)));
+}
+
+
+inline std::pair<bool, Measurement1D> absoluteImpactParameter3D(const TrajectoryStateOnSurface& tsos,
+                                                                RefCountedKinematicVertex vertex){
+  VertexDistance3D dist;
+  return absoluteImpactParameter(tsos, vertex, dist);
+}
+
+
+inline std::pair<bool, Measurement1D> absoluteTransverseImpactParameter(const TrajectoryStateOnSurface& tsos,
+                                                                        RefCountedKinematicVertex vertex){
+  VertexDistanceXY dist;
+  return absoluteImpactParameter(tsos, vertex, dist);
+}
+
+
+inline std::pair<bool, Measurement1D> signedImpactParameter3D(const TrajectoryStateOnSurface& tsos,
+                                                              RefCountedKinematicVertex vertex,
+                                                              reco::Vertex wrtVertex){
+  VertexDistance3D dist;
+  
+  std::pair<bool,Measurement1D> result = absoluteImpactParameter(tsos, vertex, dist);
+  if (!result.first)
+    return result;
+  
+  //Compute Sign
+  GlobalPoint impactPoint = tsos.globalPosition();
+  GlobalVector IPVec(impactPoint.x() - vertex->vertexState().position().x(), 
+                     impactPoint.y() - vertex->vertexState().position().y(),  
+                     impactPoint.z() - vertex->vertexState().position().z());
+
+  GlobalVector direction(vertex->vertexState().position().x() - wrtVertex.position().x(), 
+                         vertex->vertexState().position().y() - wrtVertex.position().y(), 
+                         vertex->vertexState().position().z() - wrtVertex.position().z());
+
+  double prod = IPVec.dot(direction);
+  double sign = (prod >= 0) ? 1. : -1.;
+  
+  //Apply sign to the result
+  return std::pair<bool, Measurement1D>(result.first, Measurement1D(sign * result.second.value(), result.second.error()));
+  
+}
+
+
+inline std::pair<bool, Measurement1D> signedTransverseImpactParameter(const TrajectoryStateOnSurface& tsos,
+                                                                      RefCountedKinematicVertex vertex,
+                                                                      reco::Vertex wrtVertex){
+  VertexDistanceXY dist;
+  
+  std::pair<bool,Measurement1D> result = absoluteImpactParameter(tsos, vertex, dist);
+  if (!result.first)
+    return result;
+
+  //Compute Sign
+  GlobalPoint impactPoint = tsos.globalPosition();
+  GlobalVector IPVec(impactPoint.x() - vertex->vertexState().position().x(), impactPoint.y() - vertex->vertexState().position().y(), 0.);
+  GlobalVector direction(vertex->vertexState().position().x() - wrtVertex.position().x(), 
+                         vertex->vertexState().position().y() - wrtVertex.position().y(), 0);
+
+  double prod = IPVec.dot(direction);
+  double sign = (prod >= 0) ? 1. : -1.;
+  
+  //Apply sign to the result
+  return std::pair<bool, Measurement1D>(result.first, Measurement1D(sign * result.second.value(), result.second.error()));
+  
+}
+
+
 #endif
