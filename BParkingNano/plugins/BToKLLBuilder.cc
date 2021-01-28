@@ -44,7 +44,7 @@ public:
     isolostTracksToken_(consumes<pat::PackedCandidateCollection>(cfg.getParameter<edm::InputTag>("lostTracks"))),
     isotrk_selection_{cfg.getParameter<std::string>("isoTracksSelection")},
     beamspot_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )},
-    trkDCACut_(cfg.getParameter<double>("trkDCACut"))
+    vertex_src_{consumes<reco::VertexCollection>( cfg.getParameter<edm::InputTag>("offlinePrimaryVertexSrc") )}
     {
       produces<pat::CompositeCandidateCollection>();
     }
@@ -71,9 +71,7 @@ private:
   const StringCutObjectSelector<pat::PackedCandidate> isotrk_selection_; 
 
   const edm::EDGetTokenT<reco::BeamSpot> beamspot_;  
-
-  const double trkDCACut_;
-
+  const edm::EDGetTokenT<reco::VertexCollection> vertex_src_;
 };
 
 void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &iSetup) const {
@@ -97,12 +95,13 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
   edm::Handle<reco::BeamSpot> beamspot;
   evt.getByToken(beamspot_, beamspot);  
 
+  edm::Handle<reco::VertexCollection> pvtxs;
+  evt.getByToken(vertex_src_, pvtxs);
+
   edm::ESHandle<MagneticField> fieldHandle;
   iSetup.get<IdealMagneticFieldRecord>().get(fieldHandle);
   const MagneticField *fMagneticField = fieldHandle.product();
   AnalyticalImpactPointExtrapolator extrapolator(fMagneticField);  
-
-  VertexDistance3D a3d;
 
   //for isolation
   edm::Handle<pat::PackedCandidateCollection> iso_tracks;
@@ -157,12 +156,6 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       
       if( !pre_vtx_selection_(cand) ) continue;
    
-      // kaon 3D impact parameter from dilepton SV
-      TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(k_idx).impactPointState(), dileptons_kinVtxs->at(ll_idx).fitted_vtx());
-      std::pair<bool,Measurement1D> cur3DIP = absoluteImpactParameter(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), a3d);
-      float svip = cur3DIP.second.value(); 
-      if (trkDCACut_ > 0.0 && svip > trkDCACut_) continue;
-
       KinVtxFitter fitter(
         {leptons_ttracks->at(l1_idx), leptons_ttracks->at(l2_idx), kaons_ttracks->at(k_idx)},
         {l1_ptr->mass(), l2_ptr->mass(), K_MASS},
@@ -218,7 +211,15 @@ void BToKLLBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup cons
       cand.addUserFloat("fitted_k_eta" , fitter.daughter_p4(2).eta());
       cand.addUserFloat("fitted_k_phi" , fitter.daughter_p4(2).phi());
     
-      cand.addUserFloat("k_svip" , svip);
+      // kaon 3D impact parameter from dilepton SV
+      TrajectoryStateOnSurface tsos = extrapolator.extrapolate(kaons_ttracks->at(k_idx).impactPointState(), dileptons_kinVtxs->at(ll_idx).fitted_vtx());
+      std::pair<bool,Measurement1D> cur2DIP = signedTransverseImpactParameter(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), *beamspot);
+      std::pair<bool,Measurement1D> cur3DIP = signedImpactParameter3D(tsos, dileptons_kinVtxs->at(ll_idx).fitted_refvtx(), *beamspot, (*pvtxs)[0].position().z());
+
+      cand.addUserFloat("k_svip2d" , cur2DIP.second.value());
+      cand.addUserFloat("k_svip2d_err" , cur2DIP.second.error());
+      cand.addUserFloat("k_svip3d" , cur3DIP.second.value());
+      cand.addUserFloat("k_svip3d_err" , cur3DIP.second.error());
 
       if( !post_vtx_selection_(cand) ) continue;        
 

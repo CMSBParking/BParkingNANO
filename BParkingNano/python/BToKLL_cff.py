@@ -23,11 +23,11 @@ BToKee = cms.EDProducer(
     kaons = cms.InputTag('tracksBPark', 'SelectedTracks'),
     kaonsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     beamSpot = cms.InputTag("offlineBeamSpot"),
+    offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
     tracks = cms.InputTag("packedPFCandidates"),
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
     isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
-    trkDCACut = cms.double(-1),
     preVtxSelection = cms.string(
         'pt > 1.75 && userFloat("min_dr") > 0.03 '
         '&& mass < 7. && mass > 4.'
@@ -56,12 +56,12 @@ BToKmumu = cms.EDProducer(
     kaons = BToKee.kaons,
     kaonsTransientTracks = BToKee.kaonsTransientTracks,
     beamSpot = cms.InputTag("offlineBeamSpot"),
+    offlinePrimaryVertexSrc = cms.InputTag('offlineSlimmedPrimaryVertices'),
     tracks = cms.InputTag("packedPFCandidates"),
     lostTracks = cms.InputTag("lostTracks"),
     kaonSelection = cms.string(''),
     isoTracksSelection = BToKee.isoTracksSelection,
     # This in principle can be different between electrons and muons
-    trkDCACut = cms.double(0.06),
     preVtxSelection = cms.string(
         'pt > 3. && userFloat("min_dr") > 0.03'
         '&& mass < 7. && mass > 4.'
@@ -123,7 +123,10 @@ BToKeeTable = cms.EDProducer(
         fit_k_pt = ufloat('fitted_k_pt'),
         fit_k_eta = ufloat('fitted_k_eta'),
         fit_k_phi = ufloat('fitted_k_phi'),
-        k_svip = ufloat('k_svip'),
+        k_svip2d = ufloat('k_svip2d'),
+        k_svip2d_err = ufloat('k_svip2d_err'),
+        k_svip3d = ufloat('k_svip3d'),
+        k_svip3d_err = ufloat('k_svip3d_err'),
         l1_iso03 = ufloat('l1_iso03'),
         l1_iso04 = ufloat('l1_iso04'),
         l2_iso03 = ufloat('l2_iso03'),
