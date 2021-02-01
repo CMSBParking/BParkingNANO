@@ -145,4 +145,57 @@ inline std::pair<bool, Measurement1D> absoluteTransverseImpactParameter(const Tr
 }
 
 
+inline std::pair<bool, Measurement1D> signedImpactParameter3D(const TrajectoryStateOnSurface& tsos,
+                                                              RefCountedKinematicVertex vertex,
+                                                              const reco::BeamSpot &bs, double pv_z){
+  VertexDistance3D dist;
+
+  std::pair<bool,Measurement1D> result = absoluteImpactParameter(tsos, vertex, dist);
+  if (!result.first)
+    return result;
+
+  //Compute Sign
+  auto bs_pos = bs.position(vertex->vertexState().position().z());
+  GlobalPoint impactPoint = tsos.globalPosition();
+  GlobalVector IPVec(impactPoint.x() - vertex->vertexState().position().x(),       
+                     impactPoint.y() - vertex->vertexState().position().y(),        
+                     impactPoint.z() - vertex->vertexState().position().z());
+
+  GlobalVector direction(vertex->vertexState().position().x() - bs_pos.x(), 
+                         vertex->vertexState().position().y() - bs_pos.y(), 
+                         vertex->vertexState().position().z() - pv_z);
+
+  double prod = IPVec.dot(direction);
+  double sign = (prod >= 0) ? 1. : -1.;
+
+  //Apply sign to the result
+  return std::pair<bool, Measurement1D>(result.first, Measurement1D(sign * result.second.value(), result.second.error()));
+
+}
+
+ 
+inline std::pair<bool, Measurement1D> signedTransverseImpactParameter(const TrajectoryStateOnSurface& tsos,
+                                                                      RefCountedKinematicVertex vertex,
+                                                                      const reco::BeamSpot &bs){
+  VertexDistanceXY dist;
+
+  std::pair<bool,Measurement1D> result = absoluteImpactParameter(tsos, vertex, dist);
+  if (!result.first)
+    return result;
+
+  //Compute Sign
+  auto bs_pos = bs.position(vertex->vertexState().position().z());
+  GlobalPoint impactPoint = tsos.globalPosition();
+  GlobalVector IPVec(impactPoint.x() - vertex->vertexState().position().x(), impactPoint.y() - vertex->vertexState().position().y(), 0.);
+  GlobalVector direction(vertex->vertexState().position().x() - bs_pos.x(), 
+                         vertex->vertexState().position().y() - bs_pos.y(), 0);
+
+  double prod = IPVec.dot(direction);
+  double sign = (prod >= 0) ? 1. : -1.;
+
+  //Apply sign to the result
+  return std::pair<bool, Measurement1D>(result.first, Measurement1D(sign * result.second.value(), result.second.error()));
+
+}
+
 #endif
