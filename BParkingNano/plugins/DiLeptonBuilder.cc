@@ -34,7 +34,8 @@ public:
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     src_{consumes<LeptonCollection>( cfg.getParameter<edm::InputTag>("src") )},
     ttracks_src_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("transientTracksSrc") )} {
-       produces<pat::CompositeCandidateCollection>();
+       produces<pat::CompositeCandidateCollection>("SelectedDiLeptons");
+       produces<std::vector<KinVtxFitter> >("SelectedDiLeptonKinVtxs");
     }
 
   ~DiLeptonBuilder() override {}
@@ -64,6 +65,7 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
 
   // output
   std::unique_ptr<pat::CompositeCandidateCollection> ret_value(new pat::CompositeCandidateCollection());
+  std::unique_ptr<std::vector<KinVtxFitter> > kinVtx_out( new std::vector<KinVtxFitter> );
   
   for(size_t l1_idx = 0; l1_idx < leptons->size(); ++l1_idx) {
     edm::Ptr<Lepton> l1_ptr(leptons, l1_idx);
@@ -105,10 +107,12 @@ void DiLeptonBuilder<Lepton>::produce(edm::StreamID, edm::Event &evt, edm::Event
       // cut on the SV info
       if( !post_vtx_selection_(lepton_pair) ) continue;
       ret_value->push_back(lepton_pair);
+      kinVtx_out->push_back(fitter);
     }
   }
   
-  evt.put(std::move(ret_value));
+  evt.put(std::move(ret_value), "SelectedDiLeptons");
+  evt.put(std::move(kinVtx_out), "SelectedDiLeptonKinVtxs");
 }
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
