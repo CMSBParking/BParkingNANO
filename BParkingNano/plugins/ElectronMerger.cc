@@ -162,12 +162,14 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
    // skip electrons inside tag's jet or from different PV
    bool skipEle=true;
+   float dzTrg = 0.0;
    for(const auto & trg : *trgMuon) {
      if(reco::deltaR(ele, trg) < drTrg_cleaning_ && drTrg_cleaning_ > 0)
         continue;
      if(fabs(ele.vz() - trg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ > 0)
         continue;
      skipEle=false;
+     dzTrg = ele.vz() - trg.vz();
      break; // one trg muon to pass is enough :)
    }
    // we skip evts without trg muon
@@ -184,6 +186,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("pfmvaId", pf_mva_id);
    ele.addUserFloat("chargeMode", ele.charge());
    ele.addUserInt("isPFoverlap", 0);
+   ele.addUserFloat("dzTrg", dzTrg);
 
    // Attempt to match electrons to conversions in "gsfTracksOpenConversions" collection (NO MATCHES EXPECTED)
    ConversionInfo info;
@@ -249,12 +252,14 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
 
    bool skipEle=true;
+   float dzTrg = 0.0;
    for(const auto & trg : *trgMuon) {
      if(reco::deltaR(ele, trg) < drTrg_cleaning_ && drTrg_cleaning_ > 0)
         continue;
      if(fabs(ele.vz() - trg.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ > 0)
         continue;
      skipEle=false;
+     dzTrg = ele.vz() - trg.vz();
      break;  // one trg muon is enough 
    }
    // same here Do we need evts without trg muon? now we skip them
@@ -284,6 +289,7 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    ele.addUserFloat("unBiased", unbiased_seedBDT);
    ele.addUserFloat("mvaId", mva_id);
    ele.addUserFloat("pfmvaId", 20.);
+   ele.addUserFloat("dzTrg", dzTrg);
 
    // Attempt to match electrons to conversions in "gsfTracksOpenConversions" collection
    ConversionInfo info;

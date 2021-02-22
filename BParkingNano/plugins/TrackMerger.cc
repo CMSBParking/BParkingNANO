@@ -154,6 +154,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
          trkNormChiMax_>0)  )    continue; 
 
     bool skipTrack=true;
+    float dzTrg = 0.0;
     for (const pat::Muon & mu: *trgMuons){
       //remove tracks inside trg muons jet
       if(reco::deltaR(trk, mu) < drTrg_Cleaning_ && drTrg_Cleaning_ >0) 
@@ -162,6 +163,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
       if((fabs(trk.vz() - mu.vz()) > dzTrg_cleaning_ && dzTrg_cleaning_ > 0))
         continue;
       skipTrack=false;
+      dzTrg = trk.vz() - mu.vz();
       break; // at least for one trg muon to pass this cuts
     }
     // if track is closer to at least a triggering muon keep it
@@ -244,6 +246,7 @@ void TrackMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const 
     pcand.addUserFloat("dz", trk.dz()); 
     pcand.addUserFloat("dzS", trk.dz()/trk.dzError());
     pcand.addUserFloat("DCASig", DCASig);
+    pcand.addUserFloat("dzTrg", dzTrg);
     pcand.addUserInt("isMatchedToMuon", matchedToMuon);
     pcand.addUserInt("isMatchedToLooseMuon", matchedToLooseMuon);
     pcand.addUserInt("isMatchedToSoftMuon", matchedToSoftMuon);
