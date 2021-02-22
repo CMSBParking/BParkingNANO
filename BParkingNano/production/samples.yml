@@ -100,9 +100,13 @@ samples:
     isMC: True
 
   BdToKstarJpsi_ToMuMu:
-    dataset: /BdToKstarJpsi_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
+    dataset: /BdToKstarJpsi_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v3/MINIAODSIM 
     isMC: True
     
+  BdToKstarJpsi_ToMuMu_v2:
+    dataset: /BdToKstarJpsi_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15_ext1-v1/MINIAODSIM 
+    isMC: True
+
   BdToKstarJpsi_Toee:
     dataset: /BdToKstarJpsi_ToKPiee_Mufilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v2/MINIAODSIM 
     isMC: True
@@ -132,7 +136,7 @@ samples:
     isMC: True
 
   BdToKstarPsi2S_ToMuMu:
-    dataset: /BdToKstarPsi2S_ToKPiMuMu_probefilter_SoftQCDnonD_TuneCP5_13Tev-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM 
+    dataset: /BdToKstarPsi2S_ToKPiMuMu_probefilterPt2_SoftQCDnonD_TuneCP5_13Tev-pythia8-evtgen/RunIIAutumn18MiniAOD-PUPoissonAve20_BParking_102X_upgrade2018_realistic_v15-v1/MINIAODSIM
     isMC: True
 
   BdToKstarPsi2S_Toee:
