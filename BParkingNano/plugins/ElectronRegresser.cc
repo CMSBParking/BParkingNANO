@@ -25,11 +25,9 @@ public:
       if( cfg.existsAs<edm::ParameterSet>("lowPtRegressionConfig") ) {
 	const edm::ParameterSet& iconf = cfg.getParameterSet("lowPtRegressionConfig");
 	const std::string& mname = iconf.getParameter<std::string>("modifierName");
-	ModifyObjectValueBase* plugin =
-	  ModifyObjectValueFactory::get()->create(mname,iconf);
-	regression_.reset(plugin);
 	edm::ConsumesCollector sumes = consumesCollector();
-	regression_->setConsumes(sumes);
+	ModifyObjectValueBase* plugin = ModifyObjectValueFactory::get()->create(mname,iconf,sumes);
+	regression_.reset(plugin);
       } else {
 	regression_.reset(nullptr);
       }
@@ -38,11 +36,9 @@ public:
       if( cfg.existsAs<edm::ParameterSet>("gsfRegressionConfig") ) {
 	const edm::ParameterSet& iconf = cfg.getParameterSet("gsfRegressionConfig");
 	const std::string& mname = iconf.getParameter<std::string>("modifierName");
-      ModifyObjectValueBase* plugin =
-        ModifyObjectValueFactory::get()->create(mname,iconf);
-      regressionGsf_.reset(plugin);
-      edm::ConsumesCollector sumes = consumesCollector();
-      regressionGsf_->setConsumes(sumes);
+	edm::ConsumesCollector sumes = consumesCollector();
+	ModifyObjectValueBase* plugin = ModifyObjectValueFactory::get()->create(mname,iconf,sumes);
+	regressionGsf_.reset(plugin);
       } else {
 	regressionGsf_.reset(nullptr);
       }
