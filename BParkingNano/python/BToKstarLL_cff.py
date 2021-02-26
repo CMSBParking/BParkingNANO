@@ -7,11 +7,11 @@ electronPairsForKstarEE = cms.EDProducer(
     'DiElectronBuilder',
     src = cms.InputTag('electronsForAnalysis', 'SelectedElectrons'),
     transientTracksSrc = cms.InputTag('electronsForAnalysis', 'SelectedTransientElectrons'),
-    lep1Selection = cms.string('pt > 1.5 && userFloat("unBiased") >= 3'),
+    lep1Selection = cms.string('pt > 1.3'),
     lep2Selection = cms.string(''),
     preVtxSelection = cms.string(
         'abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
-        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03'
+        '&& mass() > 0 && charge() == 0 && userFloat("lep_deltaR") > 0.03 && userInt("nlowpt")<2'
     ),
     postVtxSelection = cms.string('userFloat("sv_chi2") < 998 && userFloat("sv_prob") > 1.e-5'),
 )
@@ -31,8 +31,10 @@ KstarToKPi = cms.EDProducer(
        'KstarBuilder',
         pfcands= cms.InputTag('tracksBPark', 'SelectedTracks'),
         transientTracks= cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
-        trk1Selection = cms.string('pt > 1.5 && abs(eta)<2.4'), #need optimization   
-        trk2Selection = cms.string('pt > 1.0 && abs(eta)<2.4'), #need optimization
+        trk1Selection = cms.string('pt > 1.0 && abs(eta)<2.4'), #need optimization   
+        trk2Selection = cms.string('pt > 0.5 && abs(eta)<2.4'), #need optimization
+#         trk1Selection = cms.string('pt > 1.5 && abs(eta)<2.4'), #need optimization   
+#         trk2Selection = cms.string('pt > 1.0 && abs(eta)<2.4'), #need optimization
         preVtxSelection = cms.string('abs(userCand("trk1").vz - userCand("trk2").vz)<1.0' 
         ' &&  pt()>2.0 && ( (mass() < 1.042 && mass() > 0.742)'
         ' || (userFloat("barMass") < 1.042 && userFloat("barMass") > 0.742) ) '
@@ -54,7 +56,7 @@ BToKstarMuMu = cms.EDProducer(
     kstarsTransientTracks = cms.InputTag('tracksBPark', 'SelectedTransientTracks'),
     tracks = cms.InputTag("packedPFCandidates"),
     lostTracks = cms.InputTag("lostTracks"),
-    isoTracksSelection = cms.string('pt > 0.7 && abs(eta)<2.5'),
+    isoTracksSelection = cms.string('pt > 0.5 && abs(eta)<2.5'),
     
     beamSpot = cms.InputTag("offlineBeamSpot"),
     preVtxSelection = cms.string(
