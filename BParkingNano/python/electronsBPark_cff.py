@@ -1,10 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 
-from RecoEgamma.EgammaElectronProducers.lowPtGsfElectronIDExtra_cff import lowPtGsfElectronIDExtra
-lowPtGsfElectronExtraID = lowPtGsfElectronIDExtra.clone()
-lowPtGsfElectronExtraID.electrons = 'regressionForEle:regressedLowPtElectrons'
-lowPtGsfElectronExtraID.rho = 'fixedGridRhoFastjetAll'
+from RecoEgamma.EgammaElectronProducers.lowPtGsfElectronID_cff import lowPtGsfElectronID
+lowPtGsfElectronID = lowPtGsfElectronID.clone()
+lowPtGsfElectronID.electrons = 'regressionForEle:regressedLowPtElectrons'
+lowPtGsfElectronID.rho = 'fixedGridRhoFastjetAll'
 
 mvaConfigsForEleProducer = cms.VPSet( )
 # Import and add all desired MVAs
@@ -54,6 +54,9 @@ egmGsfElectronIDTask = cms.Task(
 )
 
 egmGsfElectronIDSequence = cms.Sequence(egmGsfElectronIDTask)
+
+
+
 
 # regression stuff
 from RecoEgamma.EgammaTools.regressionModifierNew_cfi import regressionModifier106XUL
@@ -202,7 +205,7 @@ electronsForAnalysis = cms.EDProducer(
   pfSrc    = cms.InputTag('regressionForEle:regressedElectrons'),
   ptbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","ptbiased","RECO"),
   unbiasedSeeding = cms.InputTag("lowPtGsfElectronSeedValueMaps","unbiased","RECO"),
-  mvaId = cms.InputTag("lowPtGsfElectronExtraID"),
+  mvaId = cms.InputTag("lowPtGsfElectronID"),
   pfmvaId = cms.InputTag("electronMVAValueMapProducer:ElectronMVAEstimatorRun2BParkRetrainRawValues"),
   vertexCollection = cms.InputTag("offlineSlimmedPrimaryVertices"),
   ## cleaning wrt trigger muon [-1 == no cut]
