@@ -31,7 +31,7 @@ cp $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data/
 ## Add support for GBRForest to parse ROOT files
 
 ```shell
-git cms-merge-topic CMSBParking:convertXMLToGBRForestROOT
+git cms-merge-topic -u CMSBParking:convertXMLToGBRForestROOT
 ```
 
 ## Add the modification needed to use post-fit quantities for electrons  
