@@ -16,7 +16,7 @@ git cms-init
 The ID model is `2020Sept15` (depth=15, ntrees=1000).
 
 ```shell
-git cms-merge-topic CMSBParking:from-CMSSW_10_2_15_2020Sept15
+git cms-merge-topic -u CMSBParking:from-CMSSW_10_2_15_2020Sept15_v1
 git clone --single-branch --branch from-CMSSW_10_2_15_2020Sept15 git@github.com:CMSBParking/RecoEgamma-ElectronIdentification.git $CMSSW_BASE/external/$SCRAM_ARCH/data/RecoEgamma/ElectronIdentification/data
 ```
 
