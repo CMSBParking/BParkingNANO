@@ -96,7 +96,7 @@ void ElectronRegresser::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
 	       << ", ele.p = " << ele.p() << std::endl;
    }
 
-   regressionGsf_->modifyObject(ele);
+   //   regressionGsf_->modifyObject(ele);
 
    if(debug) { 
      std::cout << "ElectronRegresser, Event " << (evt.id()).event() 
@@ -121,7 +121,7 @@ void ElectronRegresser::produce(edm::StreamID, edm::Event &evt, edm::EventSetup 
 	       << ", ele.p = " << ele.p() << std::endl;
    }
 
-   regression_->modifyObject(ele);
+   // regression_->modifyObject(ele);
 
    if(debug) {
      std::cout << "ElectronRegresser, Event " << (evt.id()).event() 

@@ -152,10 +152,16 @@ void ElectronMerger::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
    if (!ele.passConversionVeto()) continue;
 
    // Fix the mass to the proper one
-   reco::Candidate::PolarLorentzVector p4( 
+   /*   reco::Candidate::PolarLorentzVector p4(
 					  ele.pt(),
 					  ele.eta(),
 					  ele.phi(),
+					  ELECTRON_MASS
+					  ); */
+   reco::Candidate::PolarLorentzVector p4(
+					  ele.gsfTrack()->ptMode(),
+					  ele.gsfTrack()->etaMode(),
+					  ele.gsfTrack()->phiMode(),
 					  ELECTRON_MASS
 					   );
    ele.setP4(p4);     

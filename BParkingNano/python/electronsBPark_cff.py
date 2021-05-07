@@ -217,8 +217,8 @@ electronsForAnalysis = cms.EDProducer(
   ptMin = cms.double(0.5),
   etaMax = cms.double(2.5),
   bdtMin = cms.double(-2.5), #this cut can be used to deactivate low pT e if set to >12
-  useRegressionModeForP4 = cms.bool(True),
-  useGsfModeForP4 = cms.bool(False),
+    useRegressionModeForP4 = cms.bool(False),
+    useGsfModeForP4 = cms.bool(True),
   sortOutputCollections = cms.bool(True),
   saveLowPtE = cms.bool(True),
     # conversions
